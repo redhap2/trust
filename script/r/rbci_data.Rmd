@@ -143,6 +143,26 @@ levels %<>%
 print(levels, n=40)
 ```
 
+#Adm setup
+
+```{r}
+cty_adm1 <- levels%>%
+  filter(levels_nb>=1)%>%
+  pull(country)
+
+cty_adm2 <- levels%>%
+  filter(levels_nb>=2)%>%
+  pull(country)
+
+cty_adm3 <- levels%>%
+  filter(levels_nb>=3)%>%
+  pull(country)
+
+cty_adm4 <- levels%>%
+  filter(levels_nb>=4)%>%
+  pull(country)
+```
+
 #Administrative boundaries
 
 ```{r}
@@ -200,26 +220,6 @@ data_final_adm %>%
   print(n=40)
 
 saveRDS(data_final_adm, file="data/data_rds/data_final_adm.rds")
-```
-
-#Adm setup
-
-```{r}
-cty_adm1 <- levels%>%
-  filter(levels_nb>=1)%>%
-  pull(country)
-
-cty_adm2 <- levels%>%
-  filter(levels_nb>=2)%>%
-  pull(country)
-
-cty_adm3 <- levels%>%
-  filter(levels_nb>=3)%>%
-  pull(country)
-
-cty_adm4 <- levels%>%
-  filter(levels_nb>=4)%>%
-  pull(country)
 ```
 
 #Raster function

@@ -193,7 +193,9 @@ remove(bdd, country_data, country_data_result, country_data_sf, result, roads_sf
 ```
 
 ```{r}
-tiff_file <- "C:/Users/Redha CHABA/Desktop/temp/desert.tif"
+library(terra)
+
+tiff_file <- "data/data_raw/geography/desert/desert.tif"
 
 desert_wgs84 <- rast(tiff_file)
 
@@ -203,9 +205,7 @@ binary_raster <- ifel(!is.na(desert_wgs84), 1, 0)
 
 print(binary_raster)
 
-freq(binary_raster)
-
-plot(binary_raster, main = "Desert Map", col = terrain.colors(100))
+plot(binary_raster, main = "Desert Map", col = rev(heat.colors(100)))
 
 desert_r5_adm1 <- data.frame()
 
@@ -280,25 +280,3 @@ print(glimpse(desert_r5_adm2))
 
 saveRDS(desert_r5_adm2, file="data/data_rds/geo_ctrl/desert_r5_adm2.rds")
 ```
-
-```{r}
-library(ggplot2)
-
-ggplot(data_final_nlp_bis2%>%filter(!is.na(neig_eth_a)), aes(x = factor(neig_eth_a))) +
-  geom_bar(fill = "steelblue") +
-  labs(title = "Willingness to Have Neighbors of Different Ethnicities - Waves 6-8",
-       y = "Count",
-       x=NULL) +
-  scale_x_discrete(labels = c("Strongly dislike", "Somewhat dislike","Would not care", "Somewhat like", "Strongly like")) +
-  theme_minimal()
-
-
-ggplot(data_final_nlp_bis2%>%filter(!is.na(neig_eth_a), spl==1), aes(x = factor(neig_eth_a))) +
-  geom_bar(fill = "steelblue") +
-  labs(title = "Willingness to Have Neighbors of Different Ethnicities - Waves 6-8",
-       y = "Count",
-       x=NULL) +
-  scale_x_discrete(labels = c("Strongly dislike", "Somewhat dislike","Would not care", "Somewhat like", "Strongly like")) +
-  theme_minimal()
-```
-
