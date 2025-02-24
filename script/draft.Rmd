@@ -1,0 +1,304 @@
+```{r}
+library(ggplot2)
+library(dplyr)
+library(maps)
+
+# Mapping of ISO codes to country names
+iso_to_country <- data.frame(
+  iso = c("AGO", "BDI", "BEN", "BFA", "BWA", "CIV", "CMR", "CPV", "DZA", "EGY", 
+          "ETH", "GAB", "GHA", "GIN", "GMB", "KEN", "LBR", "LSO", "MAR", "MDG", 
+          "MLI", "MOZ", "MUS", "MWI", "NAM", "NER", "NGA", "SDN", "SEN", "SLE", 
+          "STP", "SWZ", "TGO", "TUN", "TZA", "UGA", "ZAF", "ZMB", "ZWE"),
+  country = c("Angola", "Burundi", "Benin", "Burkina Faso", "Botswana", "Ivory Coast", 
+              "Cameroon", "Cape Verde", "Algeria", "Egypt", "Ethiopia", "Gabon", 
+              "Ghana", "Guinea", "Gambia", "Kenya", "Liberia", "Lesotho", "Morocco", 
+              "Madagascar", "Mali", "Mozambique", "Mauritius", "Malawi", "Namibia", 
+              "Niger", "Nigeria", "Sudan", "Senegal", "Sierra Leone", "Sao Tome and Principe", 
+              "Eswatini", "Togo", "Tunisia", "Tanzania", "Uganda", "South Africa", 
+              "Zambia", "Zimbabwe")
+)
+
+# Count observations for each country based on ISO codes
+country_counts <- data_final_adm %>%
+  group_by(iso) %>%
+  summarize(observation_count = n())
+
+# Filter countries with at least 1000 observations and match with ISO codes
+highlight_countries <- country_counts %>%
+  filter(observation_count >= 1000, iso %in% iso_to_country$iso) %>%
+  pull(iso)
+
+cty <- iso_to_country%>%
+  pull(country)
+
+# Get the world map data
+africa_map <- map_data("world")%>%
+  filter(region%in%cty)
+
+# Add a column for highlighting based on country names
+africa_map <- africa_map %>%
+  left_join(iso_to_country, by = c("region" = "country")) %>%
+  mutate(highlight = ifelse(iso %in% highlight_countries, "Yes", "No"))
+
+# Plot
+ggplot() +
+  geom_polygon(data = africa_map, aes(x = long, y = lat, group = group, fill = highlight), 
+               color = "black") +
+  scale_fill_manual(values = c("Yes" = "lightblue", "No" = "gray"), guide = "none") +
+  labs(title = "Map of Africa: Countries with At Least 1000 Observations Highlighted") +
+  theme_minimal()
+
+```
+
+
+```{r}
+
+afro_diff <- anti_join(afro_stack, data_final)
+
+afro_diff%>%
+  distinct(iso)
+
+afro_diff %>%
+  select(latitude, longitude)%>%
+  View()
+
+data_final%>%
+  select(dist_cap_log, dist_ncap_log, dist_sndncap_log)%>%
+  summary()
+  
+```
+
+
+```{r}
+gov_index <- read_excel("data/data_raw/gov_index.xlsx")%>%
+  rename(iso=ISO)
+polstab_index <- read_excel("data/data_raw/polstab_index.xlsx")%>%
+  rename(iso=ISO)
+reg_index <- read_excel("data/data_raw/reg_index.xlsx")%>%
+  rename(iso=ISO)
+rule_index <- read_excel("data/data_raw/rule_index.xlsx")%>%
+  rename(iso=ISO)
+voiceac_index <- read_excel("data/data_raw/voiceac_index.xlsx")%>%
+  rename(iso=ISO)
+
+
+vdem <- readRDS("data/data_raw/V-Dem-CY-Full+Others-v13.rds")
+
+```
+
+```{r}
+data_final_adm%>% filter(iso=="BEN") %>% select(pop_adm1, pop_adm2, pop_adm3)%>%summary()
+
+data_final_adm %>% select(gg_adm1_pot, round)%>%filter(round==6)%>%summary()
+
+data_final_adm%>%filter(iso=="BEN")%>%select(iso, round, gg_adm1_pot, NAME_1)%>%View()
+```
+
+
+```{r}
+ggg_stack <- readRDS("data/data_rds/ggg_stack.rds")
+
+ggg_cty<-ggg_stack%>%distinct(iso)%>%pull(iso)
+
+all_rounds <- seq(min(ggg_stack$round, na.rm = TRUE), max(ggg_stack$round, na.rm = TRUE), by = 1)
+
+for (country in ggg_cty) {
+  ggg_stack %>%
+    filter(iso == country) %>%
+    group_by(round) %>%
+    summarize(
+      ggg_adm1_mean = mean(ggg_adm1_pot, na.rm = TRUE),
+      ggg_adm2_mean = mean(ggg_adm2_pot, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    complete(round = all_rounds, fill = list(ggg_adm1_mean = NA, ggg_adm2_mean = NA)) %>%  # Fill missing rounds with NA
+    ggplot(aes(x = round)) +
+    geom_line(aes(y = ggg_adm1_mean), size = 1, color = "blue") +
+    geom_point(aes(y = ggg_adm1_mean), size = 2, color = "blue") +
+    geom_line(aes(y = ggg_adm2_mean), size = 1, color = "red") +
+    geom_point(aes(y = ggg_adm2_mean), size = 2, color = "red") +
+    labs(
+      title = paste("Evolution of ggg_adm1_pot and ggg_adm2_pot Across Rounds for", country),
+      x = "Round",
+      y = "Mean Values"
+    ) +
+    scale_y_continuous(limits = c(0, 1)) +  # Fixed y-axis scale between 0 and 1
+    theme_minimal() +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 16),
+      axis.title = element_text(size = 14),
+      legend.position = "none"
+    ) -> p
+  print(p)
+}
+```
+
+
+
+
+```{r}
+setwd("~/working_paper/trust/")
+getwd()
+```
+
+```{r packages, echo=FALSE, }
+library(haven)
+library(dplyr)
+select <- dplyr::select
+library(magrittr)
+library(sf)
+```
+
+```{r}
+countries <- c("BEN", "BFA", "BWA", "CIV", "CMR", "GIN", "LBR", "MLI", "NAM", "NER", "SLE", "GHA", "KEN", "MOZ", "MWI", "NGA", "TZA", "UGA", "ZMB", "ZWE")
+
+data_final <- readRDS("data/data_rds/data_final.rds")
+
+data_final_sf <- subset(data_final, select = c("id_unique","iso","latitude","longitude"))
+
+data_final_sf <- st_as_sf(data_final_sf, coords = c("longitude", "latitude"), crs = 4326)
+
+result <- list()
+
+for (country in countries) {
+  shapefile <- file.path("C:/Users/Redha CHABA/Documents/working_paper/trust/data/data_raw/road_shp", paste0("routes_", country, ".shp"))
+  
+  if (file.exists(shapefile)) {
+    roads_sf <- st_read(shapefile)
+    roads_sf <- st_transform(roads_sf, st_crs(data_final_sf))
+    
+    data_final_sf$distance_to_road <- st_distance(data_final_sf, roads_sf) %>% apply(1, min)
+    
+    country_data_result <- as.data.frame(data_final_sf)
+    country_data_result <- country_data_result %>%
+      select(id_unique, distance_to_road)
+    
+    result[[country]] <- country_data_result
+  } else {
+    warning(paste("Shapefile not found for country:", country))
+  }
+}
+
+# Combine results into a single data frame
+result_combined <- do.call(rbind, lapply(names(result), function(country) {
+  cbind(result[[country]], country = country)
+}))
+
+final_result_road <- do.call(rbind, result)
+
+final_df6 <- merge(final_df6,final_result_road, by="id_unique")
+
+remove(bdd, country_data, country_data_result, country_data_sf, result, roads_sf, countries, ISO, shapefile)
+
+```
+
+```{r}
+tiff_file <- "C:/Users/Redha CHABA/Desktop/temp/desert.tif"
+
+desert_wgs84 <- rast(tiff_file)
+
+print(desert_wgs84)
+
+binary_raster <- ifel(!is.na(desert_wgs84), 1, 0)
+
+print(binary_raster)
+
+freq(binary_raster)
+
+plot(binary_raster, main = "Desert Map", col = terrain.colors(100))
+
+desert_r5_adm1 <- data.frame()
+
+for (country in cty_adm1) {
+  
+  shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_1.shp")
+  regions <- st_read(shapefile) %>% st_make_valid()
+  
+  shapefile_path <- paste0("data/data_raw/gadm/gadm41_", country, "_0.shp")
+  country_shp <- vect(shapefile_path)
+  
+  if (!identical(crs(binary_raster), crs(country_shp))) {
+    country_shp <- project(country_shp, crs(binary_raster))
+  }
+  
+  binary_raster_cropped <- crop(binary_raster, country_shp)
+  binary_raster_masked <- mask(binary_raster_cropped, country_shp)
+  
+  desert_adm1 <- exactextractr::exact_extract(binary_raster_masked, regions, 'mean')
+  
+  regions$desert_adm1 <- desert_adm1
+  regions_df <- regions %>%
+    as.data.frame() %>%
+    rename(iso = GID_0) %>%
+    select(iso, NAME_1, desert_adm1) %>%
+    mutate(round = 5)
+  
+  desert_r5_adm1 <- rbind(desert_r5_adm1, regions_df)
+}
+
+desert_r5_adm1 %<>%
+  mutate(across(everything(), ~ ifelse(is.nan(.), NA, .)))
+
+print(glimpse(desert_r5_adm1))
+
+saveRDS(desert_r5_adm1, file="data/data_rds/geo_ctrl/desert_r5_adm1.rds")
+
+
+desert_r5_adm2 <- data.frame()
+
+for (country in cty_adm2) {
+  
+  shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_2.shp")
+  regions <- st_read(shapefile) %>% st_make_valid()
+  
+  shapefile_path <- paste0("data/data_raw/gadm/gadm41_", country, "_0.shp")
+  country_shp <- vect(shapefile_path)
+  
+  if (!identical(crs(binary_raster), crs(country_shp))) {
+    country_shp <- project(country_shp, crs(binary_raster))
+  }
+  
+  binary_raster_cropped <- crop(binary_raster, country_shp)
+  binary_raster_masked <- mask(binary_raster_cropped, country_shp)
+  
+  desert_adm2 <- exactextractr::exact_extract(binary_raster_masked, regions, 'mean')
+  
+  regions$desert_adm2 <- desert_adm2
+  regions_df <- regions %>%
+    as.data.frame() %>%
+    rename(iso = GID_0) %>%
+    select(iso, NAME_2, desert_adm2) %>%
+    mutate(round = 5)
+  
+  desert_r5_adm2 <- rbind(desert_r5_adm2, regions_df)
+}
+
+desert_r5_adm2 %<>%
+  mutate(across(everything(), ~ ifelse(is.nan(.), NA, .)))
+
+print(glimpse(desert_r5_adm2))
+
+saveRDS(desert_r5_adm2, file="data/data_rds/geo_ctrl/desert_r5_adm2.rds")
+```
+
+```{r}
+library(ggplot2)
+
+ggplot(data_final_nlp_bis2%>%filter(!is.na(neig_eth_a)), aes(x = factor(neig_eth_a))) +
+  geom_bar(fill = "steelblue") +
+  labs(title = "Willingness to Have Neighbors of Different Ethnicities - Waves 6-8",
+       y = "Count",
+       x=NULL) +
+  scale_x_discrete(labels = c("Strongly dislike", "Somewhat dislike","Would not care", "Somewhat like", "Strongly like")) +
+  theme_minimal()
+
+
+ggplot(data_final_nlp_bis2%>%filter(!is.na(neig_eth_a), spl==1), aes(x = factor(neig_eth_a))) +
+  geom_bar(fill = "steelblue") +
+  labs(title = "Willingness to Have Neighbors of Different Ethnicities - Waves 6-8",
+       y = "Count",
+       x=NULL) +
+  scale_x_discrete(labels = c("Strongly dislike", "Somewhat dislike","Would not care", "Somewhat like", "Strongly like")) +
+  theme_minimal()
+```
+

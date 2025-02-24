@@ -1,0 +1,189 @@
+```{r}
+setwd("~/Working paper/Trust/Script")
+getwd()
+```
+
+```{r}
+library(haven)
+library(dplyr)
+select <- dplyr::select
+library(magrittr)
+library(ncdf4)
+library(sf)
+library(raster)
+library(exactextractr)
+library(rgdal)
+library(ggplot2)
+library(terra)
+```
+
+```{r}
+ncpath <- "data/data_Raw/"
+ncname <- "VHRFC"  
+ncfname <- paste(ncpath, ncname, ".nc", sep="")
+ncin <- nc_open(ncfname)
+print(ncin)
+
+FRD <- ncvar_get(ncin, "VHRFC_LIS_FRD")
+dim(FRD)
+
+lon <- ncvar_get(ncin, "Longitude")
+lat <- ncvar_get(ncin, "Latitude")
+
+r_FRD <- raster(t(FRD), 
+                xmn=min(lon), xmx=max(lon), 
+                ymn=min(lat), ymx=max(lat),
+                crs=CRS("+proj=longlat +datum=WGS84"))
+
+r_FRD <- flip(r_FRD, direction = "y")
+
+nc_close(ncin)
+```
+
+```{r}
+countries <- c("BEN", "BFA", "BWA", "CIV", "CMR", "GIN", "LBR", "MLI", "NAM", 
+               "NER", "SLE", "GHA", "KEN", "MOZ", "MWI", "NGA", "TZA", "UGA", 
+               "ZMB", "ZWE")
+
+accumulated_results <- data.frame()
+
+
+for (country in countries) {
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+if (!identical(crs(r_FRD), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(r_FRD))
+}
+
+cropped <- crop(r_FRD, extent(country_shp))
+masked <- mask(cropped, country_shp)
+
+
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2011_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+print(pop)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+pop_resampled <- resample(pop_wgs84, r_FRD, method="bilinear")
+
+pop_wgs84_cropped <- crop(pop_resampled, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+plot(pop_wgs84_masked)
+
+pop_resampled <- resample(pop_wgs84_masked, masked, method="bilinear")
+
+if (!all(res(masked) == res(pop_wgs84_masked))) {
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+if (!compareRaster(masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+Lightning_risk <- masked / (1 + pop_resampled)
+
+data_trust <- readRDS("Data/Data_RDS/data_merge2.rds")
+
+data_trust%<>%
+  filter(ISO==country)
+
+zones_sf <- st_as_sf(data_trust, coords = c("longitude", "latitude"), crs = 4326)
+eclairs_raster <- rast(Lightning_risk)
+
+eclairs_values <- extract(eclairs_raster, zones_sf)
+
+zones_sf$eclairs_count <- eclairs_values
+
+pop_density_values <- extract(pop_resampled, zones_sf)
+
+zones_sf$population_density <- pop_density_values
+  
+final_df <- zones_sf
+
+light_cell_vector <- unlist(final_df$light_cell)
+
+light_cell_vector <- final_df$eclairs_count[[2]]
+
+final_df$light_cell <- light_cell_vector
+
+final_df%<>%
+  select(-eclairs_count)
+
+final_df%<>%
+  select(geometry, light_cell, population_density)
+
+accumulated_results <- rbind(accumulated_results, final_df)
+}
+
+
+accumulated_results2 <- accumulated_results
+
+accumulated_results2 %<>% 
+  mutate(longitude = st_coordinates(geometry)[,1],
+         latitude = st_coordinates(geometry)[,2])
+
+accumulated_results2 %<>%
+  st_drop_geometry()
+
+accumulated_results2%<>%
+  distinct(longitude, latitude, .keep_all = TRUE)
+
+data_trust <- readRDS("Data/Data_RDS/data_merge2.rds")
+
+data_trust2 <- data_trust
+
+data_trust2 %<>% left_join(accumulated_results2, by = c("latitude", "longitude"))
+
+data_trust2%<>%
+  rename(pop_cell=population_density)
+
+glimpse(data_trust2)
+
+saveRDS(data_trust2, file="Data/Data_RDS/final_df2.rds")
+write_dta(data_trust2, "Data/Data_dta/final_df2.dta")
+
+```
+
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/data_merge2.rds")
+```
+
+```{r}
+zones_sf <- st_as_sf(data_trust, coords = c("longitude", "latitude"), crs = 4326)
+eclairs_raster <- rast(r_FRD)
+
+#zones_buffer <- st_buffer(zones_sf, dist = 10000)
+
+eclairs_values <- extract(eclairs_raster, zones_sf)
+
+#eclairs_values <- extract(eclairs_raster, vect(zones_buffer), fun = mean)
+
+zones_sf$eclairs_count <- eclairs_values
+
+final_df <- st_drop_geometry(zones_sf)
+
+light_cell_vector <- unlist(final_df$light_cell)
+
+light_cell_vector <- final_df$eclairs_count[[2]]
+
+final_df$light_cell <- light_cell_vector
+
+final_df%<>%
+  select(-eclairs_count)
+glimpse(final_df)
+
+
+saveRDS(final_df, file="Data/Data_RDS/final_df.rds")
+write_dta(final_df, "Data/Data_dta/final_df.dta")
+
+```
+

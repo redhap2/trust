@@ -1,0 +1,258 @@
+%l !Rnw weave = knitr
+
+\documentclass[11pt]{article}
+
+
+
+\usepackage[]{graphicx} % omit 'demo' option in real doc.
+\usepackage[]{color}
+%% maxwidth is the original width if it is less than linewidth
+%% otherwise use linewidth (to make sure the graphics do not exceed the margin)
+\usepackage{epstopdf}
+\usepackage{float}
+\epstopdfDeclareGraphicsRule{.tif}{png}{.png}{convert #1 \OutputFile}
+\AppendGraphicsExtensions{.tif}
+
+\makeatletter
+\def\maxwidth{ %
+  \ifdim\Gin@nat@width\linewidth
+    \linewidth
+  \else
+    \Gin@nat@width
+  \fi
+}
+\makeatother
+
+\definecolor{fgcolor}{rgb}{0.345, 0.345, 0.345}
+\newcommand{\hlnum}[1]{\textcolor[rgb]{0.686,0.059,0.569}{#1}}%
+\newcommand{\hlstr}[1]{\textcolor[rgb]{0.192,0.494,0.8}{#1}}%
+\newcommand{\hlcom}[1]{\textcolor[rgb]{0.678,0.584,0.686}{\textit{#1}}}%
+\newcommand{\hlopt}[1]{\textcolor[rgb]{0,0,0}{#1}}%
+\newcommand{\hlstd}[1]{\textcolor[rgb]{0.345,0.345,0.345}{#1}}%
+\newcommand{\hlkwa}[1]{\textcolor[rgb]{0.161,0.373,0.58}{\textbf{#1}}}%
+\newcommand{\hlkwb}[1]{\textcolor[rgb]{0.69,0.353,0.396}{#1}}%
+\newcommand{\hlkwc}[1]{\textcolor[rgb]{0.333,0.667,0.333}{#1}}%
+\newcommand{\hlkwd}[1]{\textcolor[rgb]{0.737,0.353,0.396}{\textbf{#1}}}%
+
+\usepackage{framed}
+\makeatletter
+\newenvironment{kframe}{%
+ \def\at@end@of@kframe{}%
+ \ifinner\ifhmode%
+  \def\at@end@of@kframe{\end{minipage}}%
+  \begin{minipage}{\columnwidth}%
+ \fi\fi%
+ \def\FrameCommand##1{\hskip\@totalleftmargin \hskip-\fboxsep
+ \colorbox{shadecolor}{##1}\hskip-\fboxsep
+     % There is no \\@totalrightmargin, so:
+     \hskip-\linewidth \hskip-\@totalleftmargin \hskip\columnwidth}%
+ \MakeFramed {\advance\hsize-\width
+   \@totalleftmargin\z@ \linewidth\hsize
+   \@setminipage}}%
+ {\par\unskip\endMakeFramed%
+ \at@end@of@kframe}
+\makeatother
+
+\definecolor{shadecolor}{rgb}{.97, .97, .97}
+\definecolor{messagecolor}{rgb}{0, 0, 0}
+\definecolor{warningcolor}{rgb}{1, 0, 1}
+\definecolor{errorcolor}{rgb}{1, 0, 0}
+\newenvironment{knitrout}{}{} % an empty environment to be redefined in TeX
+
+\usepackage{alltt}
+
+\usepackage{hyperref}
+\hypersetup{
+        colorlinks=true,
+        breaklinks,
+        allcolors=[RGB]{128,0,0}
+}
+
+\let\oldFootnote\footnote
+\newcommand\nextToken\relax
+
+\renewcommand\footnote[1]{%
+    \oldFootnote{#1}\futurelet\nextToken\isFootnote}
+
+\newcommand\isFootnote{%
+    \ifx\footnote\nextToken\textsuperscript{,}\fi}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{crimson}
+
+\usepackage{geometry}
+\geometry{verbose,tmargin=1in,bmargin=1in,lmargin=1in,rmargin=1in}
+\usepackage{url}
+\usepackage{dcolumn}
+\usepackage{ctable}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{setspace}
+\usepackage{rotating}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{seqsplit}
+\usepackage{amsmath,amsfonts,amssymb,amsthm}
+\usepackage{soul}
+\usepackage{float}
+%\usepackage[multiple]{footmisc}
+%\usepackage{longtable}
+
+
+\usepackage{bbding} % checkmark symbol
+\usepackage{comment} % checkmark symbol
+
+\renewcommand{\textfraction}{0.05}
+\renewcommand{\topfraction}{0.8}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\floatpagefraction}{0.75}
+
+%Bibliography
+\usepackage{natbib}
+%\usepackage[autostyle]{csquotes}
+%\usepackage[backend=bibtex, style=authoryear, natbib=true]{biblatex}
+%\addbibresource{CCH.bib}
+
+%%For Hypotheses and Subhypotheses
+%\usepackage{ntheorem}
+\newtheorem{hyp}{Hypothesis}
+\makeatletter
+\newcounter{subhyp}
+\let\savedc@hyp\c@hyp
+\newenvironment{subhyp}
+ {%
+  \setcounter{subhyp}{0}%
+  \stepcounter{hyp}%
+  \edef\saved@hyp{\thehyp}% Save the current value of hyp
+  \let\c@hyp\c@subhyp     % Now hyp is subhyp
+  \renewcommand{\thehyp}{\saved@hyp\alph{hyp}}%
+ }
+ {}
+\newcommand{\normhyp}{%
+  \let\c@hyp\savedc@hyp % revert to the old one
+  \renewcommand\thehyp{\arabic{hyp}}%
+}
+\makeatother
+%%%
+
+\setcounter{MaxMatrixCols}{10}
+
+\theoremstyle{plain}
+\newtheorem{prop}{\protect\propositionname}
+\theoremstyle{plain}
+\newtheorem{thm}{\protect\theoremname}
+\makeatother
+\providecommand{\examplename}{Example}
+\providecommand{\propositionname}{Proposition}
+\providecommand{\theoremname}{Theorem}
+\newcommand{\bi}{\begin{itemize}}
+\newcommand{\ei}{\end{itemize}}
+\newcommand{\bb}{\begin{block}}
+\newcommand{\eb}{\end{block}}
+\newcommand{\bmath}{\begin{eqnarray}}
+\newcommand{\emath}{\end{eqnarray}}
+\newcommand{\bmathnn}{\begin{eqnarray*}}
+\newcommand{\emathnn}{\end{eqnarray*}}
+\newtheorem{theorem}{{Theorem}}%[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{prediction}{Prediction}
+\newtheorem{open_question}{Open question}
+\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem{observation}[theorem]{Observation}
+\newtheorem{claim}[theorem]{{Claim}}
+\newtheorem{example}[theorem]{{Example}}
+\newtheorem{corollary}[theorem]{{Corollary}}
+\newtheorem{remark}[theorem]{{Remark}}
+\newtheorem{assumptions}[theorem]{{Assumptions}}
+\newtheorem*{thm1star}{{Theorem $\mathbf{1^*}$}}
+\newtheorem*{thm2star}{{Theorem $\mathbf{2^*}$}}
+\newtheorem*{theorem*}{Theorem}
+\newtheorem*{lemma*}{Lemma}
+
+
+%For nice tables
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{threeparttable}
+\usepackage{tabulary}
+\newcolumntype{M}[1]{{\centering\arraybackslash}m{#1}}
+
+%Expectation opperator
+\newcommand{\Expect}{{\rm I\kern-.3em E}}
+
+%Significance commands
+\newcommand*{\SuperScriptSameStyle}[1]{%
+  \ensuremath{%
+    \mathchoice
+      {{}^{\displaystyle #1}}%
+      {{}^{\textstyle #1}}%
+      {{}^{\scriptstyle #1}}%
+      {{}^{\scriptscriptstyle #1}}%
+  }%
+}
+
+\newcommand*{\oneS}{\SuperScriptSameStyle{*}}
+\newcommand*{\twoS}{\SuperScriptSameStyle{**}}
+\newcommand*{\threeS}{\SuperScriptSameStyle{*{*}*}}
+\newcommand{\vh}[1]{\textcolor{red}{(VH: #1)}}
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+
+\begin{document}
+
+
+\title{Mobile Internet and Nation Building in Africa\\  \vspace{0.75cm} \underline{Preliminary and incomplete }}
+
+\vspace{1cm}
+
+\author{
+\textbf{Illan Barriola} \\ CRED -- Paris II \\
+\and \textbf{R\'{e}dha Chaba}\\ LEMMA -- Paris II \\
+% \textbf{Paul Maarek}\thanks{\emph{Corresponding author}. LEMMA, Universit\'{e} Panth\'{e}on-Assas (Paris II), France; \texttt{Paul.Maarek@u-paris2.fr}.}   \\ LEMMA -- Paris II  \\
+%   \and \textbf{Victor Hiller} \\ LEMMA -- Paris II \\ 
+% \and \textbf{Michael T. Dorsch}
+%  \\ CEU -- Vienna 
+% \and
+% \and \textbf{R\'{e}dha Chaba} \\ LEMMA -- Paris II  \\
+}
+
+\date{ \today}
+
+\maketitle
+
+\section*{Research question}
+
+How does the diffusion of mobile internet affect political accountability in remote areas ?
+\section*{Hypothesis}
+\begin{enumerate}
+  \item Living in remote areas is associated with higher levels of institutional trust.
+  \item Increased internet access mitigates the spatial disparities in the levels of institutional trust.
+  \item Increased internet access strengthens ethnic over national identity in remote areas
+\end{enumerate}
+
+
+Trust in national institutions promotes state legitimacy, civic engagement, and social cohesion, all essential for nation-building. However, the nature of this trust is crucial for ensuring favorable outcomes. Trust in instituions can be misleading if citizens lack information or interest. Such default trust can disrupt accountability mechanisms and undermine incentives for public investments.\\
+
+Most African capitals lie in peripheral areas, with large parts of the population living at significant distances from the capital city. This geographic distribution hinders national institutions from reaching remote areas, causing a shortage of state presence and a dual institutional framework within countries. The limited state presence and restricted access to information make remote populations less likely to experience governance issues, fostering a default trust in institutions.\\
+
+Expanding internet coverage can replace default trust with a refined perception of institutions to restore accountability mechanims essential for nation-building.\\
+
+\textbf{Capital location}\\
+
+Some leaders have shifted the location of their capital in order to make governments more central and closer to their citizens. (Sow, 2023)\\
+How trust is spatially distributed matters for how polities are governed, and is consequential for electoral behaviour, trends and outcomes (McKay, 2023)\\
+Presence of the state: To what degree do state penetrates their societies?\\
+Mann (1993): Infrastructural power comes from increasing the level and quality of contact citizens have with state. Organizational capacity is partly conditioned by productive interactions that take place throughout a country's territory.\\
+
+State are not sumply about order and growth; they fundamentally depend on the construction, maintenance, and allegiance of a political community (voir les ref p.20 du livre Unpacking States in the DevelopingWorld: Capacity, Performance, and Politics - Centeno, Kohli,
+Yashar). State must have mechanims for structuring and ingraining social inclusion. By social inclusion we mean the ability of the state to incorporate the entire population, to promote social wellbeing, and to establish itself as the property of no particular group or sector.\\
+
+African presidents have historically controlled politics on the continent through highly centralised states, a situation that is enrished in around 80 per cent of African constitutions (Kuperman 2015, from Dyzenhaus)\\
+Number of factors that shape the quality of accountability in devloved system, such as the strengh of citizens and civil society (Sisk 2001).\\
+
+
+
+
+\end{document}

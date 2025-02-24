@@ -1,0 +1,364 @@
+```{r}
+setwd("~/Working paper/Trust/Script")
+getwd()
+```
+
+```{r}
+library(raster)
+library(rgdal)
+library(dplyr)
+library(magrittr)
+library(sf)
+library(exactextractr)
+library(ggplot2)
+library(haven)
+```
+
+#Data
+
+##2019
+
+```{r}
+tiff_file <- "C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/nighttime_recode/Harmonized_DN_NTL_2019.tif"
+
+night_wgs84 <- raster(tiff_file)
+
+#print(night)
+
+#night_wgs84 <- projectRaster(night, crs = CRS("+proj=longlat +datum=WGS84"))
+
+values(night_wgs84)[values(night_wgs84) < 0] <- 0
+
+countries_adm2 <- c("BEN", "BFA", "BWA", "CIV", "CMR", "GIN", "LBR", "MLI", "NAM", "NER", "SLE", "SEN", "TGO","GHA","KEN","MOZ", "MWI","NGA","TZA","UGA","ZMB", "ZWE")
+
+
+accumulated_results <- data.frame()
+
+
+for (country in countries_adm2) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_2.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(night_wgs84), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(night_wgs84))
+}
+
+# Recadrer et masquer le raster night_wgs84_recode selon les frontières du country
+night_wgs84_cropped <- crop(night_wgs84, extent(country_shp))
+night_wgs84_masked <- mask(night_wgs84_cropped, country_shp)
+
+
+
+mean_night <- exact_extract(night_wgs84_masked, regions, 'mean')
+
+
+regions$mean_night <- mean_night
+
+regions$mean_night_log <- log(mean_night+1)
+
+
+
+regions %<>%
+  as.data.frame()
+
+regions %<>%
+  rename(ISO=GID_0)%>%
+  select(ISO, NAME_2, mean_night, mean_night_log)%>%
+  mutate(round=8)
+
+accumulated_results <- rbind(accumulated_results, regions)
+
+}
+
+accumulated_results%<>%
+  rename(mean_night_2=mean_night,
+         mean_night_log_2=mean_night_log)
+
+glimpse(accumulated_results)
+
+data_trust <- readRDS("Data/Data_RDS/final_df5.rds")
+
+data_trust %<>% left_join(accumulated_results, by=c("ISO", "NAME_2", "round"))
+
+
+data_trust%<>%
+  distinct(id_unique, .keep_all = TRUE)
+
+
+glimpse(data_trust)
+```
+
+##2016
+
+```{r}
+tiff_file <- "C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/nighttime_recode/Harmonized_DN_NTL_2016.tif"
+
+night_wgs84 <- raster(tiff_file)
+
+#print(night)
+
+#night_wgs84 <- projectRaster(night, crs = CRS("+proj=longlat +datum=WGS84"))
+
+values(night_wgs84)[values(night_wgs84) < 0] <- 0
+
+countries_adm2 <- c("BEN", "BFA", "BWA", "CIV", "CMR", "GIN", "LBR", "MLI", "NAM", "NER", "SLE", "SEN", "TGO", "GHA","KEN","MOZ", "MWI","NGA","TZA","UGA","ZMB", "ZWE")
+
+accumulated_results <- data.frame()
+
+for (country in countries_adm2) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_2.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(night_wgs84), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(night_wgs84))
+}
+
+# Recadrer et masquer le raster night_wgs84_recode selon les frontières du country
+night_wgs84_cropped <- crop(night_wgs84, extent(country_shp))
+night_wgs84_masked <- mask(night_wgs84_cropped, country_shp)
+
+
+
+mean_night <- exact_extract(night_wgs84_masked, regions, 'mean')
+
+
+regions$mean_night <- mean_night
+
+regions$mean_night_log <- log(mean_night+1)
+
+
+
+regions %<>%
+  as.data.frame()
+
+regions %<>%
+  rename(ISO=GID_0)%>%
+  select(ISO, NAME_2, mean_night, mean_night_log)%>%
+  mutate(round=7)
+
+accumulated_results <- rbind(accumulated_results, regions)
+
+}
+
+accumulated_results%<>%
+  rename(mean_night_2=mean_night,
+         mean_night_log_2=mean_night_log)
+
+glimpse(accumulated_results)
+
+
+data_trust %<>% left_join(accumulated_results, by=c("ISO", "NAME_2", "round"))
+
+data_trust%<>%
+  distinct(id_unique, .keep_all = TRUE)
+
+
+data_trust %<>%
+  mutate(mean_night_2 = coalesce(mean_night_2.x, mean_night_2.y))%>%
+  mutate(mean_night_log_2 = coalesce(mean_night_log_2.x, mean_night_log_2.y))%>%
+  select(-c(mean_night_log_2.x, mean_night_log_2.y, mean_night_2.x, mean_night_2.y))
+
+glimpse(data_trust)
+
+```
+
+##2014
+```{r}
+tiff_file <- "C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/nighttime_recode/Harmonized_DN_NTL_2014.tif"
+
+night_wgs84 <- raster(tiff_file)
+
+#print(night)
+
+#night_wgs84 <- projectRaster(night, crs = CRS("+proj=longlat +datum=WGS84"))
+
+values(night_wgs84)[values(night_wgs84) < 0] <- 0
+
+countries_adm2 <- c("BEN", "BFA", "BWA", "CIV", "CMR", "GIN", "LBR", "MLI", "NAM", "NER", "SLE", "SEN", "TGO", "GHA","KEN","MOZ", "MWI","NGA","TZA","UGA","ZMB", "ZWE")
+
+
+accumulated_results <- data.frame()
+
+
+for (country in countries_adm2) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_2.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(night_wgs84), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(night_wgs84))
+}
+
+# Recadrer et masquer le raster night_wgs84_recode selon les frontières du country
+night_wgs84_cropped <- crop(night_wgs84, extent(country_shp))
+night_wgs84_masked <- mask(night_wgs84_cropped, country_shp)
+
+
+
+mean_night <- exact_extract(night_wgs84_masked, regions, 'mean')
+
+
+regions$mean_night <- mean_night
+
+regions$mean_night_log <- log(mean_night+1)
+
+
+
+regions %<>%
+  as.data.frame()
+
+regions %<>%
+  rename(ISO=GID_0)%>%
+  select(ISO, NAME_2, mean_night, mean_night_log)%>%
+  mutate(round=6)
+
+accumulated_results <- rbind(accumulated_results, regions)
+
+}
+
+accumulated_results%<>%
+  rename(mean_night_2=mean_night,
+         mean_night_log_2=mean_night_log)
+
+glimpse(accumulated_results)
+
+
+data_trust %<>% left_join(accumulated_results, by=c("ISO", "NAME_2", "round"))
+
+data_trust%<>%
+  distinct(id_unique, .keep_all = TRUE)
+
+
+data_trust %<>%
+  mutate(mean_night_2 = coalesce(mean_night_2.x, mean_night_2.y))%>%
+  mutate(mean_night_log_2 = coalesce(mean_night_log_2.x, mean_night_log_2.y))%>%
+  select(-c(mean_night_log_2.x, mean_night_log_2.y, mean_night_2.x, mean_night_2.y))
+
+glimpse(data_trust)
+```
+
+##2011
+
+```{r}
+tiff_file <- "C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/nighttime_recode/Harmonized_DN_NTL_2011.tif"
+
+night_wgs84 <- raster(tiff_file)
+
+#print(night)
+
+#night_wgs84 <- projectRaster(night, crs = CRS("+proj=longlat +datum=WGS84"))
+
+values(night_wgs84)[values(night_wgs84) < 0] <- 0
+
+countries_adm2 <- c("BEN", "BFA", "BWA", "CIV", "CMR", "GIN", "LBR", "MLI", "NAM", "NER", "SLE", "SEN", "TGO", "GHA","KEN","MOZ", "MWI","NGA","TZA","UGA","ZMB", "ZWE")
+
+
+accumulated_results <- data.frame()
+
+
+for (country in countries_adm2) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_2.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(night_wgs84), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(night_wgs84))
+}
+
+# Recadrer et masquer le raster night_wgs84_recode selon les frontières du country
+night_wgs84_cropped <- crop(night_wgs84, extent(country_shp))
+night_wgs84_masked <- mask(night_wgs84_cropped, country_shp)
+
+
+
+mean_night <- exact_extract(night_wgs84_masked, regions, 'mean')
+
+
+regions$mean_night <- mean_night
+
+regions$mean_night_log <- log(mean_night+1)
+
+
+
+regions %<>%
+  as.data.frame()
+
+regions %<>%
+  rename(ISO=GID_0)%>%
+  select(ISO, NAME_2, mean_night, mean_night_log)%>%
+  mutate(round=5)
+
+accumulated_results <- rbind(accumulated_results, regions)
+
+}
+
+accumulated_results%<>%
+  rename(mean_night_2=mean_night,
+         mean_night_log_2=mean_night_log)
+
+glimpse(accumulated_results)
+
+
+data_trust %<>% left_join(accumulated_results, by=c("ISO", "NAME_2", "round"))
+
+data_trust%<>%
+  distinct(id_unique, .keep_all = TRUE)
+
+
+data_trust %<>%
+  mutate(mean_night_2 = coalesce(mean_night_2.x, mean_night_2.y))%>%
+  mutate(mean_night_log_2 = coalesce(mean_night_log_2.x, mean_night_log_2.y))%>%
+  select(-c(mean_night_log_2.x, mean_night_log_2.y, mean_night_2.x, mean_night_2.y))
+
+glimpse(data_trust)
+
+```
+
+```{r}
+saveRDS(data_trust, file="Data/Data_RDS/final_df5.rds")
+write_dta(data_trust, "Data/Data_dta/final_df5.dta")
+```
+

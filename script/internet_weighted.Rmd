@@ -1,0 +1,3356 @@
+```{r}
+setwd("~/Working paper/Trust/Script")
+getwd()
+```
+
+```{r}
+library(raster)
+library(rgdal)
+library(dplyr)
+select <- dplyr::select
+library(magrittr)
+library(sf)
+library(exactextractr)
+library(ggplot2)
+```
+
+```{r}
+tiff_file <- "C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins/Mobile Coverage Explorer v2019 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_BJ2G_2019.tif"
+```
+
+```{r}
+gg <- raster(tiff_file)
+
+print(gg)
+
+gg_wgs84 <- projectRaster(gg, crs = CRS("+proj=longlat +datum=WGS84"))
+
+print(gg_wgs84)
+```
+
+```{r}
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+gg_wgs84_recode <- calc(gg_wgs84, fun=rc)
+
+plot(gg_wgs84_recode)
+
+rm(coords, gg, gg_wgs84, values, rc, tiff_file)
+```
+
+
+```{r}
+shapefile_path <- "C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_BEN_0.shp"
+
+country <- readOGR(shapefile_path)
+
+
+if (!identical(crs(gg_wgs84_recode), crs(country))) {
+  country <- spTransform(country, crs(gg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster gg_wgs84_recode selon les frontières du country
+gg_wgs84_cropped <- crop(gg_wgs84_recode, extent(country))
+gg_wgs84_masked <- mask(gg_wgs84_cropped, country)
+
+rm(shapefile_path, gg_wgs84_recode, gg_wgs84_cropped)
+
+dev.off()
+
+plot(gg_wgs84_masked)
+```
+
+
+```{r}
+# Lecture du fichier de données
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/BEN_pd_2019_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+print(pop)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+print(pop_wgs84)
+
+plot(pop_wgs84)
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country)
+
+rm(data_file, pop, pop_wgs84, pop_wgs84_cropped)
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(gg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de gg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, gg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+rm(pop_wgs84_masked)
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+# Multiplier les valeurs des deux rasters
+gg_pop <- gg_wgs84_masked * pop_wgs84_resampled
+
+# Afficher le raster résultant avec les contours du country
+plot(gg_pop, main="Couverture Pondérée par Densité de Population")
+plot(country, add=TRUE, border="darkgrey")
+
+graphics.off()
+
+plot(gg_wgs84_masked)
+plot(pop_wgs84_resampled)
+plot(gg_pop)
+
+
+png("plots/gg_pop/chemin_vers_le_plot.png", width = 800, height = 600)
+plot(gg_wgs84_masked)
+dev.off()
+
+png("plots/gg_pop/chemin_vers_le_plot2.png", width = 800, height = 600)
+plot(pop_wgs84_resampled)
+dev.off()
+
+png("plots/gg_pop/chemin_vers_le_plot3.png", width = 800, height = 600)
+plot(gg_pop, main="Couverture Pondérée par Densité de Population")
+dev.off()
+
+
+```
+
+
+```{r}
+
+regions <- st_read("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_BEN_2.shp")
+regions <- st_make_valid(regions)
+
+mean_gg <- exact_extract(gg_wgs84_masked, regions, 'mean')
+
+regions$mean_gg <- mean_gg
+
+
+ggplot() +
+  geom_sf(data = regions, aes(fill = mean_gg), color = "white") +
+  scale_fill_distiller(palette = "YlOrBr", direction = 1, name = "Internet Coverage")+
+  theme_minimal() +
+  theme(legend.position = "right", plot.title = element_text(hjust = 0.5, size = 16, face = "bold")) +
+  labs(title = "Benin - Internet Coverage ADM2 - Round 8")
+
+
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+regions$mean_pop <- mean_pop
+
+ggplot() +
+  geom_sf(data = regions, aes(fill = mean_pop), color = "white") +
+  scale_fill_distiller(palette = "YlOrBr", direction = 1, name = "Pop Density", breaks = c(min(regions$mean_pop), max(regions$mean_pop)), labels = c(0, 1)) +
+  theme_minimal() +
+  theme(legend.position = "right", plot.title = element_text(hjust = 0.5, size = 16, face = "bold")) +
+  labs(title = "Benin - Population Density ADM2 - Round 7")
+
+
+mean_gg_pop <- exact_extract(gg_pop, regions, 'mean')
+
+regions$mean_gg_pop <- mean_gg_pop
+
+ggplot() +
+  geom_sf(data = regions, aes(fill = mean_gg_pop), color = "white") +
+  scale_fill_distiller(palette = "YlOrBr", direction = 1, name = "Pop Density", breaks = c(min(regions$mean_gg_pop), max(regions$mean_gg_pop)), labels = c(0, 1)) +
+  theme_minimal() +
+  theme(legend.position = "right", plot.title = element_text(hjust = 0.5, size = 16, face = "bold")) +
+  labs(title = "Benin - Weighted Population Density ADM2 - Round 7")
+
+
+regions$pot_gg_pop <- mean_gg_pop/mean_pop
+
+ggplot() +
+  geom_sf(data = regions, aes(fill = pot_gg_pop), color = "white") +
+  scale_fill_distiller(palette = "YlOrBr", direction = 1, name = "Pop Density", breaks = c(min(regions$pot_gg_pop), max(regions$pot_gg_pop)), labels = c(0, 1)) +
+  theme_minimal() +
+  theme(legend.position = "right", plot.title = element_text(hjust = 0.5, size = 16, face = "bold")) +
+  labs(title = "Benin - Weighted Population Density ADM2 - Round 7")
+
+```
+
+```{r}
+data_trust_test <- readRDS("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_RDS/final_df5.rds")
+
+capitals <- data_trust_test %>%
+  select(caplong, caplat, ISO) %>%
+  na.omit() %>%
+  rename(longitude = caplong, latitude = caplat)
+
+capitals%<>%
+  filter(ISO=="BEN")%>%
+  distinct(ISO, .keep_all = TRUE)
+
+
+png("plots/gg_pop/no_pop_weighting.png", width = 800, height = 600)
+
+#Avant
+ggplot() +
+  geom_sf(data = regions, aes(fill = mean_gg), color = "white") +
+  scale_fill_distiller(palette = "YlOrBr", direction = 1, name = "2G Coverage", breaks = c(min(regions$mean_gg), max(regions$mean_gg)), labels = c(0, 1)) +
+  theme_minimal() +
+  theme(legend.position = "right", plot.title = element_text(hjust = 0.5, size = 16, face = "bold")) +
+  labs(title = "No Population Weighting")
+
+dev.off()
+
+#Après
+png("plots/gg_pop/pop_weighted.png", width = 800, height = 600, dpi=300)
+
+ggplot() +
+  geom_sf(data = regions, aes(fill = pot_gg_pop), color = "black") +
+  scale_fill_distiller(palette = "YlOrBr", direction = 1, name = "Internet Coverage", breaks = c(min(regions$pot_gg_pop), max(regions$pot_gg_pop)), labels = NULL) +
+  geom_point(data = capitals, 
+             aes(x = longitude, y = latitude), 
+             size = 4, shape = 22, fill = "green", show.legend = FALSE)+
+  geom_text(aes(x = 2.5, y = 6.2, label = "Porto-Novo"), color = "black", size = 4, fontface="bold") +
+    theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),  
+    panel.grid.minor = element_blank(),  
+    panel.background = element_blank(),   
+    axis.text = element_blank(),         
+    axis.ticks = element_blank(),         
+    axis.title = element_blank(),
+    legend.position = c(1 ,0.35),
+    plot.title = element_text(hjust = 0.5, size = 5, face = "bold")
+  )
+
+ggsave("plots/gg_pop/pop_weighted3.jpg", width = 8, height = 6, dpi = 300)
+
+
+dev.off()
+```
+
+
+
+
+#3G Maps
+##2016
+###ADM2
+
+*Note pays:
+BEN: /
+BFA: 2014
+BWA: /
+CMR: /
+CIV: /
+GHA: 2014
+GIN: 2012
+KEN: 2013
+LBR: 2013
+MLI: /
+MWI: 2014
+MOZ: /
+NAM: /
+NER: 2013
+NGA: 2012
+SEN: 2015
+SLE: 2014
+TZA: 2014
+UGA: 2013
+ZMB: 2014
+ZWE: 2015
+
+```{r}
+data_trust_report_adm2_valid <- readRDS("Data/Data_RDS/data_trust_report_adm2_valid.rds")
+
+countries_adm2 <- c("BFA","GIN", "LBR", "NER", "SLE")
+#No Botswana, Ivory Coast, Mali ,Togo in 2018
+
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+output_dir <- "C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/maps/3G/"
+
+
+for (country in countries_adm2) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_2.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+  tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2016 - GeoTIFF/Data_MCE/ByCountry/MCE_3G/MCE_", country,"3G_2016.tif")
+  
+gg <- raster(tiff_file)
+gg_wgs84 <- projectRaster(gg, crs = CRS("+proj=longlat +datum=WGS84"))
+gg_wgs84_recode <- calc(gg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(gg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(gg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster gg_wgs84_recode selon les frontières du country
+gg_wgs84_cropped <- crop(gg_wgs84_recode, extent(country_shp))
+gg_wgs84_masked <- mask(gg_wgs84_cropped, country_shp)
+
+
+# Lecture du fichier de données
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2016_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(gg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de gg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, gg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+# Multiplier les valeurs des deux rasters
+gg_pop <- gg_wgs84_masked * pop_wgs84_resampled
+
+
+
+
+
+mean_gg <- exact_extract(gg_wgs84_masked, regions, 'mean')
+
+regions$mean_gg <- mean_gg
+
+
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+regions$mean_pop <- mean_pop
+
+
+mean_gg_pop <- exact_extract(gg_pop, regions, 'mean')
+
+regions$mean_gg_pop <- mean_gg_pop
+
+
+regions$pot_gg_pop <- mean_gg_pop/mean_pop
+
+panel_sf <- data_trust_report_adm2_valid %>%
+  filter(ISO == country, round==7)
+
+panel_sf <- st_as_sf(panel_sf, coords = c("longitude", "latitude"), crs = st_crs(regions))
+
+
+
+plot <- ggplot() +
+  geom_sf(data = regions, aes(fill = pot_gg_pop), color = "white") +
+  scale_fill_distiller(palette = "YlOrBr", direction = 1, name = "3G Coverage", breaks = c(min(regions$pot_gg_pop), max(regions$pot_gg_pop)), labels = c(0, 1)) +
+    geom_point(data = panel_sf, aes(x = caplong, y = caplat), color = "black", size = 4, shape=17) +
+  theme_minimal() +
+  theme(legend.position = "right", plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),axis.title.x = element_blank(),           axis.title.y = element_blank()) +
+  labs(title = paste(country, "- 3G Coverage ADM2 - Round 7", sep = " "))
+
+  ggsave(filename = paste0(output_dir, country, "3G_weighted_map_r7.jpg"), plot = plot, width = 10, height = 8)
+
+}
+
+```
+###ADM1
+```{r}
+data_trust_report_adm1_valid <- readRDS("Data/Data_RDS/data_trust_report_adm1_valid.rds")
+
+countries_adm1 <- c("GHA","KEN","MWI","NGA","TZA","UGA","ZMB", "ZWE")
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+output_dir <- "C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/maps/3G/"
+
+
+for (country in countries_adm1) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_1.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+  tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2016 - GeoTIFF/Data_MCE/ByCountry/MCE_3G/MCE_", country,"3G_2016.tif")
+  
+gg <- raster(tiff_file)
+gg_wgs84 <- projectRaster(gg, crs = CRS("+proj=longlat +datum=WGS84"))
+gg_wgs84_recode <- calc(gg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(gg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(gg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster gg_wgs84_recode selon les frontières du country
+gg_wgs84_cropped <- crop(gg_wgs84_recode, extent(country_shp))
+gg_wgs84_masked <- mask(gg_wgs84_cropped, country_shp)
+
+
+# Lecture du fichier de données
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2016_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(gg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de gg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, gg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+# Multiplier les valeurs des deux rasters
+gg_pop <- gg_wgs84_masked * pop_wgs84_resampled
+
+
+
+
+
+mean_gg <- exact_extract(gg_wgs84_masked, regions, 'mean')
+
+regions$mean_gg <- mean_gg
+
+
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+regions$mean_pop <- mean_pop
+
+
+mean_gg_pop <- exact_extract(gg_pop, regions, 'mean')
+
+regions$mean_gg_pop <- mean_gg_pop
+
+
+regions$pot_gg_pop <- mean_gg_pop/mean_pop
+
+panel_sf <- data_trust_report_adm1_valid %>%
+  filter(ISO == country, round==7)
+
+panel_sf <- st_as_sf(panel_sf, coords = c("longitude", "latitude"), crs = st_crs(regions))
+
+
+
+plot <- ggplot() +
+  geom_sf(data = regions, aes(fill = pot_gg_pop), color = "white") +
+  scale_fill_distiller(palette = "YlOrBr", direction = 1, name = "3G Coverage", breaks = c(min(regions$pot_gg_pop), max(regions$pot_gg_pop)), labels = c(0, 1)) +
+    geom_point(data = panel_sf, aes(x = caplong, y = caplat), color = "black", size = 4, shape=17) +
+  theme_minimal() +
+  theme(legend.position = "right", plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),axis.title.x = element_blank(),           axis.title.y = element_blank()) +
+  labs(title = paste(country, "- 3G Coverage ADM1 - Round 7", sep = " "))
+
+  ggsave(filename = paste0(output_dir, country, "3G_weighted_map_r7.jpg"), plot = plot, width = 10, height = 8)
+
+}
+
+
+```
+
+##2014
+###ADM2
+```{r}
+data_trust_report_adm2_valid <- readRDS("Data/Data_RDS/data_trust_report_adm2_valid.rds")
+
+countries_adm2 <- c("GIN", "LBR", "NER")
+#No Benin, Botswana, Cameroon, Ivory Coast, Mali, Namibia, Senegal, Togo in 2015
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+output_dir <- "C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/maps/3G/"
+
+
+for (country in countries_adm2) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_2.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+  tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2014 - GeoTIFF/Data_MCE/ByCountry/MCE_3G/MCE_", country,"3G_2014.tif")
+  
+gg <- raster(tiff_file)
+gg_wgs84 <- projectRaster(gg, crs = CRS("+proj=longlat +datum=WGS84"))
+gg_wgs84_recode <- calc(gg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(gg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(gg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster gg_wgs84_recode selon les frontières du country
+gg_wgs84_cropped <- crop(gg_wgs84_recode, extent(country_shp))
+gg_wgs84_masked <- mask(gg_wgs84_cropped, country_shp)
+
+
+# Lecture du fichier de données
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2014_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(gg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de gg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, gg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+# Multiplier les valeurs des deux rasters
+gg_pop <- gg_wgs84_masked * pop_wgs84_resampled
+
+
+
+
+
+mean_gg <- exact_extract(gg_wgs84_masked, regions, 'mean')
+
+regions$mean_gg <- mean_gg
+
+
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+regions$mean_pop <- mean_pop
+
+
+mean_gg_pop <- exact_extract(gg_pop, regions, 'mean')
+
+regions$mean_gg_pop <- mean_gg_pop
+
+
+regions$pot_gg_pop <- mean_gg_pop/mean_pop
+
+panel_sf <- data_trust_report_adm2_valid %>%
+  filter(ISO == country, round==6)
+
+panel_sf <- st_as_sf(panel_sf, coords = c("longitude", "latitude"), crs = st_crs(regions))
+
+
+
+plot <- ggplot() +
+  geom_sf(data = regions, aes(fill = pot_gg_pop), color = "white") +
+  scale_fill_distiller(palette = "YlOrBr", direction = 1, name = "3G Coverage", breaks = c(min(regions$pot_gg_pop), max(regions$pot_gg_pop)), labels = c(0, 1)) +
+    geom_point(data = panel_sf, aes(x = caplong, y = caplat), color = "black", size = 4, shape=17) +
+  theme_minimal() +
+  theme(legend.position = "right", plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),axis.title.x = element_blank(),           axis.title.y = element_blank()) +
+  labs(title = paste(country, "- 3G Coverage ADM2 - Round 6", sep = " "))
+
+  ggsave(filename = paste0(output_dir, country, "3G_weighted_map_r6.jpg"), plot = plot, width = 10, height = 8)
+
+}
+
+
+
+```
+###ADM1
+```{r}
+data_trust_report_adm1_valid <- readRDS("Data/Data_RDS/data_trust_report_adm1_valid.rds")
+
+countries_adm1 <- c("KEN","NGA","UGA", "ZWE")
+# No Mozambique in 2015
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+output_dir <- "C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/maps/3G/"
+
+
+for (country in countries_adm1) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_1.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+  tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2014 - GeoTIFF/Data_MCE/ByCountry/MCE_3G/MCE_", country,"3G_2014.tif")
+  
+gg <- raster(tiff_file)
+gg_wgs84 <- projectRaster(gg, crs = CRS("+proj=longlat +datum=WGS84"))
+gg_wgs84_recode <- calc(gg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(gg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(gg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster gg_wgs84_recode selon les frontières du country
+gg_wgs84_cropped <- crop(gg_wgs84_recode, extent(country_shp))
+gg_wgs84_masked <- mask(gg_wgs84_cropped, country_shp)
+
+
+# Lecture du fichier de données
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2014_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(gg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de gg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, gg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+# Multiplier les valeurs des deux rasters
+gg_pop <- gg_wgs84_masked * pop_wgs84_resampled
+
+
+
+
+
+mean_gg <- exact_extract(gg_wgs84_masked, regions, 'mean')
+
+regions$mean_gg <- mean_gg
+
+
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+regions$mean_pop <- mean_pop
+
+
+mean_gg_pop <- exact_extract(gg_pop, regions, 'mean')
+
+regions$mean_gg_pop <- mean_gg_pop
+
+
+regions$pot_gg_pop <- mean_gg_pop/mean_pop
+
+panel_sf <- data_trust_report_adm1_valid %>%
+  filter(ISO == country, round==6)
+
+panel_sf <- st_as_sf(panel_sf, coords = c("longitude", "latitude"), crs = st_crs(regions))
+
+
+
+plot <- ggplot() +
+  geom_sf(data = regions, aes(fill = pot_gg_pop), color = "white") +
+  scale_fill_distiller(palette = "YlOrBr", direction = 1, name = "3G Coverage", breaks = c(min(regions$pot_gg_pop), max(regions$pot_gg_pop)), labels = c(0, 1)) +
+    geom_point(data = panel_sf, aes(x = caplong, y = caplat), color = "black", size = 4, shape=17) +
+  theme_minimal() +
+  theme(legend.position = "right", plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),axis.title.x = element_blank(),           axis.title.y = element_blank()) +
+  labs(title = paste(country, "- 3G Coverage ADM1 - Round 6", sep = " "))
+
+  ggsave(filename = paste0(output_dir, country, "3G_weighted_map_r6.jpg"), plot = plot, width = 10, height = 8)
+
+}
+
+```
+
+#2G Maps
+*Note pays 2G
+BEN: 2008
+BFA: 2014
+BWA: 2011
+CMR: 2015
+CIV: 2006
+GHA: 2014
+GIN: 2012
+KEN: 2011
+LBR: 2013
+MLI: 2004
+MWI: 2008
+MOZ: 2013
+NAM: 2008
+NER: 2014
+NGA: 2012
+SEN: /
+SLE: 2014
+TZA: 2008
+UGA: 2009
+ZMB: 2008
+ZWE: 2012
+
+##2016
+###ADM2
+```{r}
+data_trust_report_adm2_valid <- readRDS("Data/Data_RDS/data_trust_report_adm2_valid.rds")
+
+countries_adm2 <- c("BEN", "BFA", "BWA", "CMR", "CIV", "GIN", "LBR", "MLI","NAM", "NER", "SLE")
+#No Senegal, Togo in 2018
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+output_dir <- "C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/maps/2G/"
+
+
+for (country in countries_adm2) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_2.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+  tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2016 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country,"2G_2016.tif")
+  
+gg <- raster(tiff_file)
+gg_wgs84 <- projectRaster(gg, crs = CRS("+proj=longlat +datum=WGS84"))
+gg_wgs84_recode <- calc(gg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(gg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(gg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster gg_wgs84_recode selon les frontières du country
+gg_wgs84_cropped <- crop(gg_wgs84_recode, extent(country_shp))
+gg_wgs84_masked <- mask(gg_wgs84_cropped, country_shp)
+
+
+# Lecture du fichier de données
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2016_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(gg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de gg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, gg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+# Multiplier les valeurs des deux rasters
+gg_pop <- gg_wgs84_masked * pop_wgs84_resampled
+
+
+
+
+
+mean_gg <- exact_extract(gg_wgs84_masked, regions, 'mean')
+
+regions$mean_gg <- mean_gg
+
+
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+regions$mean_pop <- mean_pop
+
+
+mean_gg_pop <- exact_extract(gg_pop, regions, 'mean')
+
+regions$mean_gg_pop <- mean_gg_pop
+
+
+regions$pot_gg_pop <- mean_gg_pop/mean_pop
+
+panel_sf <- data_trust_report_adm2_valid %>%
+  filter(ISO == country, round==7)
+
+panel_sf <- st_as_sf(panel_sf, coords = c("longitude", "latitude"), crs = st_crs(regions))
+
+
+
+plot <- ggplot() +
+  geom_sf(data = regions, aes(fill = pot_gg_pop), color = "white") +
+  scale_fill_distiller(palette = "YlOrBr", direction = 1, name = "2G Coverage", breaks = c(min(regions$pot_gg_pop), max(regions$pot_gg_pop)), labels = c(0, 1)) +
+    geom_point(data = panel_sf, aes(x = caplong, y = caplat), color = "black", size = 4, shape=17) +
+  theme_minimal() +
+  theme(legend.position = "right", plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),axis.title.x = element_blank(),           axis.title.y = element_blank()) +
+  labs(title = paste(country, "- 2G Coverage ADM2 - Round 7", sep = " "))
+
+  ggsave(filename = paste0(output_dir, country, "2G_weighted_map_r7.jpg"), plot = plot, width = 10, height = 8)
+
+}
+
+```
+
+###ADM1
+```{r}
+data_trust_report_adm1_valid <- readRDS("Data/Data_RDS/data_trust_report_adm1_valid.rds")
+
+countries_adm1 <- c("GHA","KEN","MOZ","MWI","NGA","TZA","UGA","ZMB", "ZWE")
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+output_dir <- "C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/maps/2G/"
+
+
+for (country in countries_adm1) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_1.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+  tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2016 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country,"2G_2016.tif")
+  
+gg <- raster(tiff_file)
+gg_wgs84 <- projectRaster(gg, crs = CRS("+proj=longlat +datum=WGS84"))
+gg_wgs84_recode <- calc(gg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(gg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(gg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster gg_wgs84_recode selon les frontières du country
+gg_wgs84_cropped <- crop(gg_wgs84_recode, extent(country_shp))
+gg_wgs84_masked <- mask(gg_wgs84_cropped, country_shp)
+
+
+# Lecture du fichier de données
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2016_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(gg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de gg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, gg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+# Multiplier les valeurs des deux rasters
+gg_pop <- gg_wgs84_masked * pop_wgs84_resampled
+
+
+
+
+
+mean_gg <- exact_extract(gg_wgs84_masked, regions, 'mean')
+
+regions$mean_gg <- mean_gg
+
+
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+regions$mean_pop <- mean_pop
+
+
+mean_gg_pop <- exact_extract(gg_pop, regions, 'mean')
+
+regions$mean_gg_pop <- mean_gg_pop
+
+
+regions$pot_gg_pop <- mean_gg_pop/mean_pop
+
+panel_sf <- data_trust_report_adm2_valid %>%
+  filter(ISO == country, round==7)
+
+panel_sf <- st_as_sf(panel_sf, coords = c("longitude", "latitude"), crs = st_crs(regions))
+
+
+
+plot <- ggplot() +
+  geom_sf(data = regions, aes(fill = pot_gg_pop), color = "white") +
+  scale_fill_distiller(palette = "YlOrBr", direction = 1, name = "2G Coverage", breaks = c(min(regions$pot_gg_pop), max(regions$pot_gg_pop)), labels = c(0, 1)) +
+    geom_point(data = panel_sf, aes(x = caplong, y = caplat), color = "black", size = 4, shape=17) +
+  theme_minimal() +
+  theme(legend.position = "right", plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),axis.title.x = element_blank(),           axis.title.y = element_blank()) +
+  labs(title = paste(country, "- 2G Coverage ADM1 - Round 7", sep = " "))
+
+  ggsave(filename = paste0(output_dir, country, "2G_weighted_map_r7.jpg"), plot = plot, width = 10, height = 8)
+
+}
+```
+##2014
+*Note pays 2G
+BEN: 2008
+BFA: 2014
+BWA: 2011
+CMR: 2015
+CIV: 2006
+GHA: 2014
+GIN: 2012
+KEN: 2011
+LBR: 2013
+MLI: 2004
+MWI: 2008
+MOZ: 2013
+NAM: 2008
+NER: 2014
+NGA: 2012
+SEN: /
+SLE: 2014
+TZA: 2008
+UGA: 2009
+ZMB: 2008
+ZWE: 2012
+
+###ADM2
+```{r}
+data_trust_report_adm2_valid <- readRDS("Data/Data_RDS/data_trust_report_adm2_valid.rds")
+
+countries_adm2 <- c("BEN", "BFA", "BWA", "CMR", "CIV", "GIN", "LBR", "MLI","NAM", "NER", "SLE")
+#No Senegal, Togo in 2015
+
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+output_dir <- "C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/maps/2G/"
+
+
+for (country in countries_adm2) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_2.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+  tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2014 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country,"2G_2014.tif")
+  
+gg <- raster(tiff_file)
+gg_wgs84 <- projectRaster(gg, crs = CRS("+proj=longlat +datum=WGS84"))
+gg_wgs84_recode <- calc(gg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(gg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(gg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster gg_wgs84_recode selon les frontières du country
+gg_wgs84_cropped <- crop(gg_wgs84_recode, extent(country_shp))
+gg_wgs84_masked <- mask(gg_wgs84_cropped, country_shp)
+
+
+# Lecture du fichier de données
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2014_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(gg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de gg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, gg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+# Multiplier les valeurs des deux rasters
+gg_pop <- gg_wgs84_masked * pop_wgs84_resampled
+
+
+
+
+
+mean_gg <- exact_extract(gg_wgs84_masked, regions, 'mean')
+
+regions$mean_gg <- mean_gg
+
+
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+regions$mean_pop <- mean_pop
+
+
+mean_gg_pop <- exact_extract(gg_pop, regions, 'mean')
+
+regions$mean_gg_pop <- mean_gg_pop
+
+
+regions$pot_gg_pop <- mean_gg_pop/mean_pop
+
+panel_sf <- data_trust_report_adm2_valid %>%
+  filter(ISO == country, round==6)
+
+panel_sf <- st_as_sf(panel_sf, coords = c("longitude", "latitude"), crs = st_crs(regions))
+
+
+
+plot <- ggplot() +
+  geom_sf(data = regions, aes(fill = pot_gg_pop), color = "white") +
+  scale_fill_distiller(palette = "YlOrBr", direction = 1, name = "2G Coverage", breaks = c(min(regions$pot_gg_pop), max(regions$pot_gg_pop)), labels = c(0, 1)) +
+    geom_point(data = panel_sf, aes(x = caplong, y = caplat), color = "black", size = 4, shape=17) +
+  theme_minimal() +
+  theme(legend.position = "right", plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),axis.title.x = element_blank(),           axis.title.y = element_blank()) +
+  labs(title = paste(country, "- 2G Coverage ADM2 - Round 6", sep = " "))
+
+  ggsave(filename = paste0(output_dir, country, "2G_weighted_map_r6.jpg"), plot = plot, width = 10, height = 8)
+
+}
+
+```
+###ADM1
+```{r}
+data_trust_report_adm1_valid <- readRDS("Data/Data_RDS/data_trust_report_adm1_valid.rds")
+
+countries_adm1 <- c("GHA","KEN","MOZ","MWI","NGA","TZA","UGA","ZMB", "ZWE")
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+output_dir <- "C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/maps/2G/"
+
+
+for (country in countries_adm1) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_1.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+  tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2014 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country,"2G_2014.tif")
+  
+gg <- raster(tiff_file)
+gg_wgs84 <- projectRaster(gg, crs = CRS("+proj=longlat +datum=WGS84"))
+gg_wgs84_recode <- calc(gg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(gg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(gg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster gg_wgs84_recode selon les frontières du country
+gg_wgs84_cropped <- crop(gg_wgs84_recode, extent(country_shp))
+gg_wgs84_masked <- mask(gg_wgs84_cropped, country_shp)
+
+
+# Lecture du fichier de données
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2014_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(gg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de gg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, gg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+# Multiplier les valeurs des deux rasters
+gg_pop <- gg_wgs84_masked * pop_wgs84_resampled
+
+
+
+
+
+mean_gg <- exact_extract(gg_wgs84_masked, regions, 'mean')
+
+regions$mean_gg <- mean_gg
+
+
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+regions$mean_pop <- mean_pop
+
+
+mean_gg_pop <- exact_extract(gg_pop, regions, 'mean')
+
+regions$mean_gg_pop <- mean_gg_pop
+
+
+regions$pot_gg_pop <- mean_gg_pop/mean_pop
+
+panel_sf <- data_trust_report_adm2_valid %>%
+  filter(ISO == country, round==6)
+
+panel_sf <- st_as_sf(panel_sf, coords = c("longitude", "latitude"), crs = st_crs(regions))
+
+
+
+plot <- ggplot() +
+  geom_sf(data = regions, aes(fill = pot_gg_pop), color = "white") +
+  scale_fill_distiller(palette = "YlOrBr", direction = 1, name = "2G Coverage", breaks = c(min(regions$pot_gg_pop), max(regions$pot_gg_pop)), labels = c(0, 1)) +
+    geom_point(data = panel_sf, aes(x = caplong, y = caplat), color = "black", size = 4, shape=17) +
+  theme_minimal() +
+  theme(legend.position = "right", plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),axis.title.x = element_blank(),           axis.title.y = element_blank()) +
+  labs(title = paste(country, "- 2G Coverage ADM1 - Round 6", sep = " "))
+
+  ggsave(filename = paste0(output_dir, country, "2G_weighted_map_r6.jpg"), plot = plot, width = 10, height = 8)
+
+}
+```
+##2011
+*Note pays 2G
+BEN: 2008
+BFA: 2014
+BWA: 2011
+CMR: 2015
+CIV: 2006
+GHA: 2014
+GIN: 2012
+KEN: 2011
+LBR: 2013
+MLI: 2004
+MWI: 2008
+MOZ: 2013
+NAM: 2008
+NER: 2014
+NGA: 2012
+SEN: /
+SLE: 2014
+TZA: 2008
+UGA: 2009
+ZMB: 2008
+ZWE: 2012
+
+###ADM2
+```{r}
+data_trust_report_adm2_valid <- readRDS("Data/Data_RDS/data_trust_report_adm2_valid.rds")
+
+countries_adm2 <- c("BEN", "BFA", "BWA", "CMR", "CIV", "GIN", "LBR", "MLI","NAM", "NER", "SLE")
+#No Senegal, Togo in 2013
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+output_dir <- "C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/maps/2G/"
+
+
+for (country in countries_adm2) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_2.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+  tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2011 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country,"2G_2011.tif")
+  
+gg <- raster(tiff_file)
+gg_wgs84 <- projectRaster(gg, crs = CRS("+proj=longlat +datum=WGS84"))
+gg_wgs84_recode <- calc(gg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(gg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(gg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster gg_wgs84_recode selon les frontières du country
+gg_wgs84_cropped <- crop(gg_wgs84_recode, extent(country_shp))
+gg_wgs84_masked <- mask(gg_wgs84_cropped, country_shp)
+
+
+# Lecture du fichier de données
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2011_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(gg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de gg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, gg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+# Multiplier les valeurs des deux rasters
+gg_pop <- gg_wgs84_masked * pop_wgs84_resampled
+
+
+
+
+
+mean_gg <- exact_extract(gg_wgs84_masked, regions, 'mean')
+
+regions$mean_gg <- mean_gg
+
+
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+regions$mean_pop <- mean_pop
+
+
+mean_gg_pop <- exact_extract(gg_pop, regions, 'mean')
+
+regions$mean_gg_pop <- mean_gg_pop
+
+
+regions$pot_gg_pop <- mean_gg_pop/mean_pop
+
+panel_sf <- data_trust_report_adm2_valid %>%
+  filter(ISO == country, round==6)
+
+panel_sf <- st_as_sf(panel_sf, coords = c("longitude", "latitude"), crs = st_crs(regions))
+
+
+
+plot <- ggplot() +
+  geom_sf(data = regions, aes(fill = pot_gg_pop), color = "white") +
+  scale_fill_distiller(palette = "YlOrBr", direction = 1, name = "2G Coverage", breaks = c(min(regions$pot_gg_pop), max(regions$pot_gg_pop)), labels = c(0, 1)) +
+    geom_point(data = panel_sf, aes(x = caplong, y = caplat), color = "black", size = 4, shape=17) +
+  theme_minimal() +
+  theme(legend.position = "right", plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),axis.title.x = element_blank(),           axis.title.y = element_blank()) +
+  labs(title = paste(country, "- 2G Coverage ADM2 - Round 5", sep = " "))
+
+  ggsave(filename = paste0(output_dir, country, "2G_weighted_map_r5.jpg"), plot = plot, width = 10, height = 8)
+
+}
+
+```
+###ADM1
+```{r}
+data_trust_report_adm1_valid <- readRDS("Data/Data_RDS/data_trust_report_adm1_valid.rds")
+
+countries_adm1 <- c("GHA","KEN","MOZ","MWI","NGA","TZA","UGA","ZMB")
+
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+output_dir <- "C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/maps/2G/"
+
+
+for (country in countries_adm1) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_1.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+  tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2011 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country,"2G_2011.tif")
+  
+gg <- raster(tiff_file)
+gg_wgs84 <- projectRaster(gg, crs = CRS("+proj=longlat +datum=WGS84"))
+gg_wgs84_recode <- calc(gg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(gg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(gg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster gg_wgs84_recode selon les frontières du country
+gg_wgs84_cropped <- crop(gg_wgs84_recode, extent(country_shp))
+gg_wgs84_masked <- mask(gg_wgs84_cropped, country_shp)
+
+
+# Lecture du fichier de données
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2011_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(gg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de gg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, gg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+# Multiplier les valeurs des deux rasters
+gg_pop <- gg_wgs84_masked * pop_wgs84_resampled
+
+
+
+
+
+mean_gg <- exact_extract(gg_wgs84_masked, regions, 'mean')
+
+regions$mean_gg <- mean_gg
+
+
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+regions$mean_pop <- mean_pop
+
+
+mean_gg_pop <- exact_extract(gg_pop, regions, 'mean')
+
+regions$mean_gg_pop <- mean_gg_pop
+
+
+regions$pot_gg_pop <- mean_gg_pop/mean_pop
+
+panel_sf <- data_trust_report_adm2_valid %>%
+  filter(ISO == country, round==6)
+
+panel_sf <- st_as_sf(panel_sf, coords = c("longitude", "latitude"), crs = st_crs(regions))
+
+
+
+plot <- ggplot() +
+  geom_sf(data = regions, aes(fill = pot_gg_pop), color = "white") +
+  scale_fill_distiller(palette = "YlOrBr", direction = 1, name = "2G Coverage", breaks = c(min(regions$pot_gg_pop), max(regions$pot_gg_pop)), labels = c(0, 1)) +
+    geom_point(data = panel_sf, aes(x = caplong, y = caplat), color = "black", size = 4, shape=17) +
+  theme_minimal() +
+  theme(legend.position = "right", plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),axis.title.x = element_blank(),           axis.title.y = element_blank()) +
+  labs(title = paste(country, "- 2G Coverage ADM1 - Round 5", sep = " "))
+
+  ggsave(filename = paste0(output_dir, country, "2G_weighted_map_r5.jpg"), plot = plot, width = 10, height = 8)
+
+}
+```
+
+
+
+#3G Data
+##2019
+###ADM2
+*Note pays:
+BEN: 2018
+BFA: 2014
+BWA: /
+CMR: 2017
+CIV: /
+GHA: 2014
+GIN: 2012
+KEN: 2013
+LBR: 2013
+MLI: /
+MWI: 2014
+MOZ: /
+NAM: /
+NER: 2013
+NGA: 2012
+SEN: 2015
+SLE: 2014
+TZA: 2014
+UGA: 2013
+ZMB: 2014
+ZWE: 2015
+```{r}
+countries_adm2 <- c("BFA","GIN", "LBR", "NER", "SLE", "CMR", "NAM")
+#No Botswana, Ivory Coast, Mali ,Togo in 2018
+
+glimpse(afro_w8)
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+accumulated_results <- data.frame()
+
+for (country in countries_adm2) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_2.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+  tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2019 - GeoTIFF/Data_MCE/ByCountry/MCE_3G/MCE_", country,"3G_2019.tif")
+  
+ggg <- raster(tiff_file)
+ggg_wgs84 <- projectRaster(ggg, crs = CRS("+proj=longlat +datum=WGS84"))
+ggg_wgs84_recode <- calc(ggg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(ggg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(ggg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster ggg_wgs84_recode selon les frontières du country
+ggg_wgs84_cropped <- crop(ggg_wgs84_recode, extent(country_shp))
+ggg_wgs84_masked <- mask(ggg_wgs84_cropped, country_shp)
+
+
+# Lecture du fichier de données
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2019_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(ggg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de ggg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, ggg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(ggg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+# Multiplier les valeurs des deux rasters
+ggg_pop <- ggg_wgs84_masked * pop_wgs84_resampled
+
+mean_ggg <- exact_extract(ggg_wgs84_masked, regions, 'mean')
+
+regions$mean_ggg <- mean_ggg
+
+
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+regions$mean_pop <- mean_pop
+
+
+mean_ggg_pop <- exact_extract(ggg_pop, regions, 'mean')
+
+regions$mean_ggg_pop <- mean_ggg_pop
+
+
+regions$pot_ggg_pop <- mean_ggg_pop/mean_pop
+
+regions %<>%
+  as.data.frame()
+
+regions %<>%
+  rename(ISO=GID_0)%>%
+  select(ISO, NAME_2, pot_ggg_pop, mean_ggg_pop, mean_pop, mean_ggg)%>%
+  mutate(round=8)
+
+accumulated_results <- rbind(accumulated_results, regions)
+
+}
+
+afro_w8 %<>% left_join(accumulated_results, by=c("ISO", "NAME_2", "round"))
+
+
+glimpse(afro_w8)
+
+afro_w8%<>%
+  distinct(id_unique, .keep_all = TRUE)
+
+```
+
+###ADM1
+```{r}
+countries_adm1 <- c("GHA","KEN","MWI","NGA","TZA","UGA","ZMB", "ZWE")
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+accumulated_results <- data.frame()
+
+
+for (country in countries_adm1) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_1.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+  tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2019 - GeoTIFF/Data_MCE/ByCountry/MCE_3G/MCE_", country,"3G_2019.tif")
+  
+ggg <- raster(tiff_file)
+ggg_wgs84 <- projectRaster(ggg, crs = CRS("+proj=longlat +datum=WGS84"))
+ggg_wgs84_recode <- calc(ggg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(ggg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(ggg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster ggg_wgs84_recode selon les frontières du country
+ggg_wgs84_cropped <- crop(ggg_wgs84_recode, extent(country_shp))
+ggg_wgs84_masked <- mask(ggg_wgs84_cropped, country_shp)
+
+
+# Lecture du fichier de données
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2019_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(ggg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de ggg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, ggg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(ggg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+# Multiplier les valeurs des deux rasters
+ggg_pop <- ggg_wgs84_masked * pop_wgs84_resampled
+
+
+
+
+
+mean_ggg <- exact_extract(ggg_wgs84_masked, regions, 'mean')
+
+regions$mean_ggg <- mean_ggg
+
+
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+regions$mean_pop <- mean_pop
+
+
+mean_ggg_pop <- exact_extract(ggg_pop, regions, 'mean')
+
+regions$mean_ggg_pop <- mean_ggg_pop
+
+
+regions$pot_ggg_pop <- mean_ggg_pop/mean_pop
+
+regions %<>%
+  as.data.frame()
+
+regions %<>%
+  rename(ISO=GID_0)%>%
+  select(ISO, NAME_1, pot_ggg_pop, mean_ggg_pop, mean_pop, mean_ggg)%>%
+  mutate(round=8)
+
+accumulated_results <- rbind(accumulated_results, regions)
+
+}
+
+afro_w8 %<>% left_join(accumulated_results, by=c("ISO", "NAME_1", "round"))
+
+afro_w8 %<>%
+  mutate(mean_ggg = coalesce(mean_ggg.x, mean_ggg.y))%>%
+  mutate(mean_ggg_pop = coalesce(mean_ggg_pop.x, mean_ggg_pop.y))%>%
+  mutate(mean_pop = coalesce(mean_pop.x, mean_pop.y))%>%
+  mutate(pot_ggg_pop = coalesce(pot_ggg_pop.x, pot_ggg_pop.y))%>%
+  select(-c(mean_ggg.x, mean_ggg.y, mean_ggg_pop.x,mean_ggg_pop.y, mean_pop.x, mean_pop.y, pot_ggg_pop.x, pot_ggg_pop.y))
+
+
+afro_w8%<>%
+  distinct(id_unique, .keep_all = TRUE)
+
+```
+
+##2016
+###ADM2
+
+*Note pays:
+BEN: 2018
+BFA: 2014
+BWA: /
+CMR: 2017
+CIV: /
+GHA: 2014
+GIN: 2012
+KEN: 2013
+LBR: 2013
+MLI: /
+MWI: 2014
+MOZ: /
+NAM: /
+NER: 2013
+NGA: 2012
+SEN: 2015
+SLE: 2014
+TZA: 2014
+UGA: 2013
+ZMB: 2014
+ZWE: 2015
+
+```{r}
+data_trust_report_adm2 <- readRDS("Data/Data_RDS/data_trust_report_adm2.rds")
+
+countries_adm2 <- c("BFA","GIN", "LBR", "NER", "SLE")
+#No Botswana, Ivory Coast, Mali ,Togo in 2018
+
+data_trust <- readRDS("Data/Data_RDS/data_trust.rds")
+
+data_trust%<>%
+  select(-pot_ggg_pop, -pot_gg_pop, -pot_cvg, -mean_ggg, -mean_ggg_pop, -mean_gg, -mean_gg_pop, -mean_pop.x, mean)
+
+glimpse(data_trust)
+
+
+data_trust%<>%
+  select(-mean_ggg.x,
+-mean_ggg_pop.x,
+-pot_ggg_pop.x, 
+-mean_pop.x,
+-pot_ggg_pop.y, 
+-mean_ggg_pop.y, 
+-mean_pop.y, 
+-mean_ggg.y)
+
+
+data_trust%<>%
+  select(
+-mean_gg,
+-mean_gg_pop,
+-pot_gg_pop,
+-pot_cvg)
+
+
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+accumulated_results <- data.frame()
+
+
+for (country in countries_adm2) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_2.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+  tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2016 - GeoTIFF/Data_MCE/ByCountry/MCE_3G/MCE_", country,"3G_2016.tif")
+  
+ggg <- raster(tiff_file)
+ggg_wgs84 <- projectRaster(ggg, crs = CRS("+proj=longlat +datum=WGS84"))
+ggg_wgs84_recode <- calc(ggg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(ggg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(ggg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster ggg_wgs84_recode selon les frontières du country
+ggg_wgs84_cropped <- crop(ggg_wgs84_recode, extent(country_shp))
+ggg_wgs84_masked <- mask(ggg_wgs84_cropped, country_shp)
+
+
+# Lecture du fichier de données
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2016_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(ggg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de ggg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, ggg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(ggg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+# Multiplier les valeurs des deux rasters
+ggg_pop <- ggg_wgs84_masked * pop_wgs84_resampled
+
+
+
+
+
+mean_ggg <- exact_extract(ggg_wgs84_masked, regions, 'mean')
+
+regions$mean_ggg <- mean_ggg
+
+
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+regions$mean_pop <- mean_pop
+
+
+mean_ggg_pop <- exact_extract(ggg_pop, regions, 'mean')
+
+regions$mean_ggg_pop <- mean_ggg_pop
+
+
+regions$pot_ggg_pop <- mean_ggg_pop/mean_pop
+
+regions %<>%
+  as.data.frame()
+
+regions %<>%
+  rename(ISO=GID_0)%>%
+  select(ISO, NAME_2, pot_ggg_pop, mean_ggg_pop, mean_pop, mean_ggg)%>%
+  mutate(round=7)
+
+accumulated_results <- rbind(accumulated_results, regions)
+
+}
+
+data_trust %<>% left_join(accumulated_results, by=c("ISO", "NAME_2", "round"))
+
+
+glimpse(data_trust)
+
+data_trust%<>%
+  distinct(id_unique, .keep_all = TRUE)
+
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust.rds")
+
+write_dta(data_trust, "Data/Data_dta/data_trust.dta")
+
+```
+
+###ADM1
+```{r}
+data_trust_report_adm1_valid <- readRDS("Data/Data_RDS/data_trust_report_adm1_valid.rds")
+
+countries_adm1 <- c("GHA","KEN","MWI","NGA","TZA","UGA","ZMB", "ZWE")
+
+data_trust <- readRDS("Data/Data_RDS/data_trust.rds")
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+accumulated_results <- data.frame()
+
+
+for (country in countries_adm1) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_1.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+  tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2016 - GeoTIFF/Data_MCE/ByCountry/MCE_3G/MCE_", country,"3G_2016.tif")
+  
+ggg <- raster(tiff_file)
+ggg_wgs84 <- projectRaster(ggg, crs = CRS("+proj=longlat +datum=WGS84"))
+ggg_wgs84_recode <- calc(ggg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(ggg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(ggg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster ggg_wgs84_recode selon les frontières du country
+ggg_wgs84_cropped <- crop(ggg_wgs84_recode, extent(country_shp))
+ggg_wgs84_masked <- mask(ggg_wgs84_cropped, country_shp)
+
+
+# Lecture du fichier de données
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2016_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(ggg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de ggg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, ggg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(ggg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+# Multiplier les valeurs des deux rasters
+ggg_pop <- ggg_wgs84_masked * pop_wgs84_resampled
+
+
+
+
+
+mean_ggg <- exact_extract(ggg_wgs84_masked, regions, 'mean')
+
+regions$mean_ggg <- mean_ggg
+
+
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+regions$mean_pop <- mean_pop
+
+
+mean_ggg_pop <- exact_extract(ggg_pop, regions, 'mean')
+
+regions$mean_ggg_pop <- mean_ggg_pop
+
+
+regions$pot_ggg_pop <- mean_ggg_pop/mean_pop
+
+regions %<>%
+  as.data.frame()
+
+regions %<>%
+  rename(ISO=GID_0)%>%
+  select(ISO, NAME_1, pot_ggg_pop, mean_ggg_pop, mean_pop, mean_ggg)%>%
+  mutate(round=7)
+
+accumulated_results <- rbind(accumulated_results, regions)
+
+}
+
+data_trust %<>% left_join(accumulated_results, by=c("ISO", "NAME_1", "round"))
+
+data_trust %<>%
+  mutate(mean_ggg = coalesce(mean_ggg.x, mean_ggg.y))%>%
+  mutate(mean_ggg_pop = coalesce(mean_ggg_pop.x, mean_ggg_pop.y))%>%
+  mutate(mean_pop = coalesce(mean_pop.x, mean_pop.y))%>%
+  mutate(pot_ggg_pop = coalesce(pot_ggg_pop.x, pot_ggg_pop.y))%>%
+  select(-c(mean_ggg.x, mean_ggg.y, mean_ggg_pop.x,mean_ggg_pop.y, mean_pop.x, mean_pop.y, pot_ggg_pop.x, pot_ggg_pop.y))
+
+
+data_trust%<>%
+  distinct(id_unique, .keep_all = TRUE)
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust.rds")
+
+write_dta(data_trust, "Data/Data_dta/data_trust.dta")
+
+```
+
+##2014
+###ADM2
+```{r}
+data_trust_report_adm2_valid <- readRDS("Data/Data_RDS/data_trust_report_adm2_valid.rds")
+
+countries_adm2 <- c("GIN", "LBR", "NER")
+#No Benin, Botswana, Cameroon, Ivory Coast, Mali, Namibia, Senegal, Togo in 2014
+
+data_trust <- readRDS("Data/Data_RDS/data_trust.rds")
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+accumulated_results <- data.frame()
+
+
+for (country in countries_adm2) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_2.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+  tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2014 - GeoTIFF/Data_MCE/ByCountry/MCE_3G/MCE_", country,"3G_2014.tif")
+  
+ggg <- raster(tiff_file)
+ggg_wgs84 <- projectRaster(ggg, crs = CRS("+proj=longlat +datum=WGS84"))
+ggg_wgs84_recode <- calc(ggg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(ggg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(ggg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster ggg_wgs84_recode selon les frontières du country
+ggg_wgs84_cropped <- crop(ggg_wgs84_recode, extent(country_shp))
+ggg_wgs84_masked <- mask(ggg_wgs84_cropped, country_shp)
+
+
+# Lecture du fichier de données
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2014_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(ggg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de ggg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, ggg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(ggg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+# Multiplier les valeurs des deux rasters
+ggg_pop <- ggg_wgs84_masked * pop_wgs84_resampled
+
+
+
+
+
+mean_ggg <- exact_extract(ggg_wgs84_masked, regions, 'mean')
+
+regions$mean_ggg <- mean_ggg
+
+
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+regions$mean_pop <- mean_pop
+
+
+mean_ggg_pop <- exact_extract(ggg_pop, regions, 'mean')
+
+regions$mean_ggg_pop <- mean_ggg_pop
+
+
+regions$pot_ggg_pop <- mean_ggg_pop/mean_pop
+
+regions %<>%
+  as.data.frame()
+
+regions %<>%
+  rename(ISO=GID_0)%>%
+  select(ISO, NAME_2, pot_ggg_pop, mean_ggg_pop, mean_pop, mean_ggg)%>%
+  mutate(round=6)
+
+accumulated_results <- rbind(accumulated_results, regions)
+
+}
+
+data_trust %<>% left_join(accumulated_results, by=c("ISO", "NAME_2", "round"))
+
+data_trust %<>%
+  mutate(mean_ggg = coalesce(mean_ggg.x, mean_ggg.y))%>%
+  mutate(mean_ggg_pop = coalesce(mean_ggg_pop.x, mean_ggg_pop.y))%>%
+  mutate(mean_pop = coalesce(mean_pop.x, mean_pop.y))%>%
+  mutate(pot_ggg_pop = coalesce(pot_ggg_pop.x, pot_ggg_pop.y))%>%
+  select(-c(mean_ggg.x, mean_ggg.y, mean_ggg_pop.x,mean_ggg_pop.y, mean_pop.x, mean_pop.y, pot_ggg_pop.x, pot_ggg_pop.y))
+
+data_trust%<>%
+  distinct(id_unique, .keep_all = TRUE)
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust.rds")
+
+write_dta(data_trust, "Data/Data_dta/data_trust.dta")
+
+```
+###ADM1
+```{r}
+data_trust_report_adm1_valid <- readRDS("Data/Data_RDS/data_trust_report_adm1_valid.rds")
+
+countries_adm1 <- c("KEN","NGA","UGA", "ZWE")
+# No Mozambique in 2014
+
+data_trust <- readRDS("Data/Data_RDS/data_trust.rds")
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+accumulated_results <- data.frame()
+
+
+for (country in countries_adm1) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_1.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+  tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2014 - GeoTIFF/Data_MCE/ByCountry/MCE_3G/MCE_", country,"3G_2014.tif")
+  
+ggg <- raster(tiff_file)
+ggg_wgs84 <- projectRaster(ggg, crs = CRS("+proj=longlat +datum=WGS84"))
+ggg_wgs84_recode <- calc(ggg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(ggg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(ggg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster ggg_wgs84_recode selon les frontières du country
+ggg_wgs84_cropped <- crop(ggg_wgs84_recode, extent(country_shp))
+ggg_wgs84_masked <- mask(ggg_wgs84_cropped, country_shp)
+
+
+# Lecture du fichier de données
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2014_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(ggg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de ggg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, ggg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(ggg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+# Multiplier les valeurs des deux rasters
+ggg_pop <- ggg_wgs84_masked * pop_wgs84_resampled
+
+
+
+
+
+mean_ggg <- exact_extract(ggg_wgs84_masked, regions, 'mean')
+
+regions$mean_ggg <- mean_ggg
+
+
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+regions$mean_pop <- mean_pop
+
+
+mean_ggg_pop <- exact_extract(ggg_pop, regions, 'mean')
+
+regions$mean_ggg_pop <- mean_ggg_pop
+
+
+regions$pot_ggg_pop <- mean_ggg_pop/mean_pop
+
+regions %<>%
+  as.data.frame()
+
+regions %<>%
+  rename(ISO=GID_0)%>%
+  select(ISO, NAME_1, pot_ggg_pop, mean_ggg_pop, mean_pop, mean_ggg)%>%
+  mutate(round=6)
+
+accumulated_results <- rbind(accumulated_results, regions)
+
+}
+
+data_trust %<>% left_join(accumulated_results, by=c("ISO", "NAME_1", "round"))
+
+data_trust %<>%
+  mutate(mean_ggg = coalesce(mean_ggg.x, mean_ggg.y))%>%
+  mutate(mean_ggg_pop = coalesce(mean_ggg_pop.x, mean_ggg_pop.y))%>%
+  mutate(mean_pop = coalesce(mean_pop.x, mean_pop.y))%>%
+  mutate(pot_ggg_pop = coalesce(pot_ggg_pop.x, pot_ggg_pop.y))%>%
+  select(-c(mean_ggg.x, mean_ggg.y, mean_ggg_pop.x,mean_ggg_pop.y, mean_pop.x, mean_pop.y, pot_ggg_pop.x, pot_ggg_pop.y))
+
+data_trust%<>%
+  distinct(id_unique, .keep_all = TRUE)
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust.rds")
+
+write_dta(data_trust, "Data/Data_dta/data_trust.dta")
+
+```
+#2G Data
+
+##2019
+###ADM2
+
+```{r}
+countries_adm2 <- c("BEN", "BFA", "BWA", "CMR", "CIV", "GIN", "LBR", "MLI","NAM", "NER", "SLE")
+#No Senegal, Togo in 2019
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+accumulated_results <- data.frame()
+
+
+for (country in countries_adm2) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_2.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+## Etape 1 de Guriev et al.
+  
+tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2019 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country,"2G_2019.tif")
+
+gg <- raster(tiff_file)
+gg_wgs84 <- projectRaster(gg, crs = CRS("+proj=longlat +datum=WGS84"))
+gg_wgs84_recode <- calc(gg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(gg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(gg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster gg_wgs84_recode selon les frontières du country
+gg_wgs84_cropped <- crop(gg_wgs84_recode, extent(country_shp))
+gg_wgs84_masked <- mask(gg_wgs84_cropped, country_shp)
+
+
+## Etape 2 de Guriev et al.
+
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2019_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(gg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de gg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, gg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+## Etape 3 de Guriev et al.
+gg_pop <- gg_wgs84_masked * pop_wgs84_resampled
+
+
+## Etape 4 de Guriev et al.
+mean_gg_pop <- exact_extract(gg_pop, regions, 'mean')
+
+
+## Etape 5 de Guriev et al.
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+## Etape 6 de Guriev et al.
+regions$mean_gg_pop <- mean_gg_pop
+regions$mean_pop <- mean_pop
+
+
+
+## Etape 7 de Guriev et al.
+regions$pot_gg_pop <- mean_gg_pop/mean_pop
+
+
+## Moyenne couverture 2G non pondérée par la densité de population
+mean_gg <- exact_extract(gg_wgs84_masked, regions, 'mean')
+regions$mean_gg <- mean_gg
+
+
+regions %<>%
+  as.data.frame()
+
+regions %<>%
+  rename(ISO=GID_0)%>%
+  select(ISO, NAME_2, pot_gg_pop, mean_gg_pop, mean_pop, mean_gg)%>%
+  mutate(round=8)
+
+accumulated_results <- rbind(accumulated_results, regions)
+
+}
+
+afro_w8 %<>% left_join(accumulated_results, by=c("ISO", "NAME_2", "round"))
+
+glimpse(afro_w8)
+
+afro_w8 %<>%
+  mutate(mean_pop = coalesce(mean_pop.x, mean_pop.y))%>%
+  select(-c(mean_pop.x, mean_pop.y))
+
+afro_w8%<>%
+  distinct(id_unique, .keep_all = TRUE)
+```
+
+###ADM1
+```{r}
+countries_adm1 <- c("GHA","KEN","MOZ","MWI","NGA","TZA","UGA","ZMB", "ZWE")
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+accumulated_results <- data.frame()
+
+
+for (country in countries_adm1) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_1.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+  tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2019 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country,"2G_2019.tif")
+  
+gg <- raster(tiff_file)
+gg_wgs84 <- projectRaster(gg, crs = CRS("+proj=longlat +datum=WGS84"))
+gg_wgs84_recode <- calc(gg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(gg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(gg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster gg_wgs84_recode selon les frontières du country
+gg_wgs84_cropped <- crop(gg_wgs84_recode, extent(country_shp))
+gg_wgs84_masked <- mask(gg_wgs84_cropped, country_shp)
+
+
+# Lecture du fichier de données
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2019_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(gg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de gg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, gg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+# Multiplier les valeurs des deux rasters
+gg_pop <- gg_wgs84_masked * pop_wgs84_resampled
+
+
+
+
+
+mean_gg <- exact_extract(gg_wgs84_masked, regions, 'mean')
+
+regions$mean_gg <- mean_gg
+
+
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+regions$mean_pop <- mean_pop
+
+
+mean_gg_pop <- exact_extract(gg_pop, regions, 'mean')
+
+regions$mean_gg_pop <- mean_gg_pop
+
+
+regions$pot_gg_pop <- mean_gg_pop/mean_pop
+
+regions %<>%
+  as.data.frame()
+
+regions %<>%
+  rename(ISO=GID_0)%>%
+  select(ISO, NAME_1, pot_gg_pop, mean_gg_pop, mean_pop, mean_gg)%>%
+  mutate(round=8)
+
+accumulated_results <- rbind(accumulated_results, regions)
+
+}
+
+afro_w8 %<>% left_join(accumulated_results, by=c("ISO", "NAME_1", "round"))
+
+glimpse(afro_w8)
+
+afro_w8 %<>%
+  mutate(mean_gg = coalesce(mean_gg.x, mean_gg.y))%>%
+  mutate(mean_gg_pop = coalesce(mean_gg_pop.x, mean_gg_pop.y))%>%
+  mutate(mean_pop = coalesce(mean_pop.x, mean_pop.y))%>%
+  mutate(pot_gg_pop = coalesce(pot_gg_pop.x, pot_gg_pop.y))%>%
+  select(-c(mean_gg.x, mean_gg.y, mean_gg_pop.x,mean_gg_pop.y, mean_pop.x, mean_pop.y, pot_gg_pop.x, pot_gg_pop.y))
+
+
+afro_w8%<>%
+  distinct(id_unique, .keep_all = TRUE)
+```
+
+##2016
+###ADM2
+
+```{r}
+data_trust_report_adm2_valid <- readRDS("Data/Data_RDS/data_trust_report_adm2_valid.rds")
+
+countries_adm2 <- c("BEN", "BFA", "BWA", "CMR", "CIV", "GIN", "LBR", "MLI","NAM", "NER", "SLE")
+#No Senegal, Togo in 2016
+
+data_trust <- readRDS("Data/Data_RDS/data_trust.rds")
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+accumulated_results <- data.frame()
+
+
+for (country in countries_adm2) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_2.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+## Etape 1 de Guriev et al.
+  
+tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2016 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country,"2G_2016.tif")
+
+gg <- raster(tiff_file)
+gg_wgs84 <- projectRaster(gg, crs = CRS("+proj=longlat +datum=WGS84"))
+gg_wgs84_recode <- calc(gg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(gg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(gg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster gg_wgs84_recode selon les frontières du country
+gg_wgs84_cropped <- crop(gg_wgs84_recode, extent(country_shp))
+gg_wgs84_masked <- mask(gg_wgs84_cropped, country_shp)
+
+
+## Etape 2 de Guriev et al.
+
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2016_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(gg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de gg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, gg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+## Etape 3 de Guriev et al.
+gg_pop <- gg_wgs84_masked * pop_wgs84_resampled
+
+
+## Etape 4 de Guriev et al.
+mean_gg_pop <- exact_extract(gg_pop, regions, 'mean')
+
+
+## Etape 5 de Guriev et al.
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+## Etape 6 de Guriev et al.
+regions$mean_gg_pop <- mean_gg_pop
+regions$mean_pop <- mean_pop
+
+
+
+## Etape 7 de Guriev et al.
+regions$pot_gg_pop <- mean_gg_pop/mean_pop
+
+
+## Moyenne couverture 2G non pondérée par la densité de population
+mean_gg <- exact_extract(gg_wgs84_masked, regions, 'mean')
+regions$mean_gg <- mean_gg
+
+
+regions %<>%
+  as.data.frame()
+
+regions %<>%
+  rename(ISO=GID_0)%>%
+  select(ISO, NAME_2, pot_gg_pop, mean_gg_pop, mean_pop, mean_gg)%>%
+  mutate(round=7)
+
+accumulated_results <- rbind(accumulated_results, regions)
+
+}
+
+data_trust %<>% left_join(accumulated_results, by=c("ISO", "NAME_2", "round"))
+
+data_trust %<>%
+  mutate(mean_pop = coalesce(mean_pop.x, mean_pop.y))%>%
+  select(-c(mean_pop.x, mean_pop.y))
+
+data_trust%<>%
+  distinct(id_unique, .keep_all = TRUE)
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust.rds")
+
+write_dta(data_trust, "Data/Data_dta/data_trust.dta")
+
+```
+
+###ADM1
+```{r}
+data_trust_report_adm1_valid <- readRDS("Data/Data_RDS/data_trust_report_adm1_valid.rds")
+
+countries_adm1 <- c("GHA","KEN","MOZ","MWI","NGA","TZA","UGA","ZMB", "ZWE")
+
+data_trust <- readRDS("Data/Data_RDS/data_trust.rds")
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+accumulated_results <- data.frame()
+
+
+for (country in countries_adm1) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_1.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+  tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2016 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country,"2G_2016.tif")
+  
+gg <- raster(tiff_file)
+gg_wgs84 <- projectRaster(gg, crs = CRS("+proj=longlat +datum=WGS84"))
+gg_wgs84_recode <- calc(gg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(gg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(gg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster gg_wgs84_recode selon les frontières du country
+gg_wgs84_cropped <- crop(gg_wgs84_recode, extent(country_shp))
+gg_wgs84_masked <- mask(gg_wgs84_cropped, country_shp)
+
+
+# Lecture du fichier de données
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2016_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(gg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de gg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, gg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+# Multiplier les valeurs des deux rasters
+gg_pop <- gg_wgs84_masked * pop_wgs84_resampled
+
+
+
+
+
+mean_gg <- exact_extract(gg_wgs84_masked, regions, 'mean')
+
+regions$mean_gg <- mean_gg
+
+
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+regions$mean_pop <- mean_pop
+
+
+mean_gg_pop <- exact_extract(gg_pop, regions, 'mean')
+
+regions$mean_gg_pop <- mean_gg_pop
+
+
+regions$pot_gg_pop <- mean_gg_pop/mean_pop
+
+regions %<>%
+  as.data.frame()
+
+regions %<>%
+  rename(ISO=GID_0)%>%
+  select(ISO, NAME_1, pot_gg_pop, mean_gg_pop, mean_pop, mean_gg)%>%
+  mutate(round=7)
+
+accumulated_results <- rbind(accumulated_results, regions)
+
+}
+
+data_trust %<>% left_join(accumulated_results, by=c("ISO", "NAME_1", "round"))
+
+data_trust %<>%
+  mutate(mean_gg = coalesce(mean_gg.x, mean_gg.y))%>%
+  mutate(mean_gg_pop = coalesce(mean_gg_pop.x, mean_gg_pop.y))%>%
+  mutate(mean_pop = coalesce(mean_pop.x, mean_pop.y))%>%
+  mutate(pot_gg_pop = coalesce(pot_gg_pop.x, pot_gg_pop.y))%>%
+  select(-c(mean_gg.x, mean_gg.y, mean_gg_pop.x,mean_gg_pop.y, mean_pop.x, mean_pop.y, pot_gg_pop.x, pot_gg_pop.y))
+
+
+data_trust%<>%
+  distinct(id_unique, .keep_all = TRUE)
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust.rds")
+
+write_dta(data_trust, "Data/Data_dta/data_trust.dta")
+
+```
+
+
+
+##2014
+###ADM2
+
+```{r}
+data_trust_report_adm2_valid <- readRDS("Data/Data_RDS/data_trust_report_adm2_valid.rds")
+
+countries_adm2 <- c("BEN", "BFA", "BWA", "CMR", "CIV", "GIN", "LBR", "MLI","NAM", "NER", "SLE")
+#No Senegal, Togo in 2014
+
+data_trust <- readRDS("Data/Data_RDS/data_trust.rds")
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+accumulated_results <- data.frame()
+
+
+for (country in countries_adm2) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_2.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+  tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2014 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country,"2G_2014.tif")
+  
+gg <- raster(tiff_file)
+gg_wgs84 <- projectRaster(gg, crs = CRS("+proj=longlat +datum=WGS84"))
+gg_wgs84_recode <- calc(gg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(gg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(gg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster gg_wgs84_recode selon les frontières du country
+gg_wgs84_cropped <- crop(gg_wgs84_recode, extent(country_shp))
+gg_wgs84_masked <- mask(gg_wgs84_cropped, country_shp)
+
+
+# Lecture du fichier de données
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2014_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(gg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de gg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, gg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+# Multiplier les valeurs des deux rasters
+gg_pop <- gg_wgs84_masked * pop_wgs84_resampled
+
+
+
+
+
+mean_gg <- exact_extract(gg_wgs84_masked, regions, 'mean')
+
+regions$mean_gg <- mean_gg
+
+
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+regions$mean_pop <- mean_pop
+
+
+mean_gg_pop <- exact_extract(gg_pop, regions, 'mean')
+
+regions$mean_gg_pop <- mean_gg_pop
+
+
+regions$pot_gg_pop <- mean_gg_pop/mean_pop
+
+regions %<>%
+  as.data.frame()
+
+regions %<>%
+  rename(ISO=GID_0)%>%
+  select(ISO, NAME_2, pot_gg_pop, mean_gg_pop, mean_pop, mean_gg)%>%
+  mutate(round=6)
+
+accumulated_results <- rbind(accumulated_results, regions)
+
+}
+
+data_trust %<>% left_join(accumulated_results, by=c("ISO", "NAME_2", "round"))
+
+data_trust %<>%
+  mutate(mean_gg = coalesce(mean_gg.x, mean_gg.y))%>%
+  mutate(mean_gg_pop = coalesce(mean_gg_pop.x, mean_gg_pop.y))%>%
+  mutate(mean_pop = coalesce(mean_pop.x, mean_pop.y))%>%
+  mutate(pot_gg_pop = coalesce(pot_gg_pop.x, pot_gg_pop.y))%>%
+  select(-c(mean_gg.x, mean_gg.y, mean_gg_pop.x,mean_gg_pop.y, mean_pop.x, mean_pop.y, pot_gg_pop.x, pot_gg_pop.y))
+
+data_trust%<>%
+  distinct(id_unique, .keep_all = TRUE)
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust.rds")
+
+write_dta(data_trust, "Data/Data_dta/data_trust.dta")
+
+```
+
+###ADM1
+```{r}
+data_trust_report_adm1_valid <- readRDS("Data/Data_RDS/data_trust_report_adm1_valid.rds")
+
+countries_adm1 <- c("GHA","KEN","MOZ","MWI","NGA","TZA","UGA","ZMB", "ZWE")
+
+data_trust <- readRDS("Data/Data_RDS/data_trust.rds")
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+accumulated_results <- data.frame()
+
+
+for (country in countries_adm1) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_1.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+  tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2014 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country,"2G_2014.tif")
+  
+gg <- raster(tiff_file)
+gg_wgs84 <- projectRaster(gg, crs = CRS("+proj=longlat +datum=WGS84"))
+gg_wgs84_recode <- calc(gg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(gg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(gg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster gg_wgs84_recode selon les frontières du country
+gg_wgs84_cropped <- crop(gg_wgs84_recode, extent(country_shp))
+gg_wgs84_masked <- mask(gg_wgs84_cropped, country_shp)
+
+
+# Lecture du fichier de données
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2014_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(gg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de gg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, gg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+# Multiplier les valeurs des deux rasters
+gg_pop <- gg_wgs84_masked * pop_wgs84_resampled
+
+
+
+
+
+mean_gg <- exact_extract(gg_wgs84_masked, regions, 'mean')
+
+regions$mean_gg <- mean_gg
+
+
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+regions$mean_pop <- mean_pop
+
+
+mean_gg_pop <- exact_extract(gg_pop, regions, 'mean')
+
+regions$mean_gg_pop <- mean_gg_pop
+
+
+regions$pot_gg_pop <- mean_gg_pop/mean_pop
+
+regions %<>%
+  as.data.frame()
+
+regions %<>%
+  rename(ISO=GID_0)%>%
+  select(ISO, NAME_1, pot_gg_pop, mean_gg_pop, mean_pop, mean_gg)%>%
+  mutate(round=6)
+
+accumulated_results <- rbind(accumulated_results, regions)
+
+}
+
+data_trust %<>% left_join(accumulated_results, by=c("ISO", "NAME_1", "round"))
+
+data_trust %<>%
+  mutate(mean_gg = coalesce(mean_gg.x, mean_gg.y))%>%
+  mutate(mean_gg_pop = coalesce(mean_gg_pop.x, mean_gg_pop.y))%>%
+  mutate(mean_pop = coalesce(mean_pop.x, mean_pop.y))%>%
+  mutate(pot_gg_pop = coalesce(pot_gg_pop.x, pot_gg_pop.y))%>%
+  select(-c(mean_gg.x, mean_gg.y, mean_gg_pop.x,mean_gg_pop.y, mean_pop.x, mean_pop.y, pot_gg_pop.x, pot_gg_pop.y))
+
+
+data_trust%<>%
+  distinct(id_unique, .keep_all = TRUE)
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust.rds")
+
+write_dta(data_trust, "Data/Data_dta/data_trust.dta")
+
+```
+
+
+
+
+
+##2011
+###ADM2
+
+```{r}
+data_trust_report_adm2_valid <- readRDS("Data/Data_RDS/data_trust_report_adm2_valid.rds")
+
+countries_adm2 <- c("BEN", "BFA", "BWA", "CMR", "CIV", "GIN", "LBR", "MLI","NAM", "NER", "SLE")
+#No Senegal, Togo in 2011
+
+
+data_trust <- readRDS("Data/Data_RDS/data_trust.rds")
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+accumulated_results <- data.frame()
+
+
+for (country in countries_adm2) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_2.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+  tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2011 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country,"2G_2011.tif")
+  
+gg <- raster(tiff_file)
+gg_wgs84 <- projectRaster(gg, crs = CRS("+proj=longlat +datum=WGS84"))
+gg_wgs84_recode <- calc(gg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(gg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(gg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster gg_wgs84_recode selon les frontières du country
+gg_wgs84_cropped <- crop(gg_wgs84_recode, extent(country_shp))
+gg_wgs84_masked <- mask(gg_wgs84_cropped, country_shp)
+
+
+# Lecture du fichier de données
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2011_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(gg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de gg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, gg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+# Multiplier les valeurs des deux rasters
+gg_pop <- gg_wgs84_masked * pop_wgs84_resampled
+
+
+
+
+
+mean_gg <- exact_extract(gg_wgs84_masked, regions, 'mean')
+
+regions$mean_gg <- mean_gg
+
+
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+regions$mean_pop <- mean_pop
+
+
+mean_gg_pop <- exact_extract(gg_pop, regions, 'mean')
+
+regions$mean_gg_pop <- mean_gg_pop
+
+
+regions$pot_gg_pop <- mean_gg_pop/mean_pop
+
+regions %<>%
+  as.data.frame()
+
+regions %<>%
+  rename(ISO=GID_0)%>%
+  select(ISO, NAME_2, pot_gg_pop, mean_gg_pop, mean_pop, mean_gg)%>%
+  mutate(round=5)
+
+accumulated_results <- rbind(accumulated_results, regions)
+
+}
+
+data_trust %<>% left_join(accumulated_results, by=c("ISO", "NAME_2", "round"))
+
+data_trust %<>%
+  mutate(mean_gg = coalesce(mean_gg.x, mean_gg.y))%>%
+  mutate(mean_gg_pop = coalesce(mean_gg_pop.x, mean_gg_pop.y))%>%
+  mutate(mean_pop = coalesce(mean_pop.x, mean_pop.y))%>%
+  mutate(pot_gg_pop = coalesce(pot_gg_pop.x, pot_gg_pop.y))%>%
+  select(-c(mean_gg.x, mean_gg.y, mean_gg_pop.x,mean_gg_pop.y, mean_pop.x, mean_pop.y, pot_gg_pop.x, pot_gg_pop.y))
+
+data_trust%<>%
+  distinct(id_unique, .keep_all = TRUE)
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust.rds")
+
+write_dta(data_trust, "Data/Data_dta/data_trust.dta")
+
+```
+
+###ADM1
+```{r}
+data_trust_report_adm1_valid <- readRDS("Data/Data_RDS/data_trust_report_adm1_valid.rds")
+
+countries_adm1 <- c("GHA","KEN","MOZ","MWI","NGA","TZA","UGA","ZMB")
+
+data_trust <- readRDS("Data/Data_RDS/data_trust.rds")
+
+rc <- function(x) {
+  ifelse(is.na(x), 0,
+         ifelse(x < 1, 0,
+                ifelse(x >= 1, 1, NA)))
+}
+
+accumulated_results <- data.frame()
+
+
+for (country in countries_adm1) {
+
+  # Lecture du fichier shapefile
+  shapefile <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_", country,"_1.shp")
+  regions <- st_read(shapefile)
+  regions <- st_make_valid(regions)
+  
+  tiff_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/collins_recode/Mobile Coverage Explorer v2011 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country,"2G_2011.tif")
+  
+gg <- raster(tiff_file)
+gg_wgs84 <- projectRaster(gg, crs = CRS("+proj=longlat +datum=WGS84"))
+gg_wgs84_recode <- calc(gg_wgs84, fun=rc)
+
+
+
+shapefile_path <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/gadm41_",country,"_0.shp")
+
+country_shp <- readOGR(shapefile_path)
+
+
+if (!identical(crs(gg_wgs84_recode), crs(country_shp))) {
+  country_shp <- spTransform(country_shp, crs(gg_wgs84_recode))
+}
+
+# Recadrer et masquer le raster gg_wgs84_recode selon les frontières du country
+gg_wgs84_cropped <- crop(gg_wgs84_recode, extent(country_shp))
+gg_wgs84_masked <- mask(gg_wgs84_cropped, country_shp)
+
+
+# Lecture du fichier de données
+data_file <- paste0("C:/Users/Redha CHABA/Documents/Working paper/Trust/Script/data/data_Raw/",country,"_pd_2011_1km_UNadj_ASCII_XYZ.csv")
+
+pop <- raster(data_file)
+
+pop_wgs84 <- projectRaster(pop, crs = CRS("+proj=longlat +datum=WGS84"))
+
+# Recadrer et masquer le raster pop_wgs84 selon les frontières du country
+pop_wgs84_cropped <- crop(pop_wgs84, extent(country_shp))
+pop_wgs84_masked <- mask(pop_wgs84_cropped, country_shp)
+
+
+# Vérifier si les résolutions sont les mêmes
+if (!all(res(gg_wgs84_masked) == res(pop_wgs84_masked))) {
+  # Ajuster la résolution de pop_wgs84_masked à celle de gg_wgs84_masked
+  pop_wgs84_resampled <- resample(pop_wgs84_masked, gg_wgs84_masked, method = "bilinear")
+} else {
+  pop_wgs84_resampled <- pop_wgs84_masked
+}
+
+# Vérifier de nouveau les étendues et les résolutions
+if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
+  stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+}
+
+# Multiplier les valeurs des deux rasters
+gg_pop <- gg_wgs84_masked * pop_wgs84_resampled
+
+
+
+
+
+mean_gg <- exact_extract(gg_wgs84_masked, regions, 'mean')
+
+regions$mean_gg <- mean_gg
+
+
+mean_pop <- exact_extract(pop_wgs84_resampled, regions, 'mean')
+
+regions$mean_pop <- mean_pop
+
+
+mean_gg_pop <- exact_extract(gg_pop, regions, 'mean')
+
+regions$mean_gg_pop <- mean_gg_pop
+
+
+regions$pot_gg_pop <- mean_gg_pop/mean_pop
+
+regions %<>%
+  as.data.frame()
+
+regions %<>%
+  rename(ISO=GID_0)%>%
+  select(ISO, NAME_1, pot_gg_pop, mean_gg_pop, mean_pop, mean_gg)%>%
+  mutate(round=5)
+
+accumulated_results <- rbind(accumulated_results, regions)
+
+}
+
+data_trust %<>% left_join(accumulated_results, by=c("ISO", "NAME_1", "round"))
+
+data_trust %<>%
+  mutate(mean_gg = coalesce(mean_gg.x, mean_gg.y))%>%
+  mutate(mean_gg_pop = coalesce(mean_gg_pop.x, mean_gg_pop.y))%>%
+  mutate(mean_pop = coalesce(mean_pop.x, mean_pop.y))%>%
+  mutate(pot_gg_pop = coalesce(pot_gg_pop.x, pot_gg_pop.y))%>%
+  select(-c(mean_gg.x, mean_gg.y, mean_gg_pop.x,mean_gg_pop.y, mean_pop.x, mean_pop.y, pot_gg_pop.x, pot_gg_pop.y))
+
+
+data_trust%<>%
+  distinct(id_unique, .keep_all = TRUE)
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust.rds")
+
+write_dta(data_trust, "Data/Data_dta/data_trust.dta")
+
+```
+
+
+
+```{r}
+
+data_trust%<>%
+    mutate(mean_cvg=ifelse(is.na(pot_ggg_pop), pot_gg_pop, pot_ggg_pop))
+
+data_trust%<>%
+  rename(pot_cvg=mean_cvg)
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust.rds")
+
+write_dta(data_trust, "Data/Data_dta/data_trust.dta")
+
+
+
+afro_w8%<>%
+    mutate(mean_cvg=ifelse(is.na(pot_ggg_pop), pot_gg_pop, pot_ggg_pop))
+
+afro_w8%<>%
+  rename(pot_cvg=mean_cvg)
+
+saveRDS(afro_w8, file="Data/Data_RDS/afro_w8.rds")
+
+write_dta(afro_w8, "Data/Data_dta/afro_w8.dta")
+
+
+```
+
+
+```{r}
+data_trust_report2<- data_trust_report
+
+paste(names(data_trust_report2), collapse=",")
+
+
+data_trust_report2%<>%
+  select(coverage2G_r7,coverage_status2G_r7,coverage2G_r6,coverage_status2G_r6,coverage2G_r5,coverage_status2G_r5,coverage3G_r7,coverage_status3G_r7,coverage3G_r6,coverage_status3G_r6,mean_coverage_r7,mean_coverage_r6,mean_coverage_r5,mean_status_r7,mean_status_r6,mean_status_r5, round, id_unique, ISO)
+
+data_trust %<>% left_join(data_trust_report2, by=c("ISO", "id_unique", "round"))
+
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust.rds")
+
+write_dta(data_trust, "Data/Data_dta/data_trust.dta")
+
+
+
+
+```
+

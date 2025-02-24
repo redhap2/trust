@@ -1,0 +1,330 @@
+```{r}
+setwd("~/working_paper/trust/")
+getwd()
+```
+
+```{r packages, echo=FALSE, }
+library(haven)
+library(dplyr)
+select <- dplyr::select
+library(magrittr)
+library(estimatr)
+library(ggplot2)
+library(extrafont)
+library(ggtext)
+```
+
+```{r}
+df_40 <- read_dta("data/data_dta/df_40_2.dta")
+
+df_40 <- na.omit(subset(df_40, select = c("pol_trust","dist_cap_max_norm","dist_sndncap_max_norm","age","age_2","sex","educ_sec", "bin_rural","bin_conditions_eco","bin_conditions_country", "bin_emp", "night_region_log","pop_region_log", "area_region_log", "disc_pol_a", "tele_news", "paper_news", "radio_news", "bin_unfair_eth", "pres_adm1", "round", "country_round","murdock_names","cluster_bdd", "distance_border", "gdppc_log",  "vdem_polyarchy", "color_num", "cor_index", "area_log", "gov_num")))
+
+reg3_40 <- lm_robust(pol_trust~dist_cap_max_norm+dist_sndncap_max_norm+age+age_2+factor(sex)+ factor(educ_sec) +factor(bin_rural)+
+                             factor(bin_conditions_eco)+ factor(bin_conditions_country)+ factor(bin_emp)+ disc_pol_a+ tele_news + paper_news + radio_news + night_region_log  + pop_region_log+ area_region_log+gdppc_log+vdem_polyarchy + factor(color_num)+cor_index+area_log+ factor(gov_num), clusters = cluster_bdd, data = df_40)
+
+
+library(lfe)
+
+reg3_40 <- felm(pol_trust ~ dist_cap_max_norm + dist_sndncap_max_norm + age + age_2 + factor(sex) + factor(educ_sec) + 
+              factor(bin_rural) + factor(bin_conditions_eco) + factor(bin_conditions_country) + factor(bin_emp) + disc_pol_a + 
+              tele_news + paper_news + radio_news + night_region_log + pop_region_log + area_region_log | 
+              country_round + murdock_names | 0 | cluster_bdd, data = df_40)
+summary(reg3_40)
+
+df_40$ft_values <- fitted(reg3_40)
+
+```
+
+
+
+```{r}
+#Pour les gens près de la capitale (sous la médiane), on rend la distance à la frontière négative (cf. on multiplie par -1)
+df_40$distance_border <- ifelse(df_40$dist_cap_max_norm<median(df_40$dist_cap_max_norm),
+                                       -df_40$distance_border,df_40$distance_border)
+
+#On crée une base avec les gens près et une avec les gens loin
+df_40_pres <- subset(df_40, df_40$distance_border<=0)#ici c'est les 50% les plus près, donc la valeur sous 0 (voir ligne précedente)
+df_40_loin <- subset(df_40, df_40$distance_border>0)#ici c'est les 50% les plus loin, donc la valeur au dessus de 0 (voir ligne précedente)
+
+#On définit 10 intervalles
+nb_intervals <- 10
+
+#On découpe les deux bases en 10 intervalles
+intervals_dist_border_pres <- cut(df_40_pres$distance_border, breaks = nb_intervals)
+intervals_dist_border_loin <- cut(df_40_loin$distance_border, breaks = nb_intervals)
+
+
+
+#On fait la moyenne par intervalle pour la distance à la frontière et le fitted trust pour la base près
+mean_dist_border_intervals_pres <- data.frame(tapply(df_40_pres$distance_border, intervals_dist_border_pres, mean))
+mean_trust_intervals_pres <- data.frame(tapply(df_40_pres$ft_values, intervals_dist_border_pres, mean))
+
+#On renomme les colonnes
+colnames(mean_dist_border_intervals_pres) <- "mean_dist_border_intervals"
+colnames(mean_trust_intervals_pres) <- "mean_trust_intervals"
+
+#On fait la moyenne par intervalle pour la distance à la frontière et le fitted trust pour la base loin
+mean_dist_border_intervals_loin <- data.frame(tapply(df_40_loin$distance_border, intervals_dist_border_loin, mean))
+mean_trust_intervals_loin <- data.frame(tapply(df_40_loin$ft_values, intervals_dist_border_loin, mean))
+
+#On renomme les colonnes
+colnames(mean_dist_border_intervals_loin) <- "mean_dist_border_intervals"
+colnames(mean_trust_intervals_loin) <- "mean_trust_intervals"
+
+
+#On fussionne les bases près et loin
+mean_dist_border_intervals <- rbind(mean_dist_border_intervals_pres,mean_dist_border_intervals_loin)
+mean_trust_intervals <- rbind(mean_trust_intervals_pres,mean_trust_intervals_loin)
+
+data_intervals <- cbind(mean_dist_border_intervals,mean_trust_intervals)
+
+
+#Les intervalles de confiance pour le trust
+lower_distance_fun <- function(x) {
+  mean_val <- mean(x)
+  conf_int <- t.test(x)$conf.int
+  ic95_ <- abs(conf_int[1] - mean_val)
+  ic95_
+}
+
+#On fait les intervalles de confiance pour chaque intervalle (40 en tout, 10 près + 10 loin)
+mean_trust_intervals_pres_ic <- data.frame(tapply(df_40_pres$ft_values, intervals_dist_border_pres, lower_distance_fun))
+mean_trust_intervals_loin_ic <- data.frame(tapply(df_40_loin$ft_values, intervals_dist_border_loin, lower_distance_fun))
+colnames(mean_trust_intervals_pres_ic) <- "ic_trust"
+colnames(mean_trust_intervals_loin_ic) <- "ic_trust"
+
+#On met toutes les intervalles dans la même base
+mean_trust_intervals_ic <- rbind(mean_trust_intervals_pres_ic,mean_trust_intervals_loin_ic)
+
+data_intervals_ic <- cbind(data_intervals,mean_trust_intervals_ic)
+
+#Les moyenne près/loin pour les lignes sur le graph
+moy_trust_pres <- mean(df_40_pres$ft_values)
+moy_trust_loin <- mean(df_40_loin$ft_values)
+
+
+```
+
+
+```{r}
+theme_set(theme_minimal(base_family = "Arial"))
+
+ggplot(data_intervals_ic, aes(x = mean_dist_border_intervals, y = mean_trust_intervals)) +
+  scale_color_manual(values = c("blue", "red"), 
+                     name = "Legend",
+                     labels = c("Close to the capital","Far to the capital")) + 
+  labs(x = "Distance from the Border (in km)",
+       y = "Political Trust") +
+  scale_x_continuous(labels = function(x) x / 1000) +
+
+  theme_minimal() +
+
+  geom_vline(xintercept = 0, linetype = "dashed", color = "lightblue") + 
+  
+    geom_point(aes(color = mean_dist_border_intervals > 0), size=3, show.legend = FALSE) + 
+
+  geom_smooth(data = subset(data_intervals_ic, mean_dist_border_intervals <= 0),
+              aes(x = mean_dist_border_intervals, y = mean_trust_intervals),
+              method = "lm", formula = y ~ poly(x, 2), color = "darkblue", size = 1, se = TRUE,
+    level = 0.90, show.legend = FALSE) +
+
+  geom_smooth(data = subset(data_intervals_ic, mean_dist_border_intervals > 0),
+              aes(x = mean_dist_border_intervals, y = mean_trust_intervals),
+              method = "lm", formula = y ~ poly(x, 2), color = "darkred", size = 1, se = TRUE,
+    level = 0.90,
+show.legend = FALSE) +
+
+  geom_segment(aes(x = -max(abs(data_intervals$mean_dist_border_intervals)), 
+                   xend = 0, 
+                   y = moy_trust_pres, 
+                   yend = moy_trust_pres, 
+                   linetype = "mean_near"),
+               color = "darkblue", size = 1.5) + 
+               
+  geom_segment(aes(x = 0, 
+                   xend = max(abs(data_intervals$mean_dist_border_intervals)), 
+                   y = moy_trust_loin, 
+                   yend = moy_trust_loin, 
+                   linetype = "mean_far"),
+               color = "darkred", size = 1.5) +  
+
+scale_linetype_manual(name = NULL, 
+                        values = c("mean_near" = "solid", 
+                                   "mean_far" = "solid"),
+                        labels = c(expression(bar(y)[far]), expression(bar(y)[close]))) +
+  coord_cartesian(xlim = c(-max(abs(data_intervals$mean_dist_border_intervals)), max(abs(data_intervals$mean_dist_border_intervals))))+ 
+  
+ggtext::geom_richtext(aes(x = -max(abs(data_intervals$mean_dist_border_intervals)) * 0.5, y = Inf, label = "Close to the Capital"),
+                        vjust = 2, hjust = 0.6, size = 5, fill = "white", color = "black", fontface = "bold", 
+                        label.color = "black", box.padding = unit(0.5, "lines"), label.size = 1) + 
+  ggtext::geom_richtext(aes(x = max(abs(data_intervals$mean_dist_border_intervals)) * 0.5, y = Inf, label = "Far from the Capital"),
+                        vjust = 2, hjust = 0.4, size = 5, fill = "white", color = "black", fontface = "bold", 
+                        label.color = "black", box.padding = unit(0.5, "lines"), label.size = 1) +
+  
+  
+  theme(plot.title = element_text(size = 20, hjust = 0.5),  
+        axis.title = element_text(size = 15), 
+        legend.text = element_text(size = 12),
+        legend.position = c(0.85, 0.2), # Position de la légende
+        legend.background = element_rect(fill = alpha('white', 1)))
+
+ggsave("plots/discontinuity/discontinuity.jpg", plot = last_plot(), width = 10, height = 6, units = "in", dpi = 300)
+
+```
+
+```{r}
+# Set the base theme
+theme_set(theme_minimal(base_family = "Arial"))
+
+# Create the plot
+ggplot(data_intervals_ic, aes(x = mean_dist_border_intervals, y = mean_trust_intervals)) +
+  # Add color scale
+  scale_color_manual(
+    values = c("blue", "red"), 
+    name = "Legend",
+    labels = c("Close to the capital", "Far to the capital")
+  ) + 
+  
+  # Add labels and scales
+  labs(
+    x = "Distance from the Border (in km)",
+    y = "Political trust"
+  ) +
+  scale_x_continuous(labels = function(x) x / 1000) +
+  theme_minimal() +
+  
+  # Add vertical line at x=0
+  geom_vline(xintercept = 0, linetype = "dashed", color = "lightblue") + 
+  
+  # Add points
+  geom_point(
+    aes(color = mean_dist_border_intervals > 0), 
+    size = 3, 
+    show.legend = FALSE
+  ) + 
+  
+  # Add smooth lines for both sides
+  geom_smooth(
+    data = subset(data_intervals_ic, mean_dist_border_intervals <= 0),
+    aes(x = mean_dist_border_intervals, y = mean_trust_intervals),
+    method = "lm", 
+    formula = y ~ poly(x, 2), 
+    color = "darkblue", 
+    size = 1,
+    show.legend = FALSE
+  ) +
+  geom_smooth(
+    data = subset(data_intervals_ic, mean_dist_border_intervals > 0),
+    aes(x = mean_dist_border_intervals, y = mean_trust_intervals),
+    method = "lm", 
+    formula = y ~ poly(x, 2), 
+    color = "darkred", 
+    size = 1,
+    se = TRUE,
+    level = 0.90,
+    show.legend = FALSE
+  ) +
+  
+  # Add mean lines
+  geom_segment(
+    aes(
+      x = -max(abs(data_intervals$mean_dist_border_intervals)), 
+      xend = 0, 
+      y = moy_trust_pres, 
+      yend = moy_trust_pres, 
+      linetype = "mean_near"
+    ),
+    color = "darkblue", 
+    size = 1.5
+  ) + 
+  geom_segment(
+    aes(
+      x = 0, 
+      xend = max(abs(data_intervals$mean_dist_border_intervals)), 
+      y = moy_trust_loin, 
+      yend = moy_trust_loin, 
+      linetype = "mean_far"
+    ),
+    color = "darkred", 
+    size = 1.5
+  ) +  
+  
+  # Add line type scale
+  scale_linetype_manual(
+    name = NULL, 
+    values = c("mean_near" = "solid", "mean_far" = "solid"),
+    labels = c(expression(bar(y)[far]), expression(bar(y)[close]))
+  ) +
+  
+  # Set coordinate limits
+  coord_cartesian(
+    xlim = c(
+      -max(abs(data_intervals$mean_dist_border_intervals)), 
+      max(abs(data_intervals$mean_dist_border_intervals))
+    )
+  ) + 
+  
+  # Add text labels
+  ggtext::geom_richtext(
+    aes(
+      x = -max(abs(data_intervals$mean_dist_border_intervals)) * 0.5, 
+      y = Inf, 
+      label = "Close to the Capital"
+    ),
+    vjust = 2, 
+    hjust = 0.6, 
+    size = 5, 
+    fill = "white", 
+    color = "black", 
+    fontface = "bold", 
+    label.color = "black", 
+    box.padding = unit(0.5, "lines"), 
+    label.size = 1
+  ) + 
+  ggtext::geom_richtext(
+    aes(
+      x = max(abs(data_intervals$mean_dist_border_intervals)) * 0.5, 
+      y = Inf, 
+      label = "Far from the Capital"
+    ),
+    vjust = 2, 
+    hjust = 0.4, 
+    size = 5, 
+    fill = "white", 
+    color = "black", 
+    fontface = "bold", 
+    label.color = "black", 
+    box.padding = unit(0.5, "lines"), 
+    label.size = 1
+  ) +
+  
+  # Theme customization
+  theme(
+    plot.title = element_text(size = 20, hjust = 0.5),
+    axis.title = element_text(size = 15),
+    legend.text = element_text(size = 12),
+    legend.position = c(0.85, 0.2),
+    legend.background = element_rect(fill = alpha('white', 1))
+  )
+```
+
+```{r}
+# Check sample sizes
+n_far <- nrow(df_40_loin)
+n_close <- nrow(df_40_pres)
+cat("Sample sizes:\nFar from capital:", n_far, "\nClose to capital:", n_close, "\n")
+
+# Check variance in trust values
+var_far <- var(df_40_loin$ft_values)
+var_close <- var(df_40_pres$ft_values)
+cat("\nVariance in trust values:\nFar from capital:", round(var_far, 4), 
+    "\nClose to capital:", round(var_close, 4))
+
+# Check mean number of observations per interval
+mean_obs_per_interval_far <- mean(table(intervals_dist_border_loin))
+mean_obs_per_interval_close <- mean(table(intervals_dist_border_pres))
+cat("\n\nMean observations per interval:\nFar from capital:", 
+    round(mean_obs_per_interval_far, 2),
+    "\nClose to capital:", round(mean_obs_per_interval_close, 2))
+```
+

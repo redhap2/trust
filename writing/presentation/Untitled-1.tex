@@ -1,0 +1,38 @@
+\documentclass{article}
+\usepackage{tikz}
+\usetikzlibrary{positioning} % Load the positioning library
+
+\begin{document}
+
+\centering    
+\begin{tikzpicture}
+    \tikzset{
+      node distance=5mm and 0mm,
+      boite/.style={fill=blue!50!cyan!70,draw,align=center,
+        font=\footnotesize\bfseries,text=white},
+      boite coins ronds/.style={boite,rounded corners=3pt},
+      boite circulaire/.style={boite,circle},
+      fleche/.style={
+        line cap=round,-latex,line width=0.25mm,
+        draw=blue!50!cyan!30},
+      grosse fleche/.style={fleche,line width=1mm},
+    }
+    
+    \node[boite coins ronds]  (one) {a\\Texte vraiment très long};    
+    \node[boite coins round ,below=of one]  (a) {a\\Texte vraiment très long}; % Changed to use orange boite style
+    \node[boite coins ronds,below left=of a] (b) {b\\Texte vraiment\\très long};
+    \node[boite coins ronds,below right=of a] (c) {c\\Texte vraiment\\très long};
+    \node[boite coins ronds,below=of c] (d) {d\\Texte vraiment\\très long};
+    \node[boite coins ronds,below =of b] (e) {c\\Texte vraiment\\très long};
+    \node[draw=none, fill=none] (dummy) at (0,-5) {}; % Create a dummy node at a specific position, not visible
+    \node[boite coins ronds, below=of dummy] (trois) {3\\Texte vraiment\\très long}; 
+    
+    \begin{scope}[on background layer]
+      \draw[fleche,shorten >=2mm]
+      (a.west) -- (b.north) node[midway,left=4mm]{};
+      \draw[fleche,shorten >=2mm]
+      (a.east) -- (c.north) node[midway,right=4mm]{bla bla bla};
+    \end{scope}
+\end{tikzpicture}
+
+\end{document}

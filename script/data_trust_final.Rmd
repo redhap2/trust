@@ -1,0 +1,6817 @@
+```{r}
+setwd("~/Working paper/trust/")
+getwd()
+```
+
+```{r packages, echo=FALSE, }
+library(haven)
+library(dplyr)
+select <- dplyr::select
+library(magrittr)
+library(lubridate)
+library(geosphere)
+library(readxl)
+```
+
+# **Import Databases**
+
+```{r echo=FALSE}
+
+afro_w7 <- read_sav("data/data_raw/R7_Merged data_34ctry_4Dec18.sav")
+afro_w5 <- read.csv("data/data_raw/afb_full_r5.csv_")
+afro_w6 <- read.csv("data/data_raw/afb_full_r6.csv_")
+country_var <- read_excel("Data/Data_Raw/country_var.xlsx")
+gdppc <- read_excel("Data/Data_Raw/gdppc.xls")
+population <- read_excel("Data/Data_Raw/pop.xls")
+surface <- read_excel("Data/Data_Raw/surface.xls")
+corr_index <- read_excel("Data/Data_Raw/corr_index.xlsx")
+gov_index <- read_excel("Data/Data_Raw/gov_index.xlsx")
+polstab_index <- read_excel("Data/Data_Raw/polstab_index.xlsx")
+reg_index <- read_excel("Data/Data_Raw/reg_index.xlsx")
+rule_index <- read_excel("Data/Data_Raw/rule_index.xlsx")
+voiceac_index <- read_excel("Data/Data_Raw/voiceac_index.xlsx")
+vdem <- readRDS("data/data_raw/V-Dem-CY-Full+Others-v13.rds")
+juriglobe <- read_excel("Data/Data_Raw/FR_index.xlsx")
+legal_origin <- read_excel("Data/Data_Raw/origine_legale.xlsx")
+cities <- read_excel("Data/Data_Raw/cities.xlsx")
+
+
+```
+
+**Merging Afrobarometer Waves**
+
+```{r}
+afro_w7 %<>%
+  mutate(ccode=COUNTRY)
+
+country_mapping <- data.frame(
+  ccode = 1:34,
+  cname = c("Benin", "Botswana", "Burkina Faso", "Cabo Verde", "Cameroon", "Côte d'Ivoire", "eSwatini", "Gabon", "Gambia", "Ghana", "Guinea",
+            "Kenya", "Lesotho", "Liberia", "Madagascar", "Malawi", "Mali", "Mauritius", "Morocco", "Mozambique", "Namibia", "Niger", "Nigeria",
+            "São Tomé and Príncipe", "Senegal", "Sierra Leone", "South Africa", "Sudan", "Tanzania", "Togo", "Tunisia", "Uganda", "Zambia", "Zimbabwe")
+)
+
+afro_w7 %<>%
+  left_join(country_mapping, by = "ccode")
+
+rm(country_mapping)
+
+afro_w5%<>%
+  mutate(country_alpha=if_else(is.na(country_alpha),36, country_alpha))
+
+afro_w5 %<>%
+  mutate(ccode = as.numeric(case_when(
+    country_alpha == 1 ~ 35,
+    country_alpha == 2 ~ 1,
+    country_alpha == 3 ~ 2,
+    country_alpha == 4 ~ 3,
+    country_alpha == 5 ~ 36,
+    country_alpha == 6 ~ 5,
+    country_alpha == 7 ~ 4,
+    country_alpha == 8 ~ 6,
+    country_alpha == 9 ~ 37,
+    country_alpha == 11 ~ 10,
+    country_alpha == 12 ~ 11,
+    country_alpha == 13 ~ 12,
+    country_alpha == 14 ~ 13,
+    country_alpha == 15 ~ 14,
+    country_alpha == 16 ~ 15,
+    country_alpha == 17 ~ 16,
+    country_alpha == 18 ~ 17,
+    country_alpha == 19 ~ 18,
+    country_alpha == 20 ~ 19,
+    country_alpha == 21 ~ 20,
+    country_alpha == 22 ~ 21,
+    country_alpha == 23 ~ 22,
+    country_alpha == 24 ~ 23,
+    country_alpha == 25 ~ 25,
+    country_alpha == 26 ~ 26,
+    country_alpha == 27 ~ 27,
+    country_alpha == 28 ~ 28,
+    country_alpha == 29 ~ 7,
+    country_alpha == 30 ~ 29,
+    country_alpha == 31 ~ 30,
+    country_alpha == 32 ~ 31,
+    country_alpha == 33 ~ 32,
+    country_alpha == 34 ~ 33,
+    country_alpha == 35 ~ 34,
+    country_alpha == 36 ~ 38,
+    TRUE ~ NA
+  )))
+
+
+afro_w5 %<>%
+  mutate(cname = case_when(
+    ccode == 1 ~ "Benin",
+    ccode == 2 ~ "Botswana",
+    ccode == 3 ~ "Burkina Faso",
+    ccode == 4 ~ "Cabo Verde",
+    ccode == 5 ~ "Cameroon",
+    ccode == 6 ~ "Côte d'Ivoire",
+    ccode == 7 ~ "eSwatini",
+    ccode == 8 ~ "Gabon",
+    ccode == 9 ~ "Gambia",
+    ccode == 10 ~ "Ghana",
+    ccode == 11 ~ "Guinea",
+    ccode == 12 ~ "Kenya",
+    ccode == 13 ~ "Lesotho",
+    ccode == 14 ~ "Liberia",
+    ccode == 15 ~ "Madagascar",
+    ccode == 16 ~ "Malawi",
+    ccode == 17 ~ "Mali",
+    ccode == 18 ~ "Mauritius",
+    ccode == 19 ~ "Morocco",
+    ccode == 20 ~ "Mozambique",
+    ccode == 21 ~ "Namibia",
+    ccode == 22 ~ "Niger",
+    ccode == 23 ~ "Nigeria",
+    ccode == 24 ~ "São Tomé and Príncipe",
+    ccode == 25 ~ "Senegal",
+    ccode == 26 ~ "Sierra Leone",
+    ccode == 27 ~ "South Africa",
+    ccode == 28 ~ "Sudan",
+    ccode == 29 ~ "Tanzania",
+    ccode == 30 ~ "Togo",
+    ccode == 31 ~ "Tunisia",
+    ccode == 32 ~ "Uganda",
+    ccode == 33 ~ "Zambia",
+    ccode == 34 ~ "Zimbabwe",
+    ccode == 35 ~ "Algeria",
+    ccode == 36 ~ "Burundi",
+    ccode == 37 ~ "Egypt",
+    ccode == 38 ~ "Ethiopia",
+    TRUE ~ NA_character_
+  ))
+
+
+
+
+afro_w6 %<>%
+  mutate(ccode = as.numeric(case_when(
+    country == 1 ~ 35,
+    country == 2 ~ 1,
+    country == 3 ~ 2,
+    country == 4 ~ 3,
+    country == 5 ~ 36,
+    country == 6 ~ 5,
+    country == 7 ~ 4,
+    country == 8 ~ 6,
+    country == 9 ~ 37,
+    country == 10 ~ 8,
+    country == 11 ~ 10,
+    country == 12 ~ 11,
+    country == 13 ~ 12,
+    country == 14 ~ 13,
+    country == 15 ~ 14,
+    country == 16 ~ 15,
+    country == 17 ~ 16,
+    country == 18 ~ 17,
+    country == 19 ~ 18,
+    country == 20 ~ 19,
+    country == 21 ~ 20,
+    country == 22 ~ 21,
+    country == 23 ~ 22,
+    country == 24 ~ 23,
+    country == 25 ~ 24,
+    country == 26 ~ 25,
+    country == 27 ~ 26,
+    country == 28 ~ 27,
+    country == 29 ~ 28,
+    country == 30 ~ 7,
+    country == 31 ~ 29,
+    country == 32 ~ 30,
+    country == 33 ~ 31,
+    country == 34 ~ 32,
+    country == 35 ~ 33,
+    country == 36 ~ 34,
+    TRUE ~ NA
+  )))
+
+
+afro_w6 %<>%
+  mutate(cname = case_when(
+    ccode == 1 ~ "Benin",
+    ccode == 2 ~ "Botswana",
+    ccode == 3 ~ "Burkina Faso",
+    ccode == 4 ~ "Cabo Verde",
+    ccode == 5 ~ "Cameroon",
+    ccode == 6 ~ "Côte d'Ivoire",
+    ccode == 7 ~ "eSwatini",
+    ccode == 8 ~ "Gabon",
+    ccode == 9 ~ "Gambia",
+    ccode == 10 ~ "Ghana",
+    ccode == 11 ~ "Guinea",
+    ccode == 12 ~ "Kenya",
+    ccode == 13 ~ "Lesotho",
+    ccode == 14 ~ "Liberia",
+    ccode == 15 ~ "Madagascar",
+    ccode == 16 ~ "Malawi",
+    ccode == 17 ~ "Mali",
+    ccode == 18 ~ "Mauritius",
+    ccode == 19 ~ "Morocco",
+    ccode == 20 ~ "Mozambique",
+    ccode == 21 ~ "Namibia",
+    ccode == 22 ~ "Niger",
+    ccode == 23 ~ "Nigeria",
+    ccode == 24 ~ "São Tomé and Príncipe",
+    ccode == 25 ~ "Senegal",
+    ccode == 26 ~ "Sierra Leone",
+    ccode == 27 ~ "South Africa",
+    ccode == 28 ~ "Sudan",
+    ccode == 29 ~ "Tanzania",
+    ccode == 30 ~ "Togo",
+    ccode == 31 ~ "Tunisia",
+    ccode == 32 ~ "Uganda",
+    ccode == 33 ~ "Zambia",
+    ccode == 34 ~ "Zimbabwe",
+    ccode == 35 ~ "Algeria",
+    ccode == 36 ~ "Burundi",
+    ccode == 37 ~ "Egypt",
+    TRUE ~ NA_character_
+  ))
+
+
+
+afro_w7 %<>%
+  mutate(round=rep(7, times = length("RESPNO")))%<>%
+  select(Q8A, Q8B, Q8C, Q8D, Q8E, Q10A, Q5, Q1, Q89B, URBRUR, Q4B, Q4A, Q97, Q101, 
+         Q43G, Q43H, Q43I, Q43B, Q43D, Q43A, Q43C, Q43E, Q43F, Q44B, Q44F, Q44A, 
+         Q44E, Q44D, Q12A, Q12B, Q12C, Q12D, Q36, Q21A, Q21B, Q20B, EA_GPS_LO, 
+         EA_GPS_LA, Q84, Q85B, Q85A , REGION, EA_SVC_D, RESPNO, 
+         round, TOWNVILL, COUNTRY_Old.order,ccode,cname, Q91B, LOCATION.LEVEL.1, Q27A, Q27B, Q27C, Q28, Q13,
+         Q38A, Q38B, Q38C, Q45, Q17, Q29, Q22)
+
+
+
+
+afro_w7 %<>%
+  select(Q8A, Q8B, Q8C, Q8D, Q8E, Q10A, Q5, Q1, Q89B, URBRUR, Q4B, Q4A, Q97, Q101, 
+         Q43G, Q43H, Q43I, Q43B, Q43D, Q43A, Q43C, Q43E, Q43F, Q44B, Q44F, Q44A, 
+         Q44E, Q44D, Q12A, Q12B, Q12C, Q12D, Q36, Q21A, Q21B, Q20B, EA_GPS_LO, 
+         EA_GPS_LA, Q84, Q85B, Q85A, REGION, EA_SVC_D, RESPNO, 
+         round, TOWNVILL, ccode, cname, Q91B, LOCATION.LEVEL.1, Q27A, Q27B, Q27C, Q28, Q13, Q38A, Q38B, Q38C, Q45, Q17, Q29, Q22)
+
+
+afro_w7%<>%
+  rename(food=Q8A,
+         water=Q8B,
+         medical=Q8C,
+         cooking=Q8D,
+         money=Q8E,
+         security=Q10A,
+         compar=Q5,
+         age=Q1,
+         tele_pos=Q89B,
+         rural=URBRUR,
+         conditions_eco=Q4B,
+         conditions_country=Q4A,
+         educ=Q97,
+         sex=Q101,
+         conf_police=Q43G,
+         conf_armee=Q43H,
+         conf_court=Q43I,
+         conf_parl=Q43B,
+         conf_municipal=Q43D,
+         conf_pres=Q43A,
+         conf_elec=Q43C,
+         conf_coal=Q43E,
+         conf_oppo=Q43F,
+         cor_dep=Q44B,
+         cor_juge=Q44F,
+         cor_pres=Q44A,
+         cor_police=Q44E,
+         cor_muni=Q44D,
+         radio_news=Q12A,
+         tele_news=Q12B,
+         journal_news=Q12C,
+         internet_news=Q12D,
+         satis_demo=Q36,
+         commu=Q21A,
+         prob=Q21B,
+         assoc=Q20B,
+         longitude=EA_GPS_LO,
+         latitude=EA_GPS_LA,
+         ethnie=Q84,
+         feeleth=Q85B,
+         discri_eth=Q85A,
+         region=REGION,
+         gsm=EA_SVC_D,
+         id=RESPNO,
+         round=round,
+         town=TOWNVILL,
+         ccode=ccode,
+         cname=cname,
+         internet_use=Q91B,
+         district=LOCATION.LEVEL.1,
+         one_party=Q27A,
+         military=Q27B,
+         one_man=Q27C,
+         pref_demo=Q28,
+         disc_pol=Q13,
+         court_decis=Q38A,
+         obey_law=Q38B,
+         pay_taxes=Q38C,
+         level_cor=Q45,
+         media_free=Q17,
+         account=Q29,
+         vote=Q22
+         )
+
+saveRDS(afro_w7, file="Data/Data_RDS/afro_w7.rds")
+
+
+afro_w5 %<>%
+  mutate(round=rep(5, times = length("country")))%<>%
+  rename(food=q8a,
+         water=q8b,
+         medical=q8c,
+         cooking=q8d,
+         money=q8e,
+         security=q9a,
+         compar=q4,
+         age=q1,
+         tele_pos=q90b,
+         rural=urbrur,
+         conditions_eco=q3b,
+         conditions_country=q3a,
+         educ=q97,
+         sex=q101,
+         conf_police=q59h,
+         conf_armee=q59i,
+         conf_court=q59j,
+         conf_parl=q59b,
+         conf_municipal=q59e,
+         conf_pres=q59a,
+         conf_elec=q59c,
+         conf_coal=q59f,
+         conf_oppo=q59g,
+         cor_dep=q60b,
+         cor_juge=q60g,
+         cor_pres=q60a,
+         cor_police=q60e,
+         cor_muni=q60d,
+         radio_news=q13a,
+         tele_news=q13b,
+         journal_news=q13c,
+         internet_news=q13d,
+         satis_demo=q43,
+         commu=q26a,
+         prob=q26b,
+         assoc=q25b,
+         longitude=longitude,
+         latitude=latitude,
+         ethnie=q84,
+         feeleth=q85b,
+         discri_eth=q85a,
+         region=region,
+         gsm=ea_svc_d,
+         id=respno,
+         round=round,
+         town=townvill,
+         ccode=ccode,
+         cname=cname,
+         internet_use=q91b,
+         one_party=q31a,
+         military=q31b,
+         one_man=q31c,
+         pref_demo=q32,
+         disc_pol=q15,
+         court_decis=q48a,
+         obey_law=q48b,
+         pay_taxes=q48c,
+         tax_need=q50,
+         high_taxes=q51,
+         avoid_taxes=q56i,
+         trust_tax=q59d,
+         cor_tax=q60f,
+         tax_difficult=q75a,
+         tax_use=q75b,
+         avoid_tax_difficult=q75c,
+         not_pay_services=q76a,
+         not_pay_taxes=q76b,
+         why_avoid_taxes=q77,
+         media_cor_reveal=q53,
+         media_cor_act=q38,
+         media_free=q20,
+         account=q33,
+         vote=q27
+         )
+
+afro_w5 %<>%
+  select(
+         food,
+         water,
+         medical,
+         cooking,
+         money,
+         security,
+         compar,
+         age,
+         tele_pos,
+         rural,
+         conditions_eco,
+         conditions_country,
+         educ,
+         sex,
+         conf_police,
+         conf_armee,
+         conf_court,
+         conf_parl,
+         conf_municipal,
+         conf_pres,
+         conf_elec,
+         conf_coal,
+         conf_oppo,
+         cor_dep,
+         cor_juge,
+         cor_pres,
+         cor_police,
+         cor_muni,
+         radio_news,
+         tele_news,
+         journal_news,
+         internet_news,
+         satis_demo,
+         commu,
+         prob,
+         assoc,
+         longitude,
+         latitude,
+         ethnie,
+         feeleth,
+         discri_eth,
+         region,
+         gsm,
+         id,
+         round,
+         town,
+         ccode,
+         cname,
+         internet_use,
+         one_party,
+         military,
+         one_man,
+         pref_demo,
+         disc_pol,
+         court_decis,
+         obey_law,
+         pay_taxes,
+         tax_need,
+         high_taxes,
+         avoid_taxes,
+         trust_tax,
+         cor_tax,
+         tax_difficult,
+         tax_use,
+         avoid_tax_difficult,
+         not_pay_services,
+         not_pay_taxes,
+         why_avoid_taxes,
+         media_cor_reveal,
+         media_cor_act,
+         media_free,
+         account,
+         vote
+         )
+
+saveRDS(afro_w5, file="Data/Data_RDS/afro_w5.rds")
+
+
+afro_w6 %<>%
+  mutate(round=rep(6, times = length("country")))%<>%
+  rename(food=q8a,
+         water=q8b,
+         medical=q8c,
+         cooking=q8d,
+         money=q8e,
+         security=q10a,
+         compar=q5,
+         age=q1,
+         tele_pos=q91b,
+         rural=urbrur,
+         conditions_eco=q4b,
+         conditions_country=q4a,
+         educ=q97,
+         sex=q101,
+         conf_police=q52h,
+         conf_armee=q52i,
+         conf_court=q52j,
+         conf_parl=q52b,
+         conf_municipal=q52e,
+         conf_pres=q52a,
+         conf_elec=q52c,
+         conf_coal=q52f,
+         conf_oppo=q52g,
+         cor_dep=q53b,
+         cor_juge=q53g,
+         cor_pres=q53a,
+         cor_police=q53e,
+         cor_muni=q53d,
+         radio_news=q12a,
+         tele_news=q12b,
+         journal_news=q12c,
+         internet_news=q12d,
+         satis_demo=q41,
+         commu=q20a,
+         prob=q20b,
+         assoc=q19b,
+         longitude=longitude,
+         latitude=latitude,
+         ethnie=q87,
+         feeleth=q88b,
+         discri_eth=q88a,
+         region=region,
+         gsm=ea_svc_d,
+         id=respno,
+         round=round,
+         town=townvill,
+         ccode=ccode,
+         cname=cname,
+         internet_use=q92b,
+         district=locationlevel1,
+         one_party=q28a,
+         military=q28b,
+         one_man=q28c,
+         pref_demo=q30,
+         disc_pol=q14,
+         court_decis=q42a,
+         obey_law=q42b,
+         pay_taxes=q42c,
+         tax_need=q44,
+         trust_tax=q52d,
+         cor_tax=q53f,
+         tax_difficult=q70a,
+         avoid_tax_difficult=q70b,
+         not_pay_services=q75a,
+         not_pay_taxes=q75b,
+         media_cor_reveal=q46,
+         level_cor=q54,
+         media_cor_act=q36,
+         media_free=q17,
+         complain_services=q26c,
+         citizen_taxes=q26e,
+         taxes_health=q65c,
+         account=q31,
+         vote=q21
+         )
+
+afro_w6%<>%
+  select(food, water, medical, cooking, money, security, compar, age, tele_pos, rural, conditions_eco, conditions_country, educ, sex, conf_police, conf_armee, conf_court, conf_parl, conf_municipal, conf_pres, conf_elec, conf_coal, conf_oppo, cor_dep, cor_juge, cor_pres, cor_police, cor_muni, radio_news, tele_news, journal_news, internet_news, satis_demo, commu, prob, assoc, longitude, latitude, ethnie, feeleth, discri_eth, region, gsm, id, round, town, ccode, cname, internet_use, district, one_party, military, one_man, pref_demo, disc_pol, court_decis, obey_law, pay_taxes, tax_need, trust_tax, cor_tax, tax_difficult, avoid_tax_difficult, not_pay_services, not_pay_taxes, media_cor_reveal, level_cor, media_cor_act, media_free, complain_services, citizen_taxes, taxes_health, account, vote)
+
+saveRDS(afro_w6, file="Data/Data_RDS/afro_w6.rds")
+
+# Merging Afrobarometer waves
+
+data_trust <- bind_rows(afro_w5, afro_w6, afro_w7)
+
+rm(afro_w5, afro_w7, afro_w6)
+
+#Unique ID variable creation and filtering NA's (400) and duplicates (4)
+
+data_trust%<>%
+  mutate(id_unique=paste0(id,round))%>%
+  filter(!duplicated(id_unique))%>%
+  filter(!is.na(latitude), !is.na(longitude))
+
+```
+
+**Merging with Country Variables**
+
+```{r}
+
+#Country Variables
+
+country_var <-inner_join(country_var, corr_index, by ="ISO")%>%
+  inner_join(gov_index, by="ISO")%>%
+  inner_join(polstab_index, by="ISO")%>%
+  inner_join(reg_index, by="ISO")%>%
+  inner_join(rule_index, by="ISO")%>%
+  inner_join(voiceac_index, by="ISO")%>%
+  inner_join(gdppc, by="ISO")%>%
+  inner_join(population, by="ISO")%>%
+  inner_join(surface, by="ISO")
+
+country_var %<>%
+  mutate(cor2006_=as.numeric(cor2006_),
+         cor2009_=as.numeric(cor2009_),
+         gov2006_=as.numeric(gov2006_),
+         gov2009_=as.numeric(gov2009_),
+         polstab2006_=as.numeric(polstab2006_),
+         polstab2009_=as.numeric(polstab2009_),
+         reg2006_=as.numeric(reg2006_),
+         reg2009_=as.numeric(reg2009_),
+         rule2006_=as.numeric(rule2006_),
+         rule2009_=as.numeric(rule2009_),
+         voiceac2006_=as.numeric(voiceac2006_),
+         voiceac2009_=as.numeric(voiceac2009_))
+
+saveRDS(country_var, file="Data/Data_RDS/country_var.rds")
+
+data_trust <- left_join(data_trust, country_var, by = "ccode")
+
+rm(country_var, corr_index, gov_index, polstab_index, reg_index, rule_index, voiceac_index, gdppc, population, surface)
+
+
+```
+
+**Merging with Polity2 Democracy Index**
+
+```{r}
+
+vdem %<>%
+  subset(select=c("country_name", "year", "e_polity2"))
+
+
+vdem %<>%
+  mutate(cname = case_when(
+    country_name == "Benin" ~ "Benin",
+    country_name == "Botswana" ~ "Botswana",
+    country_name == "Burkina Faso" ~ "Burkina Faso",
+    country_name == "Cape Verde" ~ "Cabo Verde",
+    country_name == "Cameroon" ~ "Cameroon",
+    country_name == "Ivory Coast" ~ "Côte d'Ivoire",
+    country_name == "Eswatini" ~ "eSwatini",
+    country_name == "Gabon" ~ "Gabon",
+    country_name == "The Gambia" ~ "Gambia",
+    country_name == "Ghana" ~ "Ghana",
+    country_name == "Guinea" ~ "Guinea",
+    country_name == "Kenya" ~ "Kenya",
+    country_name == "Lesotho" ~ "Lesotho",
+    country_name == "Liberia" ~ "Liberia",
+    country_name == "Madagascar" ~ "Madagascar",
+    country_name == "Malawi" ~ "Malawi",
+    country_name == "Mali" ~ "Mali",
+    country_name == "Mauritius" ~ "Mauritius",
+    country_name == "Morocco" ~ "Morocco",
+    country_name == "Mozambique" ~ "Mozambique",
+    country_name == "Namibia" ~ "Namibia",
+    country_name == "Niger" ~ "Niger",
+    country_name == "Nigeria" ~ "Nigeria",
+    country_name == "Sao Tome and Principe" ~ "São Tomé and Príncipe",
+    country_name == "Senegal" ~ "Senegal",
+    country_name == "Sierra Leone" ~ "Sierra Leone",
+    country_name == "South Africa" ~ "South Africa",
+    country_name == "Sudan" ~ "Sudan",
+    country_name == "Tanzania" ~ "Tanzania",
+    country_name == "Togo" ~ "Togo",
+    country_name == "Tunisia" ~ "Tunisia",
+    country_name == "Uganda" ~ "Uganda",
+    country_name == "Zambia" ~ "Zambia",
+    country_name == "Zimbabwe" ~ "Zimbabwe",
+    country_name == "Algeria" ~ "Algeria",
+    country_name == "Burundi" ~ "Burundi",
+    country_name == "Egypt" ~ "Egypt",
+    country_name == "Ethiopia" ~ "Ethiopia",
+    TRUE ~ NA_character_
+  ))
+
+
+vdem %<>%
+  mutate(ccode = as.numeric(case_when(
+    cname == "Benin"~ 1,
+    cname == "Botswana"~ 2,
+    cname == "Burkina Faso"~ 3,
+    cname == "Cabo Verde"~ 4,
+    cname == "Cameroon"~ 5,
+    cname == "Côte d'Ivoire"~ 6,
+    cname == "eSwatini"~ 7,
+    cname == "Gabon"~ 8,
+    cname == "Gambia"~ 9,
+    cname ==  "Ghana"~ 10,
+    cname ==  "Guinea"~ 11,
+    cname ==  "Kenya"~ 12,
+    cname ==  "Lesotho"~ 13,
+    cname ==  "Liberia"~ 14,
+    cname ==  "Madagascar"~ 15,
+    cname ==  "Malawi"~ 16,
+    cname ==  "Mali"~ 17,
+    cname ==  "Mauritius"~ 18,
+    cname ==  "Morocco"~ 19,
+    cname ==  "Mozambique"~ 20,
+    cname ==  "Namibia"~ 21,
+    cname ==  "Niger"~ 22,
+    cname ==  "Nigeria"~ 23,
+    cname ==  "São Tomé and Príncipe"~ 24,
+    cname ==  "Senegal"~ 25,
+    cname ==  "Sierra Leone"~ 26,
+    cname ==  "South Africa"~ 27,
+    cname ==  "Sudan"~ 28,
+    cname ==  "Tanzania"~ 29,
+    cname ==  "Togo"~ 30,
+    cname ==  "Tunisia"~ 31,
+    cname ==  "Uganda"~ 32,
+    cname ==  "Zambia"~ 33,
+    cname ==  "Zimbabwe"~ 34,
+    cname ==  "Algeria"~ 35,
+    cname ==  "Burundi"~ 36,
+    cname ==  "Egypt"~ 37,
+    cname == "Ethiopia" ~ 38,
+    TRUE ~ NA
+  )))
+
+
+saveRDS(vdem, file="Data/Data_RDS/vdem.rds")
+
+vdem_1618 <- vdem %>%
+  filter(!is.na(ccode),year >= 2016 & year <= 2018)
+
+
+vdem_scoremean_18 <- vdem_1618 %>%
+  group_by(ccode) %>%
+  summarise(polity_mean_2018 = round(mean(e_polity2, na.rm = TRUE)))
+
+vdem18 <- left_join(vdem, vdem_scoremean_18, by = "ccode")
+
+vdem18 %<>%
+  mutate(polity_mean_2018=ifelse(year==2018, polity_mean_2018, NA))%>%
+  filter(year==2018) %>%
+  subset(select = c("ccode","polity_mean_2018"))%>%
+  filter(!is.na(ccode))
+
+
+
+
+
+
+vdem_1113 <- vdem %>%
+  filter(!is.na(ccode),year >= 2011 & year <= 2013)
+
+
+vdem_scoremean_13 <- vdem_1113 %>%
+  group_by(ccode) %>%
+  summarise(polity_mean_2013 = round(mean(e_polity2, na.rm = TRUE)))
+
+vdem13 <- left_join(vdem, vdem_scoremean_13, by = "ccode")
+
+vdem13 %<>%
+  mutate(polity_mean_2013=ifelse(year==2013, polity_mean_2013, NA))%>%
+  filter(year==2013) %>%
+  subset(select = c("ccode","polity_mean_2013")) %>%
+  filter(!is.na(ccode))
+
+
+
+vdem_1415 <- vdem %>%
+  filter(!is.na(ccode),year >= 2014 & year <= 2015)
+
+
+vdem_scoremean_15 <- vdem_1415 %>%
+  group_by(ccode) %>%
+  summarise(polity_mean_2015 = round(mean(e_polity2, na.rm = TRUE)))
+
+vdem15 <- left_join(vdem, vdem_scoremean_15, by = "ccode")
+
+vdem15 %<>%
+  mutate(polity_mean_2015=ifelse(year==2015, polity_mean_2015, NA))%>%
+  filter(year==2015) %>%
+  subset(select = c("ccode","polity_mean_2015")) %>%
+  filter(!is.na(ccode))
+
+
+data_trust <- left_join(data_trust, vdem18, by="ccode")
+data_trust <- left_join(data_trust, vdem13, by="ccode")
+data_trust <- left_join(data_trust, vdem15, by="ccode")
+
+rm(vdem_1113,vdem_1618, vdem_1415, vdem_scoremean_13, vdem_scoremean_18,vdem_scoremean_15, vdem13, vdem18, vdem15, vdem)
+
+
+```
+
+**Merging with Juriglobe**
+
+```{r}
+
+juriglobe %<>%
+  rename(gov_type="Forme\r\nde gouvernement") %>%
+  mutate(
+    presidential=(gov_type=="Présidentiel"),
+    parlementarian=(gov_type=="Parlementaire"),
+    semi_presidential=(gov_type=="Semi-présidentiel"),
+    monarchical=(gov_type=="Monarchique")
+  ) %>%
+  mutate(
+    presidential = as.numeric(presidential),
+    parlementarian = as.numeric(parlementarian),
+    semi_presidential = as.numeric(semi_presidential),
+    monarchical = as.numeric(monarchical))%>%
+  select(ccode, presidential, parlementarian, semi_presidential, monarchical)
+
+saveRDS(juriglobe, file="Data/Data_RDS/juriglobe.rds")
+
+data_trust <- left_join(data_trust, juriglobe, by="ccode")
+
+rm(juriglobe)
+
+```
+
+**Merging with Legal Origin**
+
+```{r}
+
+saveRDS(legal_origin, file="Data/Data_RDS/legal_origin.rds")
+
+data_trust <- left_join(data_trust, legal_origin, by="ISO")
+
+rm(legal_origin)
+
+```
+
+**Add cities**
+
+```{r}
+
+data_trust <- left_join(data_trust, cities, by = "ISO")%>%
+  select(-cname.y)%>%
+  rename(cname=cname.x)
+
+```
+
+
+**Variable selection and listing the distinct values**
+
+```{r}
+
+excluded_variables <- c("longitude","latitude","region","id","round","town","district","ccode","cname","ISO","pop2018_","gdpcap2018_","superficie2018_","cor2018_","gov2018_","polstab2018_","reg2018_","rule2018_","voiceac2018_","LG_RI","LG_SE","FDI","PDI","ADI","DI","GCI","color","pop2013_","gdpcap2013_","superficie2013_","cor2013_","gov2013_","polstab2013_","reg2013_","rule2013_","voiceac2013_","pop2015_","gdpcap2015_","superficie2015_","cor2015_","gov2015_","polstab2015_","reg2015_","rule2015_","voiceac2015_","caplat","caplong","ncaplat","ncaplong","polity_mean_2018","polity_mean_2013","polity_mean_2015","presidential","parlementarian","semi_presidential","monarchical","legor", "id_unique")
+
+analysis_variables <- setdiff(names(data_trust), excluded_variables)
+
+
+unique_values_list <- lapply(analysis_variables, function(var) {
+  unique_values_round5 <- unique(data_trust[data_trust$round == 5, var], na.rm = TRUE)
+  unique_values_round6 <- unique(data_trust[data_trust$round == 6, var], na.rm = TRUE)
+  unique_values_round7 <- unique(data_trust[data_trust$round == 7, var], na.rm = TRUE)
+  
+  return(list(round5 = unique_values_round5, round6 = unique_values_round6, round7 = unique_values_round7))
+})
+
+for (i in seq_along(analysis_variables)) {
+  cat("Variable:", analysis_variables[i], "\n")
+  cat("Observations possibles (Round 5):", unique_values_list[[i]]$round5, "\n")
+  cat("Observations possibles (Round 6):", unique_values_list[[i]]$round6, "\n")
+  cat("Observations possibles (Round 7):", unique_values_list[[i]]$round7, "\n\n")
+}
+
+
+
+```
+
+**Variable treatment**
+
+```{r, Variables corrections}
+
+variables_to_process <- c("food", "water", "medical", "cooking", "money", "security", "compar", "conditions_eco", "conditions_country", 
+                          "conf_police", "conf_armee", "conf_court", 
+                          "conf_parl", "conf_municipal", "conf_pres", 
+                          "conf_elec", "conf_coal", "conf_oppo", 
+                          "cor_dep", "cor_juge", "cor_pres", "cor_police", 
+                          "cor_muni", "radio_news", "tele_news", "journal_news", 
+                          "internet_news", "satis_demo", "commu", "prob", "assoc", "sex", "rural", "gsm", "internet_use", "one_party", "military", "one_man", "pref_demo", "disc_pol", "court_decis", "obey_law", "pay_taxes", "tax_need", "trust_tax", "cor_tax", "tax_difficult", "avoid_tax_difficult", "not_pay_services", "not_pay_taxes", "media_cor_reveal", "level_cor", "media_cor_act", "media_free", "complain_services", "citizen_taxes", "taxes_health", "high_taxes", "tax_use", "avoid_taxes", "why_avoid_taxes", "vote")
+
+data_trust %<>%
+  mutate(across(all_of(variables_to_process), 
+                ~na_if(.x, 9) %>% na_if(-1) %>% na_if(8) %>% na_if(998) %>% na_if(460) %>% na_if(99) %>% na_if(997)%>% na_if(98) %>% na_if(1340)%>% na_if(9997) %>% na_if(9999) %>% na_if(9995) %>% na_if(9998)))
+
+
+#Tele_pos
+
+data_trust%<>%
+  mutate(
+    tele_pos = if_else(
+      round == 7,
+      case_when(
+        tele_pos == 2 ~ 1,
+        tele_pos == 1 ~ 0,
+        tele_pos == 0 ~ 0,
+        TRUE ~ NA_real_
+      ),
+      case_when(
+        tele_pos == 1 ~ 1,
+        tele_pos == 0 ~ 0,
+        TRUE ~ NA_real_
+      )
+    )
+  )
+
+#Age
+
+data_trust%<>%
+  mutate(age=na_if(age, -1))%>%
+  mutate(age=na_if(age, 998))%>%
+  mutate(age=na_if(age, 999))
+  
+
+#Educ
+
+data_trust%<>%
+  mutate(educ=na_if(educ, 99))%>%
+  mutate(educ=na_if(educ, -1))%>%
+  mutate(educ=na_if(educ, 98))
+
+
+#ethnie
+
+data_trust%<>%
+  mutate(ethnie=na_if(ethnie,9990))%>%
+  mutate(ethnie=na_if(ethnie,9995))%>%
+  mutate(ethnie=na_if(ethnie,9997))%>%
+  mutate(ethnie=na_if(ethnie,9998))%>%
+  mutate(ethnie=na_if(ethnie,9999))%>%
+  mutate(ethnie=na_if(ethnie,-1))%>%
+  mutate(ethnie=na_if(ethnie,9996))
+  
+
+#discr_eth
+
+data_trust%<>%
+  mutate(discri_eth=na_if(discri_eth,7))%>%
+  mutate(discri_eth=na_if(discri_eth,9))%>%
+  mutate(discri_eth=na_if(discri_eth,997))%>%
+  mutate(discri_eth=na_if(discri_eth,998))%>%
+  mutate(discri_eth=na_if(discri_eth,-1))%>%
+  mutate(discri_eth=na_if(discri_eth,99))%>%
+  mutate(discri_eth=na_if(discri_eth,8))%>%
+  mutate(discri_eth=na_if(discri_eth,98))
+
+#feeleth
+
+data_trust%<>%
+  mutate(feeleth=na_if(feeleth,7))%>%
+  mutate(feeleth=na_if(feeleth,9))%>%
+  mutate(feeleth=na_if(feeleth,998))%>%
+  mutate(feeleth=na_if(feeleth,-1))%>%
+  mutate(feeleth=na_if(feeleth,997))%>%
+  mutate(feeleth=na_if(feeleth,8))%>%
+  mutate(feeleth=na_if(feeleth,99))
+
+data_trust%<>%
+  mutate(avoid_tax_difficult=na_if(avoid_tax_difficult,7))
+
+#media_cor_act ; tax_need ; high_taxes; media_free: 5= agree with neither
+
+#avoid_tax_difficult: 7= don't have to pay taxes
+
+#why_avoid_taxes: 0=People don't avoid paying, 1=The tax system is unfair, 2=The taxes are too high, 3=People cannot afford to pay, 4=The poor services they receive from government, 5=Government does not listen to them, 6=Government wastes tax money, 7=Government officials steal tax money, 8=They know they will not be caught, 9=Greed / selfishness, 10=Ignorance, don't know how to pay or don’t understand need to pay, 661=Negligence, 780=Government stopped people from paying the tax(s), 1622=Employers don't deduct or don't give to government
+
+#taxes_health: 6= it depends
+
+
+
+
+unique_values_list <- lapply(analysis_variables, function(var) {
+  unique_values_round5 <- unique(data_trust[data_trust$round == 5, var], na.rm = TRUE)
+  unique_values_round6 <- unique(data_trust[data_trust$round == 6, var], na.rm = TRUE)
+  unique_values_round7 <- unique(data_trust[data_trust$round == 7, var], na.rm = TRUE)
+  
+  return(list(round5 = unique_values_round5, round6 = unique_values_round6, round7 = unique_values_round7))
+})
+
+for (i in seq_along(analysis_variables)) {
+  cat("Variable:", analysis_variables[i], "\n")
+  cat("Observations possibles (Round 5):", unique_values_list[[i]]$round5, "\n")
+  cat("Observations possibles (Round 6):", unique_values_list[[i]]$round6, "\n")
+  cat("Observations possibles (Round 7):", unique_values_list[[i]]$round7, "\n\n")
+}
+
+rm(unique_values_list, analysis_variables, excluded_variables, i, variables_to_process)
+```
+
+**Distance variable creation**
+
+```{r}
+
+data_trust %<>%
+  filter(!is.na(longitude) & !is.na(latitude) & !is.na(caplong) & !is.na(caplat)) %>% 
+ mutate(distance_cap = distGeo(
+    cbind(longitude, latitude),
+    cbind(caplong, caplat)
+  ) / 1000)
+
+
+
+data_trust %<>%
+  filter(!is.na(longitude) & !is.na(latitude) & !is.na(ncaplong) & !is.na(ncaplat)) %>% 
+  mutate(distance_ncap = distGeo(
+    cbind(longitude, latitude),
+    cbind(ncaplong, ncaplat)
+  ) / 1000)
+
+
+data_trust %<>%
+  filter(!is.na(caplong) & !is.na(caplat) &!is.na(ncaplong) & !is.na(ncaplat)) %>% 
+   mutate(distance_cap_ncap = distGeo(
+    cbind(caplong, caplat),
+    cbind(ncaplong, ncaplat)
+  ) / 1000)
+
+
+data_trust %<>%
+  filter(!is.na(longitude) & !is.na(latitude) & !is.na(sndncaplong) & !is.na(sndncaplat)) %>% 
+  mutate(distance_sndncap = distGeo(
+    cbind(longitude, latitude),
+    cbind(sndncaplong, sndncaplat)
+  ) / 1000)
+
+
+data_trust %<>%
+  filter(!is.na(caplong) & !is.na(caplat) &!is.na(sndncaplong) & !is.na(sndncaplat)) %>% 
+   mutate(distance_cap_sndncap = distGeo(
+    cbind(caplong, caplat),
+    cbind(sndncaplong, sndncaplat)
+  ) / 1000)
+
+
+data_trust%<>%
+  mutate(distance_cap_10=distance_cap/10)
+
+
+data_trust%<>%
+  mutate(distance_ncap_10=distance_ncap/10)
+
+data_trust%<>%
+  mutate(distance_sndncap_10=distance_sndncap/10)
+
+#Log distance
+
+data_trust %<>%
+  filter(!is.na(distance_cap))%>%
+  group_by(cname)%>%
+  mutate(distance_cap_log=log(distance_cap))%>%
+  ungroup()
+
+data_trust %<>%
+  filter(!is.na(distance_ncap))%>%
+  group_by(cname)%>%
+  mutate(distance_ncap_log=log(distance_ncap))%>%
+  ungroup()
+
+
+data_trust %<>%
+  filter(!is.na(distance_sndncap))%>%
+  group_by(cname)%>%
+  mutate(distance_sndncap_log=log(distance_sndncap))%>%
+  ungroup()
+
+#Max distance normalization
+
+data_trust %<>%
+  filter(!is.na(distance_cap))%>%
+  group_by(cname)%>%
+  mutate(distance_cap_max=max(distance_cap))%>%
+  ungroup()
+
+
+data_trust %<>%
+  filter(!is.na(distance_cap))%>%
+  group_by(cname)%>%
+  mutate(distance_cap_max95=quantile(distance_cap, probs = 0.95))%>%
+  ungroup()
+
+
+data_trust %<>%
+  filter(!is.na(distance_ncap)) %>%
+  group_by(cname)%>%
+  mutate(distance_ncap_max=max(distance_ncap))%>%
+  ungroup()
+
+
+data_trust %<>%
+  filter(!is.na(distance_ncap)) %>%
+  group_by(cname)%>%
+  mutate(distance_ncap_max95=quantile(distance_ncap, probs = 0.95))%>%
+  ungroup()
+
+
+
+data_trust %<>%
+  filter(!is.na(distance_sndncap)) %>%
+  group_by(cname)%>%
+  mutate(distance_sndncap_max=max(distance_sndncap))%>%
+  ungroup()
+
+
+data_trust %<>%
+  filter(!is.na(distance_sndncap)) %>%
+  group_by(cname)%>%
+  mutate(distance_sndncap_max95=quantile(distance_sndncap, probs = 0.95))%>%
+  ungroup()
+
+
+
+ 
+ 
+#Cap
+ 
+data_trust %<>%
+  filter(!is.na(distance_cap_max)) %>%
+  group_by(cname)%>%
+  mutate(distance_cap_max_norm = distance_cap/distance_cap_max)%>%
+  ungroup()
+
+
+data_trust %<>%
+  filter(!is.na(distance_cap_max95)) %>%
+  group_by(cname)%>%
+  mutate(distance_cap_max_norm95 = if_else(distance_cap<=distance_cap_max95,distance_cap/ distance_cap_max95, NA_real_))%>%
+  ungroup()
+
+
+#Ncap
+
+data_trust %<>%
+  filter(!is.na(distance_ncap_max)) %>%
+  group_by(cname)%>%
+  mutate(distance_ncap_max_norm = distance_ncap/distance_ncap_max)%>%
+  ungroup()
+
+
+data_trust %<>%
+  filter(!is.na(distance_ncap_max95)) %>%
+  group_by(cname)%>%
+  mutate(distance_ncap_max_norm95 = if_else(distance_ncap<=distance_ncap_max95,distance_ncap/ distance_ncap_max95, NA_real_))%>%
+  ungroup()
+
+#sndNcap
+data_trust %<>%
+  filter(!is.na(distance_sndncap_max)) %>%
+  group_by(cname)%>%
+  mutate(distance_sndncap_max_norm = distance_sndncap/distance_sndncap_max)%>%
+  ungroup()
+
+
+data_trust %<>%
+  filter(!is.na(distance_sndncap_max95)) %>%
+  group_by(cname)%>%
+  mutate(distance_sndncap_max_norm95 = if_else(distance_sndncap<=distance_sndncap_max95,distance_sndncap/ distance_sndncap_max95, NA_real_))%>%
+  ungroup()
+
+#Mean distance normalization
+
+data_trust %<>%
+  filter(!is.na(distance_cap))%>%
+  group_by(cname)%>%
+  mutate(distance_cap_mean=mean(distance_cap))%>%
+  ungroup()
+
+data_trust %<>%
+  filter(!is.na(distance_ncap)) %>%
+  group_by(cname)%>%
+  mutate(distance_ncap_mean=mean(distance_ncap))%>%
+  ungroup()
+
+data_trust %<>%
+  filter(!is.na(distance_sndncap)) %>%
+  group_by(cname)%>%
+  mutate(distance_sndncap_mean=mean(distance_sndncap))%>%
+  ungroup()
+
+ 
+ 
+#Cap
+ 
+data_trust %<>%
+  filter(!is.na(distance_cap_mean)) %>%
+  group_by(cname)%>%
+  mutate(distance_cap_mean_norm = distance_cap/distance_cap_mean)%>%
+  ungroup()
+
+
+#Ncap
+
+data_trust %<>%
+  filter(!is.na(distance_ncap_mean)) %>%
+  group_by(cname)%>%
+  mutate(distance_ncap_mean_norm = distance_ncap/distance_ncap_mean)%>%
+  ungroup()
+
+
+#sndNcap
+data_trust %<>%
+  filter(!is.na(distance_sndncap_mean)) %>%
+  group_by(cname)%>%
+  mutate(distance_sndncap_mean_norm = distance_sndncap/distance_sndncap_mean)%>%
+  ungroup()
+
+
+##Distance quintiles by country
+
+#Raw
+data_trust%<>%
+  filter(!is.na(distance_cap)) %>%
+  group_by(cname) %>%
+  mutate(dist_cap_quint = ntile(distance_cap, 5))%>%
+  ungroup()
+
+data_trust%<>%
+  filter(!is.na(distance_ncap)) %>%
+  group_by(cname) %>%
+  mutate(dist_ncap_quint = ntile(distance_ncap, 5))%>%
+  ungroup()
+
+data_trust%<>%
+  filter(!is.na(distance_sndncap)) %>%
+  group_by(cname) %>%
+  mutate(dist_sndncap_quint = ntile(distance_sndncap, 5))%>%
+  ungroup()
+
+#log
+
+data_trust%<>%
+  filter(!is.na(distance_cap_log)) %>%
+  group_by(cname) %>%
+  mutate(dist_cap_quint_log = ntile(distance_cap_log, 5))%>%
+  ungroup()
+
+data_trust%<>%
+  filter(!is.na(distance_ncap_log)) %>%
+  group_by(cname) %>%
+  mutate(dist_ncap_quint_log = ntile(distance_ncap_log, 5))%>%
+  ungroup()
+
+data_trust%<>%
+  filter(!is.na(distance_sndncap_log)) %>%
+  group_by(cname) %>%
+  mutate(dist_sndncap_quint_log = ntile(distance_sndncap_log, 5))%>%
+  ungroup()
+
+#norm max
+data_trust%<>%
+  filter(!is.na(distance_cap_max_norm)) %>%
+  group_by(cname) %>%
+  mutate(dist_cap_quint_max_norm = ntile(distance_cap_max_norm, 5))%>%
+  ungroup()
+
+data_trust%<>%
+  filter(!is.na(distance_ncap_max_norm)) %>%
+  group_by(cname) %>%
+  mutate(dist_ncap_quint_max_norm = ntile(distance_ncap_max_norm, 5))%>%
+  ungroup()
+
+data_trust%<>%
+  filter(!is.na(distance_sndncap_max_norm)) %>%
+  group_by(cname) %>%
+  mutate(dist_sndncap_quint_max_norm = ntile(distance_sndncap_max_norm, 5))%>%
+  ungroup()
+
+#norm mean
+data_trust%<>%
+  filter(!is.na(distance_cap_mean_norm)) %>%
+  group_by(cname) %>%
+  mutate(dist_cap_quint_mean_norm = ntile(distance_cap_mean_norm, 5))%>%
+  ungroup()
+
+data_trust%<>%
+  filter(!is.na(distance_ncap_mean_norm)) %>%
+  group_by(cname) %>%
+  mutate(dist_ncap_quint_mean_norm = ntile(distance_ncap_mean_norm, 5))%>%
+  ungroup()
+
+data_trust%<>%
+  filter(!is.na(distance_sndncap_mean_norm)) %>%
+  group_by(cname) %>%
+  mutate(dist_sndncap_quint_mean_norm = ntile(distance_sndncap_mean_norm, 5))%>%
+  ungroup()
+
+
+##Distance quintiles all sample
+
+#Raw
+data_trust%<>%
+  filter(!is.na(distance_cap)) %>%
+  mutate(dist_cap_quint_all = ntile(distance_cap, 5))%>%
+  ungroup()
+
+data_trust%<>%
+  filter(!is.na(distance_ncap)) %>%
+  mutate(dist_ncap_quint_all = ntile(distance_ncap, 5))%>%
+  ungroup()
+
+data_trust%<>%
+  filter(!is.na(distance_sndncap)) %>%
+  mutate(dist_sndncap_quint_all = ntile(distance_sndncap, 5))%>%
+  ungroup()
+
+#log
+
+data_trust%<>%
+  filter(!is.na(distance_cap_log)) %>%
+  mutate(dist_cap_quint_log_all = ntile(distance_cap_log, 5))%>%
+  ungroup()
+
+data_trust%<>%
+  filter(!is.na(distance_ncap_log)) %>%
+  mutate(dist_ncap_quint_log_all = ntile(distance_ncap_log, 5))%>%
+  ungroup()
+
+data_trust%<>%
+  filter(!is.na(distance_sndncap_log)) %>%
+  mutate(dist_sndncap_quint_log_all = ntile(distance_sndncap_log, 5))%>%
+  ungroup()
+
+#norm max
+data_trust%<>%
+  filter(!is.na(distance_cap_max_norm)) %>%
+  mutate(dist_cap_quint_max_norm_all = ntile(distance_cap_max_norm, 5))%>%
+  ungroup()
+
+data_trust%<>%
+  filter(!is.na(distance_ncap_max_norm)) %>%
+  mutate(dist_ncap_quint_max_norm_all = ntile(distance_ncap_max_norm, 5))%>%
+  ungroup()
+
+data_trust%<>%
+  filter(!is.na(distance_sndncap_max_norm)) %>%
+  mutate(dist_sndncap_quint_max_norm_all = ntile(distance_sndncap_max_norm, 5))%>%
+  ungroup()
+
+#norm mean
+data_trust%<>%
+  filter(!is.na(distance_cap_mean_norm)) %>%
+  mutate(dist_cap_quint_mean_norm_all = ntile(distance_cap_mean_norm, 5))%>%
+  ungroup()
+
+data_trust%<>%
+  filter(!is.na(distance_ncap_mean_norm)) %>%
+  mutate(dist_ncap_quint_mean_norm_all = ntile(distance_ncap_mean_norm, 5))%>%
+  ungroup()
+
+data_trust%<>%
+  filter(!is.na(distance_sndncap_mean_norm)) %>%
+  mutate(dist_sndncap_quint_mean_norm_all = ntile(distance_sndncap_mean_norm, 5))%>%
+  ungroup()
+
+
+
+
+#Distance deciles
+
+data_trust%<>%
+  filter(!is.na(distance_cap)) %>%
+  group_by(cname) %>%
+  mutate(distance_cap_dec = ntile(distance_cap, 10))%>%
+  ungroup()
+
+data_trust%<>%
+  filter(!is.na(distance_cap_max)) %>%
+  group_by(cname) %>%
+  mutate(distance_cap_dec_max = ntile(distance_cap_max, 10))%>%
+  ungroup()
+
+
+data_trust%<>%
+  filter(!is.na(distance_ncap)) %>%
+  group_by(cname) %>%
+  mutate(distance_ncap_dec = ntile(distance_ncap, 10))%>%
+  ungroup()
+
+data_trust%<>%
+  filter(!is.na(distance_ncap)) %>%
+  group_by(cname) %>%
+  mutate(distance_ncap_dec_max = ntile(distance_ncap_max, 10))%>%
+  ungroup()
+
+
+
+
+data_trust%<>%
+  filter(!is.na(distance_sndncap)) %>%
+  group_by(cname) %>%
+  mutate(distance_sndncap_dec = ntile(distance_sndncap, 10))%>%
+  ungroup()
+
+data_trust%<>%
+  filter(!is.na(distance_sndncap)) %>%
+  group_by(cname) %>%
+  mutate(distance_sndncap_dec_max = ntile(distance_sndncap_max, 10))%>%
+  ungroup()
+```
+
+**Population and surface normalization**
+
+```{r}
+
+data_trust%<>%
+  mutate(pop2018_=pop2018_ / 100000)%>%
+  mutate(pop2013_=pop2013_ / 100000)%>%
+  mutate(pop2015_=pop2015_ / 100000)%>%
+  mutate(superficie2018_=superficie2018_ / 100)%>%
+  mutate(superficie2013_=superficie2013_ / 100)%>%
+  mutate(superficie2015_=superficie2015_ / 100)
+
+
+#summary_table <- summary(data_trust, na.rm = TRUE)
+
+```
+
+**Cluster variables creation**
+
+```{r}
+
+#Cluster ethnic X cname
+
+data_trust$cluster_var <- paste0(as.character(data_trust$ethnie),as.character(data_trust$cname))
+
+#Cluster cname X round
+
+data_trust$ef_cr <- paste0(as.character(data_trust$cname),as.character(data_trust$round))
+
+data_trust%<>%
+  mutate(country_round=paste0(round,ccode))
+
+
+#Cluster cname X round X ethnic
+
+data_trust$ef_cr_eth <- paste0(as.character(data_trust$cname),as.character(data_trust$round),as.character(data_trust$ethnie))
+
+
+```
+
+**Variables creation**
+
+```{r}
+
+#UK colonial origin variable creation
+
+data_trust %<>%
+  mutate(color_uk = if_else(color == "UK", 1, 0))
+
+#Unique GDPPC variable
+
+data_trust %<>%
+mutate(gdppc = case_when(
+    round == 5 ~ gdpcap2013_,
+    round == 6 ~ gdpcap2015_,
+    round == 7 ~ gdpcap2018_,
+    TRUE ~ NA
+  ))
+
+#Unique population variable
+
+data_trust %<>%
+mutate(population = case_when(
+    round == 5 ~ pop2013_,
+    round == 6 ~ pop2015_,
+    round == 7 ~ pop2018_,
+    TRUE ~ NA
+  ))
+
+
+#Unique area variable
+
+data_trust %<>%
+mutate(area = case_when(
+    round == 5 ~ superficie2013_,
+    round == 6 ~ superficie2015_,
+    round == 7 ~ superficie2018_,
+    TRUE ~ NA
+  ))
+
+#Preference for democracy
+
+data_trust %<>%
+   mutate(pref_demo_simple=ifelse(pref_demo==3, 1, 0))
+
+data_trust %<>%
+   mutate(pref_demo_strict=ifelse(pref_demo==3 & one_party==1|one_party==2 & military==1|military==2 & one_man==1|one_man==2, 1, 0))
+
+data_trust %<>%
+   mutate(pref_demo_strict2=ifelse(pref_demo==3 & one_party==1 & military==1 & one_man==1, 1, 0))
+
+#Satisfaction in democratic functionning
+
+data_trust%<>%
+  mutate(bin_satis_demo=ifelse(satis_demo>=3, 1, 0))
+
+#Education
+
+data_trust%<>%
+  mutate(bin_educ_sec=ifelse(educ>=5, 1, 0))
+
+data_trust%<>%
+  mutate(educ_group=case_when(
+    educ %in% 0 ~ 0,
+    educ %in% c(1,2,3) ~ 1,
+    educ %in% c(4,5) ~ 2,
+    educ %in% c(6,7,8,9) ~ 3,
+    TRUE ~ NA_integer_     
+  ))
+
+#Strict ethnic feeling
+data_trust%<>%
+  mutate(bin_feeleth=ifelse(feeleth<=2, 1, 0))
+
+#Unsafety feeling
+data_trust%<>%
+  mutate(bin_security=ifelse(security>=2, 1, 0))
+
+#Food need
+data_trust%<>%
+  mutate(bin_food=ifelse(food>=2, 1, 0))
+
+#Money need
+data_trust%<>%
+  mutate(bin_money=ifelse(money>=2, 1, 0))
+
+#Personal/country/comparison economic conditions
+data_trust%<>%
+  mutate(bin_conditions_eco=ifelse(conditions_eco>=3, 1, 0))%>%
+  mutate(bin_conditions_country=ifelse(conditions_country>=3, 1, 0))%>%
+  mutate(bin_compar=ifelse(compar>=3, 1, 0))
+
+#Politics discussion
+data_trust%<>%
+  mutate(bin_disc_pol_no=ifelse(disc_pol==0, 1, 0))%>%
+  mutate(bin_disc_pol_low=ifelse(disc_pol==1, 1, 0))%>%
+  mutate(bin_disc_pol_high=ifelse(disc_pol==2, 1, 0))
+
+#News and rural
+data_trust%<>%
+  mutate(bin_tele_news=ifelse(tele_news>=3, 1, 0))%>%
+  mutate(bin_radio_news=ifelse(radio_news>=3, 1, 0))%>%
+  mutate(bin_journal_news=ifelse(journal_news>=3, 1, 0))%>%
+  mutate(bin_internet_news=ifelse(internet_news>=3, 1, 0))
+
+
+data_trust%<>%
+    mutate(rural = ifelse(rural == 3, 1, rural))
+
+#Log GDPPC
+data_trust%<>%
+  mutate(log_gdppc=log(gdppc))
+
+#Unique Polity2
+data_trust %<>%
+mutate(polity2 = case_when(
+    round == 5 ~ polity_mean_2013,
+    round == 6 ~ polity_mean_2015,
+    round == 7 ~ polity_mean_2018,
+    TRUE ~ NA
+  ))
+
+#Unique Rule of Law
+data_trust %<>%
+mutate(rule_index = case_when(
+    round == 5 ~ rule2013_,
+    round == 6 ~ rule2015_,
+    round == 7 ~ rule2018_,
+    TRUE ~ NA
+  ))
+
+#Unique Corruption Index
+data_trust %<>%
+mutate(corr_index = case_when(
+    round == 5 ~ cor2013_,
+    round == 6 ~ cor2015_,
+    round == 7 ~ cor2018_,
+    TRUE ~ NA
+  ))
+
+#Unique Governance Index
+data_trust %<>%
+mutate(gov_index = case_when(
+    round == 5 ~ gov2013_,
+    round == 6 ~ gov2015_,
+    round == 7 ~ gov2018_,
+    TRUE ~ NA
+  ))
+
+#Unique Political Stability Index
+data_trust %<>%
+mutate(polstab_index = case_when(
+    round == 5 ~ polstab2013_,
+    round == 6 ~ polstab2015_,
+    round == 7 ~ polstab2018_,
+    TRUE ~ NA
+  ))
+
+
+#Unique Regulatory Quality Index
+data_trust %<>%
+mutate(reg_index = case_when(
+    round == 5 ~ reg2013_,
+    round == 6 ~ reg2015_,
+    round == 7 ~ reg2018_,
+    TRUE ~ NA
+  ))
+
+#Unique Voice Accountability Index
+data_trust %<>%
+mutate(voiceac_index = case_when(
+    round == 5 ~ voiceac2013_,
+    round == 6 ~ voiceac2015_,
+    round == 7 ~ voiceac2018_,
+    TRUE ~ NA
+  ))
+
+
+#Weighted institutional trust index
+#data_trust %<>%
+ # group_by(id_unique)%>%
+#  mutate(weighted_inst_trust = ifelse(all(is.na(c(conf_pres, conf_parl, conf_elec))), NA, weighted.mean(c(conf_pres, conf_parl, conf_elec), na.rm = TRUE)))%>%
+#  ungroup()
+
+#Mean institutional trust index
+data_trust %<>%
+  mutate(mean_inst_trust = (trust_pres+ trust_parl + trust_elec) / 
+           rowSums(!is.na(cbind(trust_pres, trust_parl, trust_elec))))
+
+#data_trust %>% select(weighted_inst_trust, conf_parl, conf_pres, conf_elec)%>%View()
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust.rds")
+
+```
+
+```{r}
+### Après avoir fait tourner le script ADM.RMD ###
+
+data_trust <- readRDS("Data/Data_RDS/data_trust2.rds")
+
+data_trust %<>%
+  group_by(NAME_1, round) %>%
+  mutate(internet_use_adm1 = if_else(!is.na(internet_use) & NAME_1 != "NA", mean(internet_use, na.rm = TRUE), NA_real_)) %>%
+  ungroup()
+
+data_trust %<>%
+  group_by(NAME_2, round) %>%
+  mutate(internet_use_adm2 = if_else(!is.na(internet_use) & NAME_2 != "NA", mean(internet_use, na.rm = TRUE), NA_real_)) %>%
+  ungroup()
+
+data_trust %<>%
+  group_by(NAME_3, round) %>%
+  mutate(internet_use_adm3 = if_else(!is.na(internet_use) & NAME_3 != "NA", mean(internet_use, na.rm = TRUE), NA_real_)) %>%
+  ungroup()
+
+summary(select(data_trust, internet_use_adm1, internet_use_adm2, internet_use_adm3))
+
+
+### Après avoir fait tourner le script popdensity.R ###
+
+summary(select(data_trust, popdensity_1, popdensity_2, popdensity_3))
+
+data_trust%<>%
+  group_by(NAME_1, round)%>%
+  mutate(internet_use_adm1_pop=internet_use_adm1*popdensity_1)%>%
+  ungroup()
+
+data_trust%<>%
+  group_by(NAME_2, round)%>%
+  mutate(internet_use_adm2_pop=internet_use_adm2*popdensity_2)%>%
+  ungroup()
+
+
+data_trust%<>%
+  group_by(NAME_3, round)%>%
+  mutate(internet_use_adm3_pop=internet_use_adm3*popdensity_3)%>%
+  ungroup()
+
+#summary(select(data_trust, internet_use_adm1_pop, internet_use_adm2_pop, internet_use_adm3_pop))
+
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust2.rds")
+
+```
+
+```{r}
+data_trust %<>%
+  mutate(age_2 = age^2)
+
+data_trust %<>%
+  group_by(NAME_1) %>%
+  mutate(region1_id = cur_group_id())%>%
+  ungroup()
+
+data_trust %<>%
+  group_by(ccode, region1_id) %>%
+  mutate(region1_ccode = cur_group_id())%>%
+  ungroup()
+  
+data_trust %<>%
+  group_by(round, region1_id) %>%
+  mutate(region1_round = cur_group_id())%>%
+  ungroup()
+
+data_trust %<>%
+  group_by(NAME_2) %>%
+  mutate(region2_id = cur_group_id())%>%
+  ungroup()
+
+data_trust %<>%
+  group_by(ccode, region2_id) %>%
+  mutate(region2_ccode = cur_group_id())%>%
+  ungroup()
+
+data_trust %<>%
+  group_by(round, region2_id) %>%
+  mutate(region2_round = cur_group_id())%>%
+  ungroup()
+
+data_trust %<>%
+  group_by(NAME_3) %>%
+  mutate(region3_id = cur_group_id()) %>%
+  ungroup()
+
+data_trust%<>%
+  group_by(ccode, region3_id) %>%
+  mutate(region3_ccode = cur_group_id())%>%
+  ungroup()
+
+data_trust%<>%
+  group_by(round, region3_id) %>%
+  mutate(region3_round = cur_group_id())%>%
+  ungroup()
+
+data_trust%<>%
+  mutate(r5=if_else(round==5, 1, 0))%>%
+  mutate(r6=if_else(round==6, 1, 0))%>%
+  mutate(r7=if_else(round==7, 1, 0))%>%
+  mutate(r6_7=if_else(round==6|round==7, 1, 0))
+
+data_trust %<>%
+  mutate(cor_tax = as.double(cor_tax))
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust2.rds")
+
+
+```
+
+
+
+```{r}
+did_use_internet_trust_r7_5 <- data_trust
+
+did_use_internet_trust_r7_5 %<>%
+  filter(!is.na(NAME_2))%>%
+  filter(round %in% c(5, 7)) %>%
+  group_by(NAME_2) %>%
+  filter(all(c(5, 7) %in% round)) %>%
+  ungroup()
+
+did_use_internet_trust_r7_5%<>%
+  select(cname, NAME_2, round, internet_use_adm2)%>%
+  distinct(NAME_2, round, .keep_all = TRUE)%>%
+  arrange(NAME_2)
+
+did_use_internet_trust_r7_5%<>%
+ group_by(NAME_2) %>%
+ mutate(diff_internet_use_adm2_r7_5 = internet_use_adm2[round == 7] - internet_use_adm2[round == 5])%>%
+  arrange(NAME_2,round)%>%
+  ungroup()
+
+
+did_use_internet_trust_r7_5 %<>% distinct(NAME_2, .keep_all = TRUE)
+
+did_use_internet_trust_r7_5%<>%
+  select(NAME_2, diff_internet_use_adm2_r7_5)
+
+
+
+data_trust %<>% left_join(did_use_internet_trust_r7_5, by="NAME_2")
+
+rm(did_use_internet_trust_r7_5)
+
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust2.rds")
+
+```
+
+
+```{r}
+did_use_internet_trust_r6_5 <- data_trust
+
+did_use_internet_trust_r6_5 %<>%
+  filter(!is.na(NAME_2))%>%
+  filter(round %in% c(5, 6)) %>%
+  group_by(NAME_2) %>%
+  filter(all(c(5, 6) %in% round)) %>%
+  ungroup()
+
+did_use_internet_trust_r6_5%<>%
+  select(cname, NAME_2, round, internet_use_adm2)%>%
+  distinct(NAME_2, round, .keep_all = TRUE)%>%
+  arrange(NAME_2)
+
+did_use_internet_trust_r6_5%<>%
+ group_by(NAME_2) %>%
+ mutate(diff_internet_use_adm2_r6_5 = internet_use_adm2[round == 6] - internet_use_adm2[round == 5])%>%
+  arrange(NAME_2,round)%>%
+  ungroup()
+
+
+did_use_internet_trust_r6_5 %<>% distinct(NAME_2, .keep_all = TRUE)
+
+did_use_internet_trust_r6_5%<>%
+  select(NAME_2, diff_internet_use_adm2_r6_5)
+
+
+
+data_trust %<>% left_join(did_use_internet_trust_r6_5, by="NAME_2")
+
+rm(did_use_internet_trust_r6_5)
+
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust2.rds")
+
+```
+
+
+```{r}
+data_trust%<>%
+  mutate(diff_internet_use_adm2=case_when(round==7~diff_internet_use_adm2_r7_5,
+                                          round==6~diff_internet_use_adm2_r6_5))
+
+#data_trust %>% select(cname, NAME_2, round, internet_use_adm2, diff_internet_use_adm2_r7_5, diff_internet_use_adm2_r6_5, diff_internet_use_adm2)%>%arrange(NAME_2)%>%View()
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust2.rds")
+
+```
+
+
+
+
+```{r}
+#data_trust %<>%
+#  group_by(NAME_2, round)%>%
+#  mutate(weighted_inst_trust_adm2=mean(weighted_inst_trust, na.rm = TRUE))%>%
+#  ungroup()
+
+#data_trust %<>%
+#  group_by(NAME_1, round)%>%
+#  mutate(weighted_inst_trust_adm1=mean(weighted_inst_trust, na.rm = TRUE))%>%
+#  ungroup()
+
+
+data_trust %<>%
+  group_by(NAME_2, round)%>%
+  mutate(conf_parl_adm2=mean(conf_parl, na.rm = TRUE))%>%
+  ungroup()
+
+data_trust %<>%
+  group_by(NAME_2, round)%>%
+  mutate(feelnat_adm2=mean(feeleth, na.rm = TRUE))%>%
+  ungroup()
+
+data_trust %<>%
+  group_by(NAME_2)%>%
+  mutate(dist_cap_max_norm_adm2=mean(distance_cap_max_norm, na.rm = TRUE))%>%
+  ungroup()
+
+data_trust %<>%
+  group_by(NAME_2)%>%
+  mutate(dist_cap_quint_adm2=mean(dist_cap_quint, na.rm = TRUE))%>%
+  ungroup()
+
+#cor_pres, cor_juge, cor_dep, cor_tax, cor_muni
+
+data_trust %<>%
+  group_by(NAME_2, round)%>%
+  mutate(cor_pres_adm2=mean(cor_pres, na.rm = TRUE))%>%
+  ungroup()
+
+data_trust %<>%
+  group_by(NAME_2, round)%>%
+  mutate(cor_dep_adm2=mean(cor_dep, na.rm = TRUE))%>%
+  ungroup()
+
+data_trust %<>%
+  group_by(NAME_2, round)%>%
+  mutate(cor_juge_adm2=mean(cor_juge, na.rm = TRUE))%>%
+  ungroup()
+
+
+data_trust %<>%
+  group_by(NAME_2, round)%>%
+  mutate(cor_tax_adm2=mean(cor_tax, na.rm = TRUE))%>%
+  ungroup()
+
+
+data_trust %<>%
+  group_by(NAME_2, round)%>%
+  mutate(cor_muni_adm2=mean(cor_muni, na.rm = TRUE))%>%
+  ungroup()
+
+
+data_trust %<>%
+  group_by(NAME_2, round)%>%
+  mutate(internet_news_adm2=mean(internet_news, na.rm = TRUE))%>%
+  ungroup()
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust2.rds")
+
+```
+
+
+
+```{r}
+did_weighted_inst_trust_r7_5 <- data_trust
+
+did_weighted_inst_trust_r7_5 %<>%
+  filter(!is.na(NAME_2))%>%
+  filter(round %in% c(5, 7)) %>%
+  group_by(NAME_2) %>%
+  filter(all(c(5, 7) %in% round)) %>%
+  ungroup()
+
+did_weighted_inst_trust_r7_5%<>%
+  select(cname, NAME_2, round, weighted_inst_trust_adm2)%>%
+  distinct(NAME_2, round, .keep_all = TRUE)%>%
+  arrange(NAME_2)
+
+did_weighted_inst_trust_r7_5%<>%
+ group_by(NAME_2) %>%
+ mutate(diff_inst_trust_adm2_r7_5 = weighted_inst_trust_adm2[round == 7] - weighted_inst_trust_adm2[round == 5])%>%
+  arrange(NAME_2,round)%>%
+  ungroup()
+
+did_weighted_inst_trust_r7_5 %<>% distinct(NAME_2, .keep_all = TRUE)
+
+did_weighted_inst_trust_r7_5%<>%
+  select(NAME_2, diff_inst_trust_adm2_r7_5)
+
+
+
+data_trust %<>% left_join(did_weighted_inst_trust_r7_5, by="NAME_2")
+
+rm(did_weighted_inst_trust_r7_5)
+
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust.rds")
+
+```
+
+
+```{r}
+did_weighted_inst_trust_r6_5 <- data_trust
+
+did_weighted_inst_trust_r6_5 %<>%
+  filter(!is.na(NAME_2))%>%
+  filter(round %in% c(5, 6)) %>%
+  group_by(NAME_2) %>%
+  filter(all(c(5, 6) %in% round)) %>%
+  ungroup()
+
+did_weighted_inst_trust_r6_5%<>%
+  select(cname, NAME_2, round, weighted_inst_trust_adm2)%>%
+  distinct(NAME_2, round, .keep_all = TRUE)%>%
+  arrange(NAME_2)
+
+did_weighted_inst_trust_r6_5%<>%
+ group_by(NAME_2) %>%
+ mutate(diff_inst_trust_adm2_r6_5 = weighted_inst_trust_adm2[round == 6] - weighted_inst_trust_adm2[round == 5])%>%
+  arrange(NAME_2,round)%>%
+  ungroup()
+
+
+did_weighted_inst_trust_r6_5 %<>% distinct(NAME_2, .keep_all = TRUE)
+
+did_weighted_inst_trust_r6_5%<>%
+  select(NAME_2, diff_inst_trust_adm2_r6_5)
+
+
+
+data_trust %<>% left_join(did_weighted_inst_trust_r6_5, by="NAME_2")
+
+rm(did_weighted_inst_trust_r6_5)
+
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust.rds")
+
+```
+
+
+```{r}
+data_trust%<>%
+  mutate(diff_inst_trust_adm2=case_when(round==7~diff_inst_trust_adm2_r7_5,
+                                          round==6~diff_inst_trust_adm2_r6_5))
+
+#data_trust %>% select(cname, NAME_2, round, inst_trust_adm2, diff_inst_trust_adm2_r7_5, diff_inst_trust_adm2_r6_5, diff_inst_trust_adm2)%>%arrange(NAME_2)%>%View()
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust.rds")
+
+```
+
+
+```{r}
+countries <- unique(data_trust$ISO)
+
+qog <- read.csv("Data/Data_raw/qog_std_ts_jan24.csv")
+
+qog %<>%
+  filter(year==2013|year==2015|year==2018)
+
+qog%<>%
+  filter(ccodealp %in% countries)
+
+qog %<>%
+  select(year, ccodealp, aii_q55, aii_q56, aii_q57, fhp_mclr5, fhp_mcpp5, fhp_score5, fhp_status5, gcb_pmedia, rsf_pfi, sgi_qd, vdem_mecorrpt, wvs_confpr, wvs_conftv)
+
+qog%<>%
+  select(year, ccodealp, aii_q55, aii_q56, vdem_mecorrpt, vdem_polyarchy)%>%
+  rename(ISO=ccodealp, med_self_censor=aii_q55, citiz_self_censor=aii_q56, vdem_med_corrupt=vdem_mecorrpt)
+
+
+qog%<>%
+  rename(round=year)%>%
+  mutate(round=case_when(round==2013 ~ 5,
+                   round==2015 ~ 6,
+                   round==2018 ~ 7))
+
+
+data_trust %<>% left_join(qog, by=c("ISO", "round"))
+
+```
+
+```{r}
+data_trust %<>%
+  rename(feelnat=feeleth)
+
+data_trust%<>%
+  mutate(color = case_when(
+    ISO == "BDI" ~ "BEL",
+    ISO == "LBR" ~ NA_character_,
+    TRUE ~ color
+  ))
+```
+
+
+
+```{r}
+
+data_trust <- readRDS("Data/Data_RDS/data_trust.rds")
+
+afro_w7 <- read_sav("Data/Data_Raw/R7_Merged data_34ctry_4Dec18.sav")
+
+afro_w7%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w7%<>%
+  select(RESPNO, Q29)%>%
+  rename(id=RESPNO)
+
+afro_w7%<>%
+  mutate(round=7)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q29)%>%
+  rename(account=Q29)
+
+
+data_trust <- left_join(data_trust, afro_w7, by="id_unique")
+
+rm(afro_w7)
+
+data_trust %>%
+  select(round, id, account)%>%
+  filter(round==7)%>%
+  summary()
+
+
+
+
+afro_w6 <- read.csv("Data/Data_Raw/afb_full_r6.csv")
+
+
+
+afro_w6%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+
+afro_w6%<>%
+  select(respno, q31)%>%
+  rename(id=respno)
+
+afro_w6%<>%
+  mutate(round=6)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q31)
+
+afro_w6%<>%
+  rename(account=q31)
+
+data_trust <- left_join(data_trust, afro_w6, by="id_unique")
+
+rm(afro_w6)
+
+data_trust %>%
+  select(round, id, account.y)%>%
+  filter(round==7)%>%
+  summary()
+
+
+afro_w5 <- read.csv("Data/Data_Raw/afb_full_r5.csv")
+
+afro_w5%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+
+afro_w5%<>%
+  select(respno, q33)%>%
+  rename(id=respno)
+
+afro_w5%<>%
+  mutate(round=5)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q33)
+
+afro_w5%<>%
+  rename(account=q33)
+
+data_trust <- left_join(data_trust, afro_w5, by="id_unique")
+
+rm(afro_w5)
+
+data_trust %>%
+  select(round, id, account)%>%
+  filter(round==5)%>%
+  summary()
+
+
+data_trust%<>%
+  mutate(account = case_when(
+    round == 6 ~ account.y,
+    round == 7 ~ account.x,
+    round== 5  ~ account
+  ))
+
+data_trust%<>%
+  select(-account.y, -account.x)
+
+data_trust %<>%
+  mutate(account=case_when(
+    account %in% c(5,-1, 9, 8, 998) ~ NA_real_,
+    TRUE~account
+  ))
+
+```
+
+
+```{r}
+
+data_trust %<>%
+  group_by(NAME_2, round) %>%
+  mutate(feelnat_adm2 = if_else(!is.na(feelnat) & NAME_2 != "NA", mean(feelnat, na.rm = TRUE), NA_real_)) %>%
+  ungroup()
+
+
+data_trust %<>%
+  group_by(NAME_1, round) %>%
+  mutate(feelnat_adm1 = if_else(!is.na(feelnat) & NAME_1 != "NA", mean(feelnat, na.rm = TRUE), NA_real_)) %>%
+  ungroup()
+
+```
+
+```{r}
+data_trust%<>%
+  mutate(area_log = if_else(!is.na(area), log(area), NA_real_))
+```
+
+
+```{r}
+data_trust%<>%
+  mutate(ceeac=ifelse(ISO%in%c("BDI","CMR","GAB","STP"), 1, 0))%>%
+  mutate(cedeao=ifelse(ISO%in%c("BEN","BFA", "CIV", "GMB", "GHA", "GIN","LBR","MLI", "NER","NGA","SLE","SEN","TGO"), 1, 0))%>%
+  mutate(sadc=ifelse(ISO%in%c("ZAF", "BWA", "MDG", "NAM", "SWZ", "TZA", "ZMB", "ZWE"), 1, 0))%>%
+  mutate(cae=ifelse(ISO%in%c("BDI", "KEN", "SDN", "TZA", "UGA"), 1, 0))
+  
+```
+
+
+** Correction rural NA **
+
+```{r}
+data_trust%>%
+  select(rural, id_unique, round, cname, NAME_1, NAME_2, NAME_3, longitude, latitude)%>%
+  filter(is.na(rural))%>%
+  distinct(NAME_2)%>%
+  print(n=100)
+
+data_trust%>%
+  select(rural, NAME_1, NAME_2, NAME_3, latitude, longitude)%>%
+  filter(NAME_2=="TA Santhe")%>%
+  View()
+
+data_trust%>%
+  select(rural, NAME_1, NAME_2, NAME_3, latitude, longitude)%>%
+  filter(NAME_2=="Lilongwe City")%>%
+  count(rural)
+
+data_trust%<>%
+  mutate(rural=ifelse(NAME_2=="TA Mwenewenya" & is.na(rural), 2, rural))%>%
+  mutate(rural=ifelse(NAME_2=="TA Kyungu" & is.na(rural), 2, rural))%>%
+  mutate(rural=ifelse(NAME_2=="SC Kampingo Sibande" & is.na(rural), 2, rural))%>%
+  mutate(rural=ifelse(NAME_2=="TA Mwase" & is.na(rural), 2, rural))%>%
+  mutate(rural=ifelse(NAME_2=="Nkhotakota Game Reserve" & is.na(rural), 2, rural))%>%
+  mutate(rural=ifelse(NAME_2=="Lilongwe City" & is.na(rural), 2, rural))%>%
+  mutate(rural=ifelse(NAME_2=="TA Kaphuka" & is.na(rural), 2, rural))%>%
+  mutate(rural=ifelse(NAME_2=="SC Chowe" & is.na(rural), 2, rural))%>%
+  mutate(rural=ifelse(NAME_2=="TA Mpama" & is.na(rural), 2, rural))%>%
+  mutate(rural=ifelse(NAME_2=="TA Mkhumba" & is.na(rural), 2, rural))%>%
+  mutate(rural=ifelse(NAME_2=="TA Nsamala" & is.na(rural), 2, rural))%>%
+  mutate(rural=ifelse(NAME_2=="Lake Malawi" & is.na(rural), 2, rural))%>%
+  mutate(rural=ifelse(NAME_2=="Mangochi Town" & is.na(rural), 1, rural))%>%
+  mutate(rural=ifelse(NAME_2=="TA Santhe" & is.na(rural), 2, rural))
+```
+
+
+** Add vote **
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/data_trust.rds")
+
+data_trust%<>%select(-vote)
+
+afro_w7 <- read_sav("Data/Data_Raw/R7_Merged data_34ctry_4Dec18.sav")
+
+afro_w7%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w7%<>%
+  select(RESPNO, Q22)%>%
+  rename(id=RESPNO)
+
+afro_w7%<>%
+  mutate(round=7)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q22)%>%
+  rename(vote=Q22)
+
+
+data_trust <- left_join(data_trust, afro_w7, by="id_unique")
+
+
+data_trust%<>%
+  mutate(vote = if_else(vote %in% c(0, 2, 3, 4, 5 ,6 , 7), 0, if_else(vote == 1, 1, NA_real_)))
+
+
+data_trust %>%
+  select(round, id, vote)%>%
+  filter(round==7)%>%
+  summary()
+
+
+rm(afro_w7)
+
+
+afro_w6 <- read.csv("Data/Data_Raw/afb_full_r6.csv")
+
+
+afro_w6%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+
+afro_w6%<>%
+  select(respno, q21)%>%
+  rename(id=respno)
+
+afro_w6%<>%
+  mutate(round=6)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q21)
+
+afro_w6%<>%
+  rename(vote=q21)
+
+data_trust <- left_join(data_trust, afro_w6, by="id_unique")
+
+
+data_trust%<>%
+  mutate(vote.y = if_else(vote.y %in% c(0, 2, 3, 4, 5 ,6 , 7), 0, if_else(vote.y == 1, 1, NA_real_)))
+
+data_trust %>%
+  select(round, id, vote.y)%>%
+  filter(round==6)%>%
+  summary()
+
+rm(afro_w6)
+
+
+afro_w5 <- read.csv("Data/Data_Raw/afb_full_r5.csv")
+
+afro_w5%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+
+afro_w5%<>%
+  select(respno, q27)%>%
+  rename(id=respno)
+
+afro_w5%<>%
+  mutate(round=5)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q27)
+
+afro_w5%<>%
+  rename(vote=q27)
+
+data_trust <- left_join(data_trust, afro_w5, by="id_unique")
+
+rm(afro_w5)
+
+data_trust%<>%
+  mutate(vote = if_else(vote %in% c(0, 2, 3, 4, 5 ,6 , 7), 0, if_else(vote == 1, 1, NA_real_)))
+
+data_trust %>%
+  select(round, id, vote)%>%
+  filter(round==5)%>%
+  summary()
+
+
+
+
+data_trust%<>%
+  mutate(vote = case_when(
+    round == 6 ~ vote.y,
+    round == 7 ~ vote.x,
+    round== 5  ~ vote
+  ))
+
+data_trust%<>%
+  select(-vote.y, -vote.x)
+
+
+data_trust%>%
+  select(round, vote, rural)%>%
+  group_by(round, rural)%>%
+  do(data.frame(summary = capture.output(summary(.))))%>%
+  print(n=100)
+
+	
+```
+
+** Add social media question **
+```{r}
+data_trust <- readRDS("Data/Data_RDS/data_trust.rds")
+
+afro_w7 <- read_sav("Data/Data_Raw/R7_Merged data_34ctry_4Dec18.sav")
+
+afro_w7%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w7%<>%
+  select(RESPNO, Q12E)%>%
+  rename(id=RESPNO)
+
+afro_w7%<>%
+  mutate(round=7)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q12E)%>%
+  rename(sm_news=Q12E)
+
+
+data_trust <- left_join(data_trust, afro_w7, by="id_unique")
+
+data_trust%<>%
+  mutate(sm_news = if_else(sm_news %in% c(0, 1, 2, 3, 4), sm_news, NA_real_))
+
+data_trust %>%
+  select(round, id, sm_news)%>%
+  filter(round==7)%>%
+  summary()
+
+rm(afro_w7)
+
+
+afro_w6 <- read.csv("Data/Data_Raw/afb_full_r6.csv")
+
+
+afro_w6%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+
+afro_w6%<>%
+  select(respno, q12e)%>%
+  rename(id=respno)
+
+afro_w6%<>%
+  mutate(round=6)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q12e)
+
+afro_w6%<>%
+  rename(sm_news=q12e)
+
+data_trust <- left_join(data_trust, afro_w6, by="id_unique")
+
+
+data_trust%<>%
+  mutate(sm_news.y = if_else(sm_news.y %in% c(0, 1, 2, 3, 4), sm_news.y, NA_real_))
+
+data_trust %>%
+  select(round, id, sm_news.y)%>%
+  filter(round==6)%>%
+  summary()
+
+rm(afro_w6)
+
+
+
+data_trust%<>%
+  mutate(sm_news = case_when(
+    round == 6 ~ sm_news.y,
+    round == 7 ~ sm_news.x))
+
+data_trust%<>%
+  select(-sm_news.y, -sm_news.x)
+
+data_trust%>%
+  select(round, sm_news)%>%
+  group_by(round)%>%
+  do(data.frame(summary = capture.output(summary(.))))%>%
+  print(n=50)
+
+data_trust%>%
+  select(round, vote)%>%
+  group_by(round)%>%
+  do(data.frame(summary = capture.output(summary(.))))%>%
+  print(n=50)
+
+```
+
+
+
+```{r}
+afro_w7%>%
+  count(URBRUR)
+
+afro_w6%>%
+  count(urbrur)
+
+afro_w5%>%
+  count(urbrur)
+
+```
+
+```{r}
+data_trust%>%
+  select(internet_news, round, rural)%>%
+  group_by(round, rural)%>%
+  do(data.frame(summary = capture.output(summary(.))))%>%
+  print(n=100)
+
+data_trust%>%
+  select(internet_use, round, rural)%>%
+  group_by(round, rural)%>%
+  do(data.frame(summary = capture.output(summary(.))))%>%
+  print(n=100)
+
+```
+
+
+
+** Add variables on trust in parties and institutional performances
+```{r}
+data_trust <- readRDS("Data/Data_RDS/data_trust.rds")
+
+afro_w7 <- read_sav("Data/Data_Raw/R7_Merged data_34ctry_4Dec18.sav")
+
+afro_w7%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w7%<>%
+  select(RESPNO, Q43E, Q43F, Q58A, Q58B, Q58C)%>%
+  rename(id=RESPNO)
+
+afro_w7%<>%
+  mutate(round=7)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q43E, Q43F, Q58A, Q58B, Q58C)%>%
+  rename(trust_govpart=Q43E, trust_opppart=Q43F, perf_pres=Q58A, perf_mp=Q58B, perf_local=Q58C)
+
+
+data_trust <- left_join(data_trust, afro_w7, by="id_unique")
+
+data_trust%<>%
+  mutate(trust_govpart = if_else(trust_govpart %in% c(0, 1, 2, 3), trust_govpart, NA_real_))%>%
+  mutate(trust_opppart = if_else(trust_opppart %in% c(0, 1, 2, 3), trust_opppart, NA_real_))%>%
+  mutate(perf_pres = if_else(perf_pres %in% c(1, 2, 3, 4), perf_pres, NA_real_))%>%
+  mutate(perf_mp = if_else(perf_mp %in% c(1, 2, 3, 4), perf_mp, NA_real_))%>%
+  mutate(perf_local = if_else(perf_local %in% c(1, 2, 3, 4), perf_local, NA_real_))
+
+
+  
+  
+data_trust %>%
+  select(round, id, trust_govpart, trust_opppart, perf_pres, perf_mp, perf_local, dist_cap_quint_max_norm)%>%
+  filter(round==7, dist_cap_quint_max_norm==2)%>%
+  summary()
+
+rm(afro_w7)
+
+afro_w6 <- read.csv("Data/Data_Raw/afb_full_r6.csv")
+
+afro_w6%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w6%<>%
+  select(respno, q52f, q52g, q68a, q68b, q68c)%>%
+  rename(id=respno)
+
+afro_w6%<>%
+  mutate(round=6)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q52f, q52g, q68a, q68b, q68c)%>%
+  rename(trust_govpart=q52f, trust_opppart=q52g, perf_pres=q68a, perf_mp=q68b, perf_local=q68c)
+
+
+data_trust <- left_join(data_trust, afro_w6, by="id_unique")
+
+
+data_trust%<>%
+  mutate(trust_govpart.y = if_else(trust_govpart.y %in% c(0, 1, 2, 3), trust_govpart.y, NA_real_))%>%
+  mutate(trust_opppart.y = if_else(trust_opppart.y %in% c(0, 1, 2, 3), trust_opppart.y, NA_real_))%>%
+  mutate(perf_pres.y = if_else(perf_pres.y %in% c(1, 2, 3, 4), perf_pres.y, NA_real_))%>%
+  mutate(perf_mp.y = if_else(perf_mp.y %in% c(1, 2, 3, 4), perf_mp.y, NA_real_))%>%
+  mutate(perf_local.y = if_else(perf_local.y %in% c(1, 2, 3, 4), perf_local.y, NA_real_))
+
+
+data_trust%<>%
+  mutate(trust_govpart = case_when(
+    round == 6 ~ trust_govpart.y,
+    round == 7 ~ trust_govpart.x))%>%
+  mutate(trust_opppart = case_when(
+    round == 6 ~ trust_opppart.y,
+    round == 7 ~ trust_opppart.x))%>%
+  mutate(perf_pres = case_when(
+    round == 6 ~ perf_pres.y,
+    round == 7 ~ perf_pres.x))%>%
+  mutate(perf_mp = case_when(
+    round == 6 ~ perf_mp.y,
+    round == 7 ~ perf_mp.x))%>%
+  mutate(perf_local = case_when(
+    round == 6 ~ perf_local.y,
+    round == 7 ~ perf_local.x))
+  
+
+data_trust%<>%
+  select(-c(trust_govpart.y, trust_govpart.x, trust_opppart.y, trust_opppart.x, perf_pres.x, perf_pres.y, perf_mp.x, perf_mp.y, perf_local.x, perf_local.y))
+
+
+data_trust %>%
+  select(round, id, trust_govpart, trust_opppart, perf_pres, perf_mp, perf_local, dist_cap_quint_max_norm)%>%
+  filter(round==7, dist_cap_quint_max_norm==5)%>%
+  summary()
+
+rm(afro_w6)
+
+
+
+afro_w5 <- read.csv("Data/Data_Raw/afb_full_r5.csv")
+
+afro_w5%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w5%<>%
+  select(respno, q59f, q59g, q71a, q71b, q71c)%>%
+  rename(id=respno)
+
+afro_w5%<>%
+  mutate(round=5)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q59f, q59g, q71a, q71b, q71c)%>%
+  rename(trust_govpart=q59f, trust_opppart=q59g, perf_pres=q71a, perf_mp=q71b, perf_local=q71c)
+
+
+data_trust <- left_join(data_trust, afro_w5, by="id_unique")
+
+
+data_trust%<>%
+  mutate(trust_govpart.y = if_else(trust_govpart.y %in% c(0, 1, 2, 3), trust_govpart.y, NA_real_))%>%
+  mutate(trust_opppart.y = if_else(trust_opppart.y %in% c(0, 1, 2, 3), trust_opppart.y, NA_real_))%>%
+  mutate(perf_pres.y = if_else(perf_pres.y %in% c(1, 2, 3, 4), perf_pres.y, NA_real_))%>%
+  mutate(perf_mp.y = if_else(perf_mp.y %in% c(1, 2, 3, 4), perf_mp.y, NA_real_))%>%
+  mutate(perf_local.y = if_else(perf_local.y %in% c(1, 2, 3, 4), perf_local.y, NA_real_))
+
+
+
+
+data_trust%<>%
+  mutate(trust_govpart = case_when(
+    round == 5 ~ trust_govpart.y,
+    round %in% c(6,7) ~ trust_govpart.x))%>%
+  mutate(trust_opppart = case_when(
+    round == 5 ~ trust_opppart.y,
+    round %in% c(6,7) ~ trust_opppart.x))%>%
+  mutate(perf_pres = case_when(
+    round == 5 ~ perf_pres.y,
+    round %in% c(6,7) ~ perf_pres.x))%>%
+  mutate(perf_mp = case_when(
+    round == 5 ~ perf_mp.y,
+    round %in% c(6,7) ~ perf_mp.x))%>%
+  mutate(perf_local = case_when(
+    round == 5 ~ perf_local.y,
+    round %in% c(6,7) ~ perf_local.x))
+  
+
+data_trust%<>%
+  select(-c(trust_govpart.y, trust_govpart.x, trust_opppart.y, trust_opppart.x, perf_pres.x, perf_pres.y, perf_mp.x, perf_mp.y, perf_local.x, perf_local.y))
+
+
+data_trust %>%
+  select(round, id, trust_govpart, trust_opppart, perf_pres, perf_mp, perf_local, dist_cap_quint_max_norm)%>%
+  filter(round==5, dist_cap_quint_max_norm==5)%>%
+  summary()
+
+rm(afro_w5)
+
+```
+
+
+
+
+** Add variables on protest participation
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/data_trust.rds")
+
+afro_w7 <- read_sav("Data/Data_Raw/R7_Merged data_34ctry_4Dec18.sav")
+
+afro_w7%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w7%<>%
+  select(RESPNO, Q26E)%>%
+  rename(id=RESPNO)
+
+afro_w7%<>%
+  mutate(round=7)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q26E)%>%
+  rename(protest=Q26E)
+
+
+data_trust <- left_join(data_trust, afro_w7, by="id_unique")
+
+data_trust%<>%
+  mutate(protest = if_else(protest %in% c(0, 1, 2, 3, 4), protest, NA_real_))
+
+
+rm(afro_w7)
+
+
+
+afro_w6 <- read.csv("Data/Data_Raw/afb_full_r6.csv")
+
+afro_w6%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w6%<>%
+  select(respno, q27e)%>%
+  rename(id=respno)
+
+afro_w6%<>%
+  mutate(round=6)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q27e)%>%
+  rename(protest=q27e)
+
+
+data_trust <- left_join(data_trust, afro_w6, by="id_unique")
+
+
+data_trust%<>%
+  mutate(protest.y = if_else(protest.y %in% c(0, 1, 2, 3, 4), protest.y, NA_real_))
+
+
+data_trust%<>%
+  mutate(protest = case_when(
+    round == 6 ~ protest.y,
+    round == 7 ~ protest.x))
+
+
+data_trust%<>%
+  select(-c(protest.y, protest.x))
+
+
+rm(afro_w6)
+
+
+
+afro_w5 <- read.csv("Data/Data_Raw/afb_full_r5.csv")
+
+afro_w5%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w5%<>%
+  select(respno, q26d)%>%
+  rename(id=respno)
+
+afro_w5%<>%
+  mutate(round=5)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q26d)%>%
+  rename(protest=q26d)
+
+
+data_trust <- left_join(data_trust, afro_w5, by="id_unique")
+
+
+data_trust%<>%
+  mutate(protest.y = if_else(protest.y %in% c(0, 1, 2, 3, 4), protest.y, NA_real_))
+
+
+
+data_trust%<>%
+  mutate(protest = case_when(
+    round == 5 ~ protest.y,
+    round %in% c(6,7) ~ protest.x))
+
+data_trust%<>%
+  select(-c(protest.y, protest.x))
+
+
+rm(afro_w5)
+
+
+
+data_trust%<>%
+  mutate(protest = if_else(!is.na(protest) & protest %in% c(0, 1), 0, if_else(!is.na(protest) & protest %in% c(2, 3, 4), 1, NA_real_)))
+  
+```
+
+** Rename variables
+```{r}
+data_trust%<>%
+  rename(trust_local=conf_municipal)
+
+data_trust%<>%
+  rename(trust_pres=conf_pres)%>%
+  rename(trust_parl=conf_parl)%>%
+  rename(trust_elec=conf_elec)
+
+```
+
+
+
+
+
+** Add variables on level of corruption and local corruption
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/data_trust.rds")
+
+afro_w7 <- read_sav("Data/Data_Raw/R7_Merged data_34ctry_4Dec18.sav")
+
+afro_w7%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w7%<>%
+  select(RESPNO, Q45)%>%
+  rename(id=RESPNO)
+
+afro_w7%<>%
+  mutate(round=7)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q45)%>%
+  rename(corr_level=Q45)
+
+
+data_trust <- left_join(data_trust, afro_w7, by="id_unique")
+
+data_trust%<>%
+  mutate(corr_level = if_else(corr_level %in% c(1, 2, 3, 4, 5), corr_level, NA_real_))
+
+data_trust%<>%
+  mutate(
+    corr_level = case_when(
+      corr_level == 5 ~ 1,
+      corr_level == 4 ~ 2,
+      corr_level == 3 ~ 3,
+      corr_level == 2 ~ 4,
+      corr_level == 1 ~ 5,
+      TRUE ~ NA_real_
+    )
+  )
+
+rm(afro_w7)
+
+
+
+afro_w6 <- read.csv("Data/Data_Raw/afb_full_r6.csv")
+
+afro_w6%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w6%<>%
+  select(respno, q54)%>%
+  rename(id=respno)
+
+afro_w6%<>%
+  mutate(round=6)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q54)%>%
+  rename(corr_level=q54)
+
+
+data_trust <- left_join(data_trust, afro_w6, by="id_unique")
+
+
+data_trust%<>%
+  mutate(corr_level.y = if_else(corr_level.y %in% c(1, 2, 3, 4, 5), corr_level.y, NA_real_))
+
+
+
+data_trust%<>%
+  mutate(corr_level = case_when(
+    round == 6 ~ corr_level.y,
+    round == 7 ~ corr_level.x))
+
+data_trust%<>%
+  mutate(
+    corr_level = case_when(
+      corr_level == 5 ~ 1,
+      corr_level == 4 ~ 2,
+      corr_level == 3 ~ 3,
+      corr_level == 2 ~ 4,
+      corr_level == 1 ~ 5,
+      TRUE ~ NA_real_
+    )
+  )
+
+data_trust%<>%
+  select(-c(corr_level.y, corr_level.x))
+
+
+rm(afro_w6)
+
+
+data_trust%>%
+  select(corr_level, round)%>%
+  filter(round %in% c(6,7))%>%
+  summary()
+
+
+
+afro_w7 <- read_sav("Data/Data_Raw/R7_Merged data_34ctry_4Dec18.sav")
+
+afro_w7%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w7%<>%
+  select(RESPNO, Q44D)%>%
+  rename(id=RESPNO)
+
+afro_w7%<>%
+  mutate(round=7)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q44D)%>%
+  rename(corr_local=Q44D)
+
+
+data_trust <- left_join(data_trust, afro_w7, by="id_unique")
+
+data_trust%<>%
+  mutate(corr_local = if_else(corr_local %in% c(0, 1, 2, 3), corr_local, NA_real_))
+
+
+rm(afro_w7)
+
+
+
+afro_w6 <- read.csv("Data/Data_Raw/afb_full_r6.csv")
+
+afro_w6%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w6%<>%
+  select(respno, q53d)%>%
+  rename(id=respno)
+
+afro_w6%<>%
+  mutate(round=6)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q53d)%>%
+  rename(corr_local=q53d)
+
+
+data_trust <- left_join(data_trust, afro_w6, by="id_unique")
+
+
+data_trust%<>%
+  mutate(corr_local.y = if_else(corr_local.y %in% c(0, 1, 2, 3), corr_local.y, NA_real_))
+
+
+data_trust%<>%
+  mutate(corr_local = case_when(
+    round == 6 ~ corr_local.y,
+    round == 7 ~ corr_local.x))
+
+data_trust%<>%
+  select(-c(corr_local.y, corr_local.x))
+
+
+rm(afro_w6)
+
+
+
+afro_w5 <- read.csv("Data/Data_Raw/afb_full_r5.csv")
+
+afro_w5%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w5%<>%
+  select(respno, q60d)%>%
+  rename(id=respno)
+
+afro_w5%<>%
+  mutate(round=5)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q60d)%>%
+  rename(corr_local=q60d)
+
+
+data_trust <- left_join(data_trust, afro_w5, by="id_unique")
+
+
+data_trust%<>%
+  mutate(corr_local.y = if_else(corr_local.y %in% c(0, 1, 2, 3), corr_local.y, NA_real_))
+
+
+
+data_trust%<>%
+  mutate(corr_local = case_when(
+    round == 5 ~ corr_local.y,
+    round %in% c(6,7) ~ corr_local.x))
+
+data_trust%<>%
+  select(-c(corr_local.y, corr_local.x))
+
+
+rm(afro_w5)
+
+data_trust%<>%
+  rename(corr_dep=cor_dep,
+         corr_juge=cor_juge, 
+         corr_pres=cor_pres,
+         corr_police=cor_police,
+         corr_muni=cor_muni,
+         corr_tax=cor_tax)
+
+```
+
+
+** Transformation feelnat en trois niveaux
+
+```{r}
+data_trust%>%
+  select(feelnat)%>%
+  summary()
+
+data_trust%<>%
+  mutate(feelnat_cat = case_when(
+      !is.na(feelnat) & feelnat %in% c(1, 2) ~ 1,
+      !is.na(feelnat) & feelnat == 3 ~ 2,
+      !is.na(feelnat) & feelnat %in% c(4, 5) ~ 3,
+      TRUE ~ NA_real_)) 
+
+
+```
+
+** Add country economic performance
+
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/data_trust.rds")
+
+afro_w7 <- read_sav("Data/Data_Raw/R7_Merged data_34ctry_4Dec18.sav")
+
+afro_w7%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w7%<>%
+  select(RESPNO, Q6)%>%
+  rename(id=RESPNO)
+
+afro_w7%<>%
+  mutate(round=7)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q6)%>%
+  rename(perf_country=Q6)
+
+
+data_trust <- left_join(data_trust, afro_w7, by="id_unique")
+
+data_trust%<>%
+  mutate(perf_country = if_else(perf_country %in% c(1, 2, 3, 4, 5), perf_country, NA_real_))
+
+
+rm(afro_w7)
+
+
+
+afro_w6 <- read.csv("Data/Data_Raw/afb_full_r6.csv")
+
+afro_w6%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w6%<>%
+  select(respno, q6)%>%
+  rename(id=respno)
+
+afro_w6%<>%
+  mutate(round=6)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q6)%>%
+  rename(perf_country=q6)
+
+
+data_trust <- left_join(data_trust, afro_w6, by="id_unique")
+
+
+data_trust%<>%
+  mutate(perf_country.y = if_else(perf_country.y %in% c(1, 2, 3, 4, 5), perf_country.y, NA_real_))
+
+
+data_trust%<>%
+  mutate(perf_country = case_when(
+    round == 6 ~ perf_country.y,
+    round == 7 ~ perf_country.x))
+
+data_trust%<>%
+  select(-c(perf_country.y, perf_country.x))
+
+
+rm(afro_w6)
+
+
+
+afro_w5 <- read.csv("Data/Data_Raw/afb_full_r5.csv")
+
+afro_w5%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w5%<>%
+  select(respno, q5a)%>%
+  rename(id=respno)
+
+afro_w5%<>%
+  mutate(round=5)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q5a)%>%
+  rename(perf_country=q5a)
+
+
+data_trust <- left_join(data_trust, afro_w5, by="id_unique")
+
+
+data_trust%<>%
+  mutate(perf_country.y = if_else(perf_country.y %in% c(1, 2, 3, 4, 5), perf_country.y, NA_real_))
+
+
+
+data_trust%<>%
+  mutate(perf_country = case_when(
+    round == 5 ~ perf_country.y,
+    round %in% c(6,7) ~ perf_country.x))
+
+data_trust%<>%
+  select(-c(perf_country.y, perf_country.x))
+
+
+rm(afro_w5)
+
+```
+
+** Creation strict national feeling
+```{r}
+data_trust%<>%
+  mutate(feelnat_bin = case_when(
+      !is.na(feelnat) & feelnat %in% c(4, 5) ~ 1,
+      !is.na(feelnat) & feelnat %in% c(1, 2, 3) ~ 0,
+      TRUE ~ NA_real_))
+
+```
+
+** Transformation pref democratie
+
+```{r}
+#Preference for democracy
+
+data_trust %>%
+  mutate(pref_demo_simple = ifelse(is.na(pref_demo), NA, ifelse(pref_demo == 3, 1, 0)))%>%
+  select(pref_demo_simple)%>%
+  summary()
+
+data_trust %<>%
+  mutate(
+    na_count = rowSums(is.na(cbind(one_party, military, one_man))),
+    pref_demo_strict = case_when(
+      # Deux ou plus des trois variables sont NA
+      na_count >= 2 ~ NA_real_,
+      # `pref_demo` est 3 et au moins deux des variables sont dans {1, 2}
+      pref_demo == 3 & 
+      (sum(c(one_party, military, one_man) %in% c(1, 2), na.rm = TRUE) >= 2) ~ 1,
+      # Sinon, la valeur est 0
+      TRUE ~ 0
+    ))
+
+
+data_trust %<>%
+  mutate(
+    na_count = rowSums(is.na(cbind(one_party, military, one_man))),
+    pref_demo_strict2 = case_when(
+      # Deux ou plus des trois variables sont NA
+      na_count >= 2 ~ NA_real_,
+      # `pref_demo` est 3 et toutes les variables sont égales à 1
+      pref_demo == 3 & one_party == 1 & military == 1 & one_man == 1 ~ 1,
+      # Sinon, la valeur est 0
+      TRUE ~ 0
+    ))
+
+```
+
+
+
+** Add occupation
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/data_trust.rds")
+
+afro_w7 <- read_sav("Data/Data_Raw/R7_Merged data_34ctry_4Dec18.sav")
+
+afro_w7%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w7%<>%
+  select(RESPNO, Q94)%>%
+  rename(id=RESPNO)
+
+afro_w7%<>%
+  mutate(round=7)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q94)%>%
+  rename(emp=Q94)
+
+
+data_trust <- left_join(data_trust, afro_w7, by="id_unique")
+
+data_trust%<>%
+  mutate(emp = case_when(
+    emp %in% c(0, 1) ~ 0,
+    emp %in% c(2, 3) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+rm(afro_w7)
+
+
+
+afro_w6 <- read.csv("Data/Data_Raw/afb_full_r6.csv")
+
+afro_w6%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w6%<>%
+  select(respno, q95)%>%
+  rename(id=respno)
+
+afro_w6%<>%
+  mutate(round=6)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q95)%>%
+  rename(emp=q95)
+
+
+data_trust <- left_join(data_trust, afro_w6, by="id_unique")
+
+
+data_trust%<>%
+  mutate(emp.y = case_when(
+    emp.y %in% c(0, 1) ~ 0,
+    emp.y %in% c(2, 3) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+
+data_trust%<>%
+  mutate(emp = case_when(
+    round == 6 ~ emp.y,
+    round == 7 ~ emp.x))
+
+data_trust%<>%
+  select(-c(emp.y, emp.x))
+
+
+rm(afro_w6)
+
+
+
+afro_w5 <- read.csv("Data/Data_Raw/afb_full_r5.csv")
+
+afro_w5%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w5%<>%
+  select(respno, q96)%>%
+  rename(id=respno)
+
+afro_w5%<>%
+  mutate(round=5)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q96)%>%
+  rename(emp=q96)
+
+
+data_trust <- left_join(data_trust, afro_w5, by="id_unique")
+
+
+data_trust%<>%
+  mutate(emp.y = case_when(
+    emp.y %in% c(0, 1) ~ 0,
+    emp.y %in% c(2, 3) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+
+data_trust%<>%
+  mutate(emp = case_when(
+    round == 5 ~ emp.y,
+    round %in% c(6,7) ~ emp.x))
+
+data_trust%<>%
+  select(-c(emp.y, emp.x))
+
+
+rm(afro_w5)
+
+data_trust%>%select(disc_pol)%>%summary()
+```
+
+
+** Media dummies
+
+```{r}
+data_trust%<>%
+  mutate(radio_news_bin=case_when(
+    radio_news%in%c(0,1) ~ 0,
+    radio_news%in%c(2,3, 4) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+data_trust%<>%
+  mutate(tele_news_bin=case_when(
+    tele_news%in%c(0,1) ~ 0,
+    tele_news%in%c(2,3, 4) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+
+data_trust%<>%
+  mutate(journal_news_bin=case_when(
+    journal_news%in%c(0,1, 2) ~ 0,
+    journal_news%in%c(3, 4) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+
+data_trust%<>%
+  mutate(internet_news_bin=case_when(
+    internet_news%in%c(0,1, 2) ~ 0,
+    internet_news%in%c(3, 4) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+
+data_trust%<>%
+  mutate(radio_news_bin2=case_when(
+    radio_news%in%c(0,1, 2) ~ 0,
+    radio_news%in%c(3, 4) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+data_trust%<>%
+  mutate(tele_news_bin2=case_when(
+    tele_news%in%c(0,1, 2) ~ 0,
+    tele_news%in%c(3, 4) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+
+data_trust%<>%
+  mutate(journal_news_bin2=case_when(
+    journal_news%in%c(0,1, 2) ~ 0,
+    journal_news%in%c(3, 4) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+data_trust%<>%
+  mutate(internet_news_bin2=case_when(
+    internet_news%in%c(0,1, 2) ~ 0,
+    internet_news%in%c(3, 4) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+
+
+```
+
+
+** Education secondaire
+
+```{r}
+data_trust%<>%
+  mutate(educ_sec=case_when(
+    educ %in% c(5, 6,7,8,9) ~ 1,
+    educ %in% c(0,1,2, 3, 4) ~0,
+    TRUE ~ NA_real_     
+  ))
+
+data_trust%<>%
+  mutate(educ_sec_2=case_when(
+    educ %in% c(4, 5, 6,7,8,9) ~ 1,
+    educ %in% c(0,1,2, 3) ~0,
+    TRUE ~ NA_real_     
+  ))
+
+```
+
+
+
+
+** Add EA
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/data_trust.rds")
+
+afro_w7 <- read_sav("Data/Data_Raw/R7_Merged data_34ctry_4Dec18.sav")
+
+afro_w7%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w7%<>%
+  select(RESPNO, EANUMB_AB)%>%
+  rename(id=RESPNO)
+
+afro_w7%<>%
+  mutate(round=7)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, EANUMB_AB)%>%
+  rename(EA=EANUMB_AB)
+
+
+data_trust <- left_join(data_trust, afro_w7, by="id_unique")
+
+data_trust%<>%
+  mutate(EA_unique = if_else(!is.na(EA), paste0(EA,ccode,round), NA))
+
+rm(afro_w7)
+
+
+
+afro_w6 <- read.csv("Data/Data_Raw/afb_full_r6.csv")
+
+afro_w6%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w6%<>%
+  select(respno, eanumb_ab)%>%
+  rename(id=respno)
+
+afro_w6%<>%
+  mutate(round=6)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, eanumb_ab)%>%
+  rename(EA=eanumb_ab)
+
+
+data_trust <- left_join(data_trust, afro_w6, by="id_unique")
+
+
+data_trust%<>%
+  mutate(EA_unique.y = if_else(!is.na(EA.y), paste0(EA.y,ccode,round), NA))
+
+
+data_trust%<>%
+  mutate(EA_unique = case_when(
+    round == 6 ~ EA_unique.y,
+    round == 7 ~ EA_unique))
+
+data_trust%<>%
+  select(-c(EA.y, EA.x, EA_unique.y))
+
+
+rm(afro_w6)
+
+
+
+afro_w5 <- read.csv("Data/Data_Raw/afb_full_r5.csv")
+
+afro_w5%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w5%<>%
+  select(respno, eanumb_ab)%>%
+  rename(id=respno)
+
+afro_w5%<>%
+  mutate(round=5)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, eanumb_ab)%>%
+  rename(EA=eanumb_ab)
+
+
+data_trust <- left_join(data_trust, afro_w5, by="id_unique")
+
+
+data_trust%<>%
+  mutate(EA_unique.y = if_else(!is.na(EA), paste0(EA,ccode,round), NA))
+
+data_trust%<>%
+  mutate(EA_unique = case_when(
+    round == 5 ~ EA_unique.y,
+    round %in% c(6,7) ~ EA_unique))
+
+data_trust%<>%
+  select(-c(EA, EA_unique.y))
+
+
+rm(afro_w5)
+
+
+
+
+
+
+afro_w8 <- read_sav("Data/Data_Raw/R8.Merge_34ctry_2nov21.release.w.local.info.sav")
+
+afro_w8%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w8%<>%
+  select(RESPNO, EANUMB_AB)%>%
+  rename(id=RESPNO)
+
+afro_w8%<>%
+  mutate(round=8)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, EANUMB_AB)%>%
+  rename(EA=EANUMB_AB)
+
+
+data_trust <- left_join(data_trust, afro_w8, by="id_unique")
+
+
+data_trust%<>%
+  mutate(EA_unique.y = if_else(!is.na(EA), paste0(EA,ccode,round), NA))
+
+data_trust%<>%
+  mutate(EA_unique = case_when(
+    round == 8 ~ EA_unique.y,
+    round %in% c(5,6,7) ~ EA_unique))
+
+data_trust%<>%
+  select(-c(EA, EA_unique.y))
+
+
+rm(afro_w8)
+
+
+
+```
+
+
+
+
+** Add extent
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/data_trust_report.rds")
+
+afro_w7 <- read_sav("Data/Data_Raw/R7_Merged data_34ctry_4Dec18.sav")
+
+afro_w7%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w7%<>%
+  select(RESPNO, Q35)%>%
+  rename(id=RESPNO)
+
+afro_w7%<>%
+  mutate(round=7)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q35)%>%
+  rename(extent=Q35)
+
+
+data_trust <- left_join(data_trust, afro_w7, by="id_unique")
+
+
+rm(afro_w7)
+
+
+
+afro_w6 <- read.csv("Data/Data_Raw/afb_full_r6.csv_")
+
+afro_w6%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w6%<>%
+  select(respno, q40)%>%
+  rename(id=respno)
+
+afro_w6%<>%
+  mutate(round=6)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q40)%>%
+  rename(extent=q40)
+
+
+data_trust <- left_join(data_trust, afro_w6, by="id_unique")
+
+
+
+data_trust%<>%
+  mutate(extent = case_when(
+    round == 6 ~ extent.y,
+    round == 7 ~ extent.x))
+
+data_trust%<>%
+  select(-c(extent.y, extent.x))
+
+
+rm(afro_w6)
+
+
+
+afro_w5 <- read.csv("Data/Data_Raw/afb_full_r5.csv_")
+
+afro_w5%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w5%<>%
+  select(respno, q42)%>%
+  rename(id=respno)
+
+afro_w5%<>%
+  mutate(round=5)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q42)%>%
+  rename(extent=q42)
+
+
+data_trust <- left_join(data_trust, afro_w5, by="id_unique")
+
+
+
+data_trust%<>%
+  mutate(extent = case_when(
+    round == 5 ~ extent.y,
+    round %in% c(6,7) ~ extent.x))
+
+data_trust%<>%
+  select(-c(extent.y, extent.x))
+
+
+rm(afro_w5)
+
+
+data_trust%>%
+  select(extent)%>%
+  summary()
+
+data_trust%<>%
+  mutate(extent = if_else(extent %in% c(1, 2, 3, 4), extent, NA_real_))
+  
+  
+  
+data_trust%<>%
+  mutate(extent_bin = case_when(
+    extent %in% c(1, 2) ~ 0,
+    extent %in% c(3, 4) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+
+
+```
+
+
+```{r}
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust_report2.rds")
+
+write_dta(data_trust, "Data/Data_dta/data_trust_report2.dta")
+
+```
+
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/data_trust_report2.rds")
+
+#Mean local participation
+data_trust %<>%
+group_by(id_unique) %>%
+mutate(mean_local_part = ifelse(all(!is.na(c(assoc, commu, prob))), 
+                                      mean(c(assoc, commu, prob), na.rm = TRUE), 
+                                      NA)) %>%
+  ungroup()
+
+
+data_trust %<>%
+  group_by(id_unique) %>%
+  mutate(mean_local_part = ifelse(all(!is.na(c(assoc, commu, prob))), 
+                                  mean(c(assoc, commu, prob), na.rm = TRUE), 
+                                  NA_real_)) %>%
+  ungroup()
+
+
+data_trust%<>%
+  mutate(internet_use_bin=case_when(
+    internet_use%in%c(0,1) ~ 0,
+    internet_use%in%c(2,3, 4) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+data_trust%<>%
+  mutate(internet_use_bin2=case_when(
+    internet_use%in%c(0,1, 2) ~ 0,
+    internet_use%in%c(3, 4) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+data_trust %<>%
+  mutate(mean_inst_trust_bin = case_when(
+    mean_inst_trust >= median(mean_inst_trust, na.rm = TRUE) ~ 1,
+    mean_inst_trust < median(mean_inst_trust, na.rm = TRUE) ~ 0,
+    TRUE ~ NA_real_
+  )) %>%
+  ungroup()
+
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust_report2.rds")
+
+write_dta(data_trust, "Data/Data_dta/data_trust_report2.dta")
+
+```
+
+***Add gov_type
+```{r}
+data_trust <- readRDS("Data/Data_RDS/data_trust_report2.rds")
+
+juriglobe <- read_excel("Data/Data_Raw/FR_index.xlsx")
+
+juriglobe %<>%
+  rename(gov_type="Forme\r\nde gouvernement") %>%
+  mutate(
+    presidential=(gov_type=="Présidentiel"),
+    parlementarian=(gov_type=="Parlementaire"),
+    semi_presidential=(gov_type=="Semi-présidentiel"),
+    monarchical=(gov_type=="Monarchique")
+  ) %>%
+  mutate(
+    presidential = as.numeric(presidential),
+    parlementarian = as.numeric(parlementarian),
+    semi_presidential = as.numeric(semi_presidential),
+    monarchical = as.numeric(monarchical))%>%
+  select(ccode, presidential, parlementarian, semi_presidential, monarchical)
+
+data_trust <- left_join(data_trust, juriglobe, by="ccode")
+
+rm(juriglobe)
+
+
+data_trust%<>%
+  mutate(gov_type = case_when(
+    presidential == 1 ~ "Presidential",
+    parlementarian == 1 ~ "Parliamentarian",
+    monarchical == 1 ~ "Monarchical",
+    semi_presidential == 1 ~ "Semi-presidential",
+    TRUE ~ "NA"  # Assurez-vous qu'il y a une valeur par défaut
+  ))
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust_report2.rds")
+
+write_dta(data_trust, "Data/Data_dta/data_trust_report2.dta")
+
+```
+
+
+
+
+
+** Add elec_fair
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/data_trust_report2.rds")
+
+afro_w7 <- read_sav("Data/Data_Raw/R7_Merged data_34ctry_4Dec18.sav")
+
+afro_w7%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w7%<>%
+  select(RESPNO, Q23)%>%
+  rename(id=RESPNO)
+
+afro_w7%<>%
+  mutate(round=7)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q23)%>%
+  rename(elec_fair=Q23)
+
+
+data_trust <- left_join(data_trust, afro_w7, by="id_unique")
+
+
+rm(afro_w7)
+
+
+
+afro_w6 <- read.csv("Data/Data_Raw/afb_full_r6.csv_")
+
+afro_w6%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w6%<>%
+  select(respno, q22)%>%
+  rename(id=respno)
+
+afro_w6%<>%
+  mutate(round=6)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q22)%>%
+  rename(elec_fair=q22)
+
+
+data_trust <- left_join(data_trust, afro_w6, by="id_unique")
+
+
+
+data_trust%<>%
+  mutate(elec_fair = case_when(
+    round == 6 ~ elec_fair.y,
+    round == 7 ~ elec_fair.x))
+
+data_trust%<>%
+  select(-c(elec_fair.y, elec_fair.x))
+
+
+rm(afro_w6)
+
+
+
+afro_w5 <- read.csv("Data/Data_Raw/afb_full_r5.csv_")
+
+afro_w5%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w5%<>%
+  select(respno, q28)%>%
+  rename(id=respno)
+
+afro_w5%<>%
+  mutate(round=5)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q28)%>%
+  rename(elec_fair=q28)
+
+
+data_trust <- left_join(data_trust, afro_w5, by="id_unique")
+
+
+
+data_trust%<>%
+  mutate(elec_fair = case_when(
+    round == 5 ~ elec_fair.y,
+    round %in% c(6,7) ~ elec_fair.x))
+
+data_trust%<>%
+  select(-c(elec_fair.y, elec_fair.x))
+
+
+rm(afro_w5)
+
+
+data_trust%>%
+  select(elec_fair)%>%
+  summary()
+
+data_trust%<>%
+  mutate(elec_fair = if_else(elec_fair %in% c(1, 2, 3, 4), elec_fair, NA_real_))
+  
+  
+  
+data_trust%<>%
+  mutate(elec_fair_bin = case_when(
+    elec_fair %in% c(1, 2) ~ 0,
+    elec_fair %in% c(3, 4) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust_report2.rds")
+
+write_dta(data_trust, "Data/Data_dta/data_trust_report2.dta")
+
+
+```
+
+
+** Create separate distance samples
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/data_trust_report2.rds")
+
+data_trust %<>%
+  filter(!is.na(distance_cap))%>%
+  group_by(ccode)%>%
+  mutate(distance_max_med=median(distance_cap_max_norm))
+
+data_trust %<>%
+  filter(!is.na(distance_cap))%>%
+  group_by(ccode)%>%
+  mutate(distance_max_bin=case_when(
+    distance_cap_max_norm>=distance_max_med~1,
+    distance_cap_max_norm<distance_max_med~0,
+    TRUE~NA_real_))
+
+data_trust%>%
+  select(distance_max_med, distance_max_bin)%>%
+  summary()
+
+data_trust%<>%
+  ungroup()
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust_report2.rds")
+
+write_dta(data_trust, "Data/Data_dta/data_trust_report2.dta")
+
+```
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/data_trust_report2.rds")
+
+data_trust%<>%
+  mutate(coverage_bin = coalesce(coverage3G_r6, coverage3G_r7, coverage2G_r5, coverage2G_r6, coverage2G_r7))
+
+data_trust%>%
+  select(coverage_bin)%>%
+  summary()
+
+table(data_trust$coverage_bin, data_trust$round)
+
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust_report2.rds")
+
+write_dta(data_trust, "Data/Data_dta/data_trust_report2.dta")
+
+```
+
+```{r}
+# Create a summary table indicating whether each combination of NAME_2 and round is covered
+coverage_status <- data_trust %>%
+  group_by(NAME_2, round) %>% 
+  summarise(covered = any(pot_cvg > 0), .groups = 'drop')  # Check if any `pot_cvg` > 0 in each group
+
+# Create a table showing the distribution of coverage status by round
+table(coverage_status$covered, coverage_status$round)
+
+# Summarize the duration of coverage for each NAME_2
+coverage_duration <- coverage_status %>%
+  group_by(NAME_2) %>%
+  summarise(duration = sum(covered), .groups = 'drop')  # Sum the coverage status to get total duration
+
+# Determine the first appearance of coverage for each NAME_2
+first_appearance <- data_trust %>%
+  filter(pot_cvg > 0) %>%
+  group_by(NAME_2) %>%
+  summarise(first_round = min(round), .groups = 'drop')  # Get the earliest round with coverage
+
+# Calculate the duration since the first appearance of coverage
+duration_since_first_appearance <- data_trust %>%
+  left_join(first_appearance, by = "NAME_2") %>%  # Join with `first_appearance` to get `first_round`
+  mutate(
+    duration = ifelse(pot_cvg > 0, round - first_round + 1, 0)  # Calculate duration since first appearance
+  ) %>%
+  group_by(NAME_2, round) %>%
+  summarise(
+    duration_since_first = max(duration, na.rm = TRUE),  # Get the maximum duration for each group
+    .groups = 'drop'
+  )
+
+data_trust2 <- data_trust
+
+data_trust2 %<>%
+  left_join(duration_since_first_appearance, by = c("NAME_2", "round"))  # Join with duration information
+
+data_trust2%>%
+  select(duration_since_first)%>%
+  summary()
+
+
+table(data_trust2$duration_since_first, data_trust2$round)
+
+
+saveRDS(data_trust2, file="Data/Data_RDS/data_trust_report3.rds")
+
+write_dta(data_trust2, "Data/Data_dta/data_trust_report3.dta")
+
+```
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/data_trust_report2.rds")
+
+regions_all_rounds <- data_trust %>%
+  group_by(NAME_2) %>%
+  summarise(rounds_present = n_distinct(round), .groups = 'drop') %>%
+  filter(rounds_present == 3)
+
+df_filtered <- data_trust %>%
+  semi_join(regions_all_rounds, by = "NAME_2")
+
+# Trouver la première apparition pour les régions filtrées
+first_appearance <- df_filtered %>%
+  filter(pot_cvg >0) %>%
+  group_by(NAME_2) %>%
+  summarise(first_round = min(round), .groups = 'drop')
+
+# Calculer la durée de couverture depuis la première apparition
+duration_since_first_appearance <- df_filtered %>%
+  left_join(first_appearance, by = "NAME_2") %>%
+  mutate(
+    duration = ifelse(pot_cvg >0, round - first_round + 1, 0)
+  ) %>%
+  group_by(NAME_2, round) %>%
+  summarise(
+    duration_since_first = max(duration, na.rm = TRUE),
+    .groups = 'drop'
+  )
+
+
+df_with_duration <- df_filtered %>%
+  left_join(duration_since_first_appearance, by = c("NAME_2", "round"))
+
+table(df_with_duration$NAME_2, df_with_duration$round)
+
+saveRDS(df_with_duration, file="Data/Data_RDS/data_trust_report4.rds")
+
+write_dta(df_with_duration, "Data/Data_dta/data_trust_report4.dta")
+
+```
+
+
+
+
+** Add trust_trad
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/data_trust_report2.rds")
+
+afro_w7 <- read_sav("Data/Data_Raw/R7_Merged data_34ctry_4Dec18.sav")
+
+afro_w7%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w7%<>%
+  select(RESPNO, Q43J)%>%
+  rename(id=RESPNO)
+
+afro_w7%<>%
+  mutate(round=7)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q43J)%>%
+  rename(trust_trad=Q43J)
+
+
+data_trust <- left_join(data_trust, afro_w7, by="id_unique")
+
+
+rm(afro_w7)
+
+
+
+afro_w6 <- read.csv("Data/Data_Raw/afb_full_r6.csv_")
+
+afro_w6%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w6%<>%
+  select(respno, q52k)%>%
+  rename(id=respno)
+
+afro_w6%<>%
+  mutate(round=6)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q52k)%>%
+  rename(trust_trad=q52k)
+
+
+data_trust <- left_join(data_trust, afro_w6, by="id_unique")
+
+
+
+data_trust%<>%
+  mutate(trust_trad = case_when(
+    round == 6 ~ trust_trad.y,
+    round == 7 ~ trust_trad.x))
+
+data_trust%<>%
+  select(-c(trust_trad.y, trust_trad.x))
+
+
+
+
+data_trust%>%
+  select(trust_trad)%>%
+  summary()
+
+data_trust%<>%
+  mutate(trust_trad = if_else(trust_trad %in% c(0, 1, 2, 3), trust_trad, NA_real_))
+  
+  
+  
+data_trust%<>%
+  mutate(trust_trad_bin = case_when(
+    trust_trad %in% c(0, 1) ~ 0,
+    trust_trad %in% c(2, 3) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust_report2.rds")
+
+write_dta(data_trust, "Data/Data_dta/data_trust_report2.dta")
+
+
+```
+
+** Add corr_trad
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/data_trust_report2.rds")
+
+afro_w7 <- read_sav("Data/Data_Raw/R7_Merged data_34ctry_4Dec18.sav")
+
+afro_w7%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w7%<>%
+  select(RESPNO, Q44G)%>%
+  rename(id=RESPNO)
+
+afro_w7%<>%
+  mutate(round=7)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q44G)%>%
+  rename(corr_trad=Q44G)
+
+
+data_trust <- left_join(data_trust, afro_w7, by="id_unique")
+
+
+rm(afro_w7)
+
+
+
+afro_w6 <- read.csv("Data/Data_Raw/afb_full_r6.csv_")
+
+afro_w6%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w6%<>%
+  select(respno, q53h)%>%
+  rename(id=respno)
+
+afro_w6%<>%
+  mutate(round=6)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q53h)%>%
+  rename(corr_trad=q53h)
+
+
+data_trust <- left_join(data_trust, afro_w6, by="id_unique")
+
+
+
+data_trust%<>%
+  mutate(corr_trad = case_when(
+    round == 6 ~ corr_trad.y,
+    round == 7 ~ corr_trad.x))
+
+data_trust%<>%
+  select(-c(corr_trad.y, corr_trad.x))
+
+
+
+
+data_trust%>%
+  select(corr_trad)%>%
+  summary()
+
+data_trust%<>%
+  mutate(corr_trad = if_else(corr_trad %in% c(0, 1, 2, 3), corr_trad, NA_real_))
+  
+  
+  
+data_trust%<>%
+  mutate(corr_trad_bin = case_when(
+    corr_trad %in% c(0, 1) ~ 0,
+    corr_trad %in% c(2, 3) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust_report2.rds")
+
+write_dta(data_trust, "Data/Data_dta/data_trust_report2.dta")
+
+```
+
+** create mean_inst_corr
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/data_trust_30_09.rds")
+
+data_trust$corr_pres <- as.numeric(data_trust$corr_pres)
+data_trust$corr_dep <- as.numeric(data_trust$corr_dep)
+data_trust$corr_juge <- as.numeric(data_trust$corr_juge)
+
+
+
+data_trust %<>%
+  mutate(mean_inst_corr = (corr_pres + corr_dep + corr_juge) / 
+           rowSums(!is.na(cbind(corr_pres, corr_dep, corr_juge))))
+
+data_trust%>%
+  filter(round==8)%>%
+  select(mean_inst_corr)%>%
+  summary()
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust_report2.rds")
+
+write_dta(data_trust, "Data/Data_dta/data_trust_report2.dta")
+
+```
+
+** create mean_pop_log
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/data_trust_report2.rds")
+
+data_trust%<>%
+  mutate(mean_pop_log=log(mean_pop+1))
+         
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust_report2.rds")
+write_dta(data_trust, "Data/Data_dta/data_trust_report2.dta")
+
+data_trust <- readRDS("Data/Data_RDS/data_trust_30_09.rds")
+
+data_trust%<>%
+  mutate(mean_pop=as.numeric(mean_pop))%>%
+  mutate(mean_pop_log=log(mean_pop+1))
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust_30_09.rds")
+write_dta(data_trust, "Data/Data_dta/data_trust_30_09.dta")
+```
+
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/data_trust_test_report2.rds")
+
+afro_w8 <- read_sav("Data/Data_Raw/R8.Merge_34ctry_2nov21.release.w.local.info.sav")
+
+afro_w8%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+afro_w8%<>%
+  select(RESPNO, Q99)%>%
+  rename(id=RESPNO)
+
+afro_w8%<>%
+  mutate(round=8)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q99)%>%
+  rename(vote_party=Q99)
+
+
+data_trust <- left_join(data_trust, afro_w8, by="id_unique")
+
+
+rm(afro_w8)
+
+
+afro_w7 <- read_sav("Data/Data_Raw/R7_Merged data_34ctry_4Dec18.sav")
+
+afro_w7%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w7%<>%
+  select(RESPNO, Q99)%>%
+  rename(id=RESPNO)
+
+afro_w7%<>%
+  mutate(round=7)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q99)%>%
+  rename(vote_party=Q99)
+
+
+data_trust <- left_join(data_trust, afro_w7, by="id_unique")
+
+data_trust%<>%
+  mutate(vote_party = case_when(
+    round == 7 ~ vote_party.y,
+    round == 8 ~ vote_party.x))
+
+data_trust%<>%
+  select(-c(vote_party.y, vote_party.x))
+
+rm(afro_w7)
+
+afro_w6 <- read.csv("Data/Data_Raw/afb_full_r6.csv_")
+
+afro_w6%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w6%<>%
+  select(respno, q99)%>%
+  rename(id=respno)
+
+afro_w6%<>%
+  mutate(round=6)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q99)%>%
+  rename(vote_party=q99)
+
+
+data_trust <- left_join(data_trust, afro_w6, by="id_unique")
+
+
+data_trust%<>%
+  mutate(vote_party = case_when(
+    round == 6 ~ vote_party.y,
+    round %in% c(7,8) ~ vote_party.x))
+
+data_trust%<>%
+  select(-c(vote_party.y, vote_party.x))
+
+
+rm(afro_w6)
+
+afro_w5 <- read.csv("Data/Data_Raw/afb_full_r5.csv_")
+
+afro_w5%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w5%<>%
+  select(respno, q99)%>%
+  rename(id=respno)
+
+afro_w5%<>%
+  mutate(round=5)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q99)%>%
+  rename(vote_party=q99)
+
+
+data_trust <- left_join(data_trust, afro_w5, by="id_unique")
+
+data_trust%<>%
+  mutate(vote_party = case_when(
+    round == 5 ~ vote_party.y,
+    round %in% c(6,7,8) ~ vote_party.x))
+
+data_trust%<>%
+  select(-c(vote_party.y, vote_party.x))
+
+
+rm(afro_w5)
+
+
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust_30_09.rds")
+
+write_dta(data_trust, "Data/Data_dta/data_trust_30_09.dta")
+
+```
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/data_trust_30_09.rds")
+
+afro_w8 <- read_sav("Data/Data_Raw/R8.Merge_34ctry_2nov21.release.w.local.info.sav")
+afro_w7 <- read_sav("Data/Data_Raw/R7_Merged data_34ctry_4Dec18.sav")
+afro_w6 <- read.csv("Data/Data_Raw/afb_full_r6.csv_")
+afro_w5 <- read.csv("Data/Data_Raw/afb_full_r5.csv_")
+
+afro_w8$DATEINTR <- trimws(afro_w8$DATEINTR)
+
+afro_w8%>%select(DATEINTR)%>%count(DATEINTR)%>%print(n=2000)
+
+afro_w7$DATEINTR <- trimws(afro_w7$DATEINTR)
+
+afro_w7%>%select(DATEINTR)%>%count(DATEINTR)%>%print(n=2000)
+
+afro_w6$dateintr <- trimws(afro_w6$dateintr)
+
+afro_w6%>%select(dateintr)%>%arrange(dateintr)%>%count(dateintr)
+
+afro_w5$dateintr <- trimws(afro_w5$dateintr)
+
+afro_w5%>%select(dateintr)%>%arrange(dateintr)%>%count(dateintr)
+
+afro_w8%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+afro_w8%<>%
+  select(RESPNO, DATEINTR)%>%
+  rename(id=RESPNO)
+
+afro_w8%<>%
+  mutate(round=8)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, DATEINTR)
+
+data_trust <- left_join(data_trust, afro_w8, by="id_unique")
+
+rm(afro_w8)
+
+afro_w7%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+afro_w7%<>%
+  select(RESPNO, DATEINTR)%>%
+  rename(id=RESPNO)
+
+afro_w7%<>%
+  mutate(round=7)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, DATEINTR)
+
+data_trust <- left_join(data_trust, afro_w7, by="id_unique")
+
+data_trust%<>%
+  mutate(DATEINTR = case_when(
+    round == 7 ~ DATEINTR.y,
+    round == 8 ~ DATEINTR.x))
+
+data_trust%<>%
+  select(-c(DATEINTR.y, DATEINTR.x))
+
+rm(afro_w7)
+
+afro_w6%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w6%<>%
+  select(respno, dateintr)%>%
+  rename(id=respno)
+
+afro_w6%<>%
+  mutate(round=6)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, dateintr)%>%
+  rename(DATEINTR=dateintr)
+
+data_trust <- left_join(data_trust, afro_w6, by="id_unique")
+
+data_trust%<>%
+  mutate(DATEINTR = case_when(
+    round == 6 ~ DATEINTR.y,
+    round %in% c(7,8) ~ DATEINTR.x))
+
+data_trust%<>%
+  select(-c(DATEINTR.y, DATEINTR.x))
+
+rm(afro_w6)
+
+afro_w5%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w5%<>%
+  select(respno, dateintr)%>%
+  rename(id=respno)
+
+afro_w5%<>%
+  mutate(round=5)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, dateintr)%>%
+  rename(DATEINTR=dateintr)
+
+data_trust <- left_join(data_trust, afro_w5, by="id_unique")
+
+data_trust%<>%
+  mutate(DATEINTR = case_when(
+    round == 5 ~ DATEINTR.y,
+    round %in% c(6,7,8) ~ DATEINTR.x))
+
+data_trust%<>%
+  select(-c(DATEINTR.y, DATEINTR.x))
+
+rm(afro_w5)
+
+saveRDS(data_trust, file="Data/Data_RDS/data_trust_30_09.rds")
+
+write_dta(data_trust, "Data/Data_dta/data_trust_30_09.dta")
+```
+
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/data_merge2.rds")
+
+afro_w8 <- read_sav("Data/Data_Raw/R8.Merge_34ctry_2nov21.release.w.local.info.sav")
+
+afro_w8%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+afro_w8%<>%
+  select(RESPNO, Q4A)%>%
+  rename(id=RESPNO)
+
+afro_w8%<>%
+  mutate(round=8)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q4A)%>%
+  rename(conditions_country=Q4A)
+
+afro_w8%<>%
+  mutate(conditions_country = if_else(conditions_country %in% c(1, 2, 3, 4, 5), conditions_country, NA_real_))
+
+afro_w8%<>%
+  mutate(bin_conditions_country=ifelse(conditions_country>=3, 1, 0))
+
+data_trust <- left_join(data_trust, afro_w8, by="id_unique")
+
+data_trust%<>%
+  mutate(bin_conditions_country = case_when(
+    round == 8 ~ bin_conditions_country.y,
+    round %in% c(5,6,7) ~ bin_conditions_country.x))
+
+data_trust%<>%
+  select(-c(bin_conditions_country.y, bin_conditions_country.x, conditions_country))
+
+glimpse(data_trust)
+
+rm(afro_w8)
+
+
+data_trust%>%
+  select(bin_conditions_country)%>%
+  summary()
+
+```
+
+
+```{r}
+data_trust %<>%
+  mutate(mean_inst_corr = (corr_pres+ corr_dep + corr_juge) / 
+           rowSums(!is.na(cbind(corr_pres, corr_dep, corr_juge))))
+
+
+data_trust %<>%
+ group_by(id_unique)%>%
+  mutate(weighted_inst_trust = ifelse(all(is.na(c(trust_pres, trust_parl, trust_elec))), NA, weighted.mean(c(trust_pres, trust_parl, trust_elec), na.rm = TRUE)))%>%
+  ungroup()
+
+data_trust %<>%
+ group_by(id_unique)%>%
+  mutate(weighted_inst_corr = ifelse(all(is.na(c(corr_pres, corr_dep, corr_juge))), NA, weighted.mean(c(corr_pres, corr_dep, corr_juge), na.rm = TRUE)))%>%
+  ungroup()
+
+
+data_trust%>%
+  select(mean_inst_trust, weighted_inst_trust, mean_inst_corr, weighted_inst_corr)%>%
+  summary()
+
+```
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/final_df4.rds")
+
+afro_w7 <- read_sav("Data/Data_Raw/R7_Merged data_34ctry_4Dec18.sav")
+
+afro_w7%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+afro_w7%<>%
+  select(RESPNO, Q43A, Q43B, Q43C)%>%
+  rename(id=RESPNO)
+
+afro_w7%<>%
+  mutate(round=7)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q43A, Q43B, Q43C)%>%
+  rename(know_pres=Q43A,
+         know_parl=Q43B,
+         know_elec=Q43C)
+
+data_trust <- left_join(data_trust, afro_w7, by="id_unique")
+
+rm(afro_w7)
+
+
+afro_w6 <- read.csv("Data/Data_Raw/afb_full_r6.csv_")
+
+afro_w6%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w6%<>%
+  select(respno, q52a, q52b, q52c)%>%
+  rename(id=respno)
+
+afro_w6%<>%
+  mutate(round=6)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q52a, q52b, q52c)%>%
+ rename(know_pres=q52a,
+         know_parl=q52b,
+         know_elec=q52c)
+
+
+data_trust <- left_join(data_trust, afro_w6, by="id_unique")
+
+data_trust%<>%
+  mutate(know_pres = case_when(
+    round == 6 ~ know_pres.y,
+    round == 7 ~ know_pres.x),
+    know_parl = case_when(
+    round == 6 ~ know_parl.y,
+    round == 7 ~ know_parl.x),
+    know_elec = case_when(
+    round == 6 ~ know_elec.y,
+    round == 7 ~ know_elec.x))
+
+data_trust%<>%
+  select(-c(know_pres.x, know_parl.x, know_elec.x, know_pres.y, know_parl.y, know_elec.y))
+
+glimpse(data_trust)
+
+rm(afro_w6)
+
+
+afro_w5 <- read.csv("Data/Data_Raw/afb_full_r5.csv_")
+
+afro_w5%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w5%<>%
+  select(respno, q59a, q59b, q59c)%>%
+  rename(id=respno)
+
+afro_w5%<>%
+  mutate(round=5)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q59a, q59b, q59c)%>%
+ rename(know_pres=q59a,
+         know_parl=q59b,
+         know_elec=q59c)
+
+
+data_trust <- left_join(data_trust, afro_w5, by="id_unique")
+
+data_trust%<>%
+  mutate(know_pres = case_when(
+    round == 5 ~ know_pres.y,
+    round %in% c(6,7) ~ know_pres.x),
+    know_parl = case_when(
+    round == 5 ~ know_parl.y,
+    round %in% c(6,7) ~ know_parl.x),
+    know_elec = case_when(
+    round == 5 ~ know_elec.y,
+    round %in% c(6,7) ~ know_elec.x))
+
+data_trust%<>%
+  select(-c(know_pres.x, know_parl.x, know_elec.x, know_pres.y, know_parl.y, know_elec.y))
+
+
+rm(afro_w5)
+
+afro_w8 <- read_sav("Data/Data_Raw/R8.Merge_34ctry_2nov21.release.w.local.info.sav")
+
+afro_w8%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w8%<>%
+  select(RESPNO, Q41A, Q41B, Q41C)%>%
+  rename(id=RESPNO)
+
+afro_w8%<>%
+  mutate(round=8)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q41A, Q41B, Q41C)%>%
+rename(know_pres=Q41A,
+         know_parl=Q41B,
+         know_elec=Q41C)
+
+data_trust <- left_join(data_trust, afro_w8, by="id_unique")
+
+
+data_trust%<>%
+  mutate(know_pres = case_when(
+    round == 8 ~ know_pres.y,
+    round %in% c(5,6,7) ~ know_pres.x),
+    know_parl = case_when(
+    round == 8 ~ know_parl.y,
+    round %in% c(5,6,7) ~ know_parl.x),
+    know_elec = case_when(
+    round == 8 ~ know_elec.y,
+    round %in% c(5,6,7) ~ know_elec.x))
+
+data_trust%<>%
+  select(-c(know_pres.x, know_parl.x, know_elec.x, know_pres.y, know_parl.y, know_elec.y))
+
+
+rm(afro_w8)
+
+data_trust%<>%
+  mutate(know_pres = if_else(know_pres %in% c(0, 1, 2, 3, 4, 9), know_pres, NA_real_),
+         know_parl = if_else(know_parl %in% c(0, 1, 2, 3, 4, 9), know_parl, NA_real_),
+         know_elec = if_else(know_elec %in% c(0, 1, 2, 3, 4, 9), know_elec, NA_real_))
+
+data_trust %<>%
+  mutate(know_pres = if_else(!is.na(know_pres) & know_pres %in% c(0, 1, 2, 3, 4), 0,
+                             if_else(!is.na(know_pres) & know_pres == 9, 1, know_pres)),
+         know_parl = if_else(!is.na(know_parl) & know_parl %in% c(0, 1, 2, 3, 4), 0,
+                             if_else(!is.na(know_parl) & know_parl == 9, 1, know_parl)),
+         know_elec = if_else(!is.na(know_elec) & know_elec %in% c(0, 1, 2, 3, 4), 0,
+                             if_else(!is.na(know_elec) & know_elec == 9, 1, know_elec))
+         )
+
+glimpse(data_trust)
+
+data_trust%<>%
+ group_by(id_unique)%>%
+  mutate(weighted_inst_trust_know = ifelse(all(is.na(c(know_pres, know_parl, know_elec))), NA, weighted.mean(c(know_pres, know_parl, know_elec), na.rm = TRUE)))%>%
+  ungroup()
+
+data_trust %<>%
+  mutate(mean_inst_trust_know = (know_pres+ know_parl + know_elec) / 
+           rowSums(!is.na(cbind(know_pres, know_parl, know_elec))))
+
+
+
+saveRDS(data_trust, file="Data/Data_RDS/final_df5.rds")
+
+write_dta(data_trust, "Data/Data_dta/final_df5.dta")
+
+```
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/final_df5.rds")
+
+afro_w7 <- read_sav("Data/Data_Raw/R7_Merged data_34ctry_4Dec18.sav")
+
+afro_w7%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+afro_w7%<>%
+  select(RESPNO, Q85A)%>%
+  rename(id=RESPNO)
+
+afro_w7%<>%
+  mutate(round=7)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q85A)%>%
+  rename(unfair_eth=Q85A)
+
+data_trust <- left_join(data_trust, afro_w7, by="id_unique")
+
+rm(afro_w7)
+
+afro_w6 <- read.csv("Data/Data_Raw/afb_full_r6.csv_")
+
+afro_w6%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w6%<>%
+  select(respno, q88a)%>%
+  rename(id=respno)
+
+afro_w6%<>%
+  mutate(round=6)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q88a)%>%
+ rename(unfair_eth=q88a)
+
+
+data_trust <- left_join(data_trust, afro_w6, by="id_unique")
+
+data_trust%<>%
+  mutate(unfair_eth = case_when(
+    round == 6 ~ unfair_eth.y,
+    round == 7 ~ unfair_eth.x))
+
+data_trust%<>%
+  select(-c(unfair_eth.x, unfair_eth.y))
+
+glimpse(data_trust)
+
+rm(afro_w6)
+
+
+afro_w5 <- read.csv("Data/Data_Raw/afb_full_r5.csv_")
+
+afro_w5%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w5%<>%
+  select(respno, q85a)%>%
+  rename(id=respno)
+
+afro_w5%<>%
+  mutate(round=5)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q85a)%>%
+ rename(unfair_eth=q85a)
+
+
+data_trust <- left_join(data_trust, afro_w5, by="id_unique")
+
+data_trust%<>%
+  mutate(unfair_eth = case_when(
+    round == 5 ~ unfair_eth.y,
+    round %in% c(6,7) ~ unfair_eth.x))
+
+data_trust%<>%
+  select(-c(unfair_eth.x, unfair_eth.y))
+
+
+rm(afro_w5)
+
+afro_w8 <- read_sav("Data/Data_Raw/R8.Merge_34ctry_2nov21.release.w.local.info.sav")
+
+afro_w8%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w8%<>%
+  select(RESPNO, Q84C)%>%
+  rename(id=RESPNO)
+
+afro_w8%<>%
+  mutate(round=8)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q84C)%>%
+  rename(unfair_eth=Q84C)
+
+data_trust <- left_join(data_trust, afro_w8, by="id_unique")
+
+
+data_trust%<>%
+  mutate(unfair_eth = case_when(
+    round == 8 ~ unfair_eth.y,
+    round %in% c(5,6,7) ~ unfair_eth.x))
+
+data_trust%<>%
+  select(-c(unfair_eth.x, unfair_eth.y))
+
+
+rm(afro_w8)
+
+data_trust%<>%
+  mutate(unfair_eth = if_else(unfair_eth %in% c(0, 1, 2, 3), unfair_eth, NA_real_))
+
+data_trust %<>%
+  mutate(unfair_eth_bin = case_when(
+    !is.na(unfair_eth) & unfair_eth %in% c(0, 1) ~ 0,
+    !is.na(unfair_eth) & unfair_eth %in% c(2, 3) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+glimpse(data_trust)
+
+saveRDS(data_trust, file="Data/Data_RDS/final_df5.rds")
+
+write_dta(data_trust, "Data/Data_dta/final_df5.dta")
+```
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/final_df5.rds")
+
+countries_adm2 <- c("BEN", "BFA", "BWA", "CIV", "CMR", "GIN", "LBR", "MLI", "NAM", "NER", "SLE")
+countries_adm1 <- c("GHA","KEN","MOZ", "MWI","NGA","TZA","UGA","ZMB", "ZWE")
+
+data_trust %<>%
+  group_by(NAME_2) %>%
+  mutate(name2_id = cur_group_id()) %>%
+  ungroup() %>%
+  group_by(NAME_1) %>%
+  mutate(name1_id = cur_group_id() + max(name2_id)) %>%
+  ungroup()
+
+data_trust %<>%
+  mutate(region_time = case_when(
+    ISO %in% countries_adm2 ~ name2_id * 10000 + round, 
+    ISO %in% countries_adm1 ~ name1_id * 10000 + round,
+    TRUE ~ NA_integer_
+  ))%>%
+  mutate(region_time = as.integer(as.factor(region_time)))
+
+
+
+data_trust%>%
+  select(region2_round, region_time)%>%
+  summarise(n=n())
+library(psych)
+
+describe(data_trust$region2_round)
+
+
+saveRDS(data_trust, file="Data/Data_RDS/final_df5.rds")
+
+write_dta(data_trust, "Data/Data_dta/final_df5.dta")
+
+```
+
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/final_df5.rds")
+
+data_trust%<>%
+  mutate(corr_pres_bin=case_when(
+    corr_pres%in%c(0,1) ~ 0,
+    corr_pres%in%c(2,3) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+data_trust%<>%
+  mutate(corr_dep_bin=case_when(
+    corr_dep%in%c(0,1) ~ 0,
+    corr_dep%in%c(2,3) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+data_trust%<>%
+  mutate(corr_juge_bin=case_when(
+    corr_juge%in%c(0,1) ~ 0,
+    corr_juge%in%c(2,3) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+afro_w7 <- read_sav("Data/Data_Raw/R7_Merged data_34ctry_4Dec18.sav")
+
+afro_w7%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+afro_w7%<>%
+  select(RESPNO, Q44A, Q44B, Q44F)%>%
+  rename(id=RESPNO)
+
+afro_w7%<>%
+  mutate(round=7)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q44A, Q44B, Q44F)%>%
+  rename(corr_pres_know=Q44A,
+         corr_dep_know=Q44B,
+         corr_juge_know=Q44F)
+
+data_trust <- left_join(data_trust, afro_w7, by="id_unique")
+
+rm(afro_w7)
+
+
+afro_w6 <- read.csv("Data/Data_Raw/afb_full_r6.csv_")
+
+afro_w6%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w6%<>%
+  select(respno, q53a, q53b, q53g)%>%
+  rename(id=respno)
+
+afro_w6%<>%
+  mutate(round=6)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q53a, q53b, q53g)%>%
+ rename(corr_pres_know=q53a,
+         corr_dep_know=q53b,
+         corr_juge_know=q53g)
+
+
+data_trust <- left_join(data_trust, afro_w6, by="id_unique")
+
+data_trust%<>%
+  mutate(corr_pres_know = case_when(
+    round == 6 ~ corr_pres_know.y,
+    round == 7 ~ corr_pres_know.x),
+    corr_dep_know = case_when(
+    round == 6 ~ corr_dep_know.y,
+    round == 7 ~ corr_dep_know.x),
+    corr_juge_know = case_when(
+    round == 6 ~ corr_juge_know.y,
+    round == 7 ~ corr_juge_know.x))
+
+data_trust%<>%
+  select(-c(corr_pres_know.x, corr_dep_know.x, corr_juge_know.x, corr_pres_know.y, corr_dep_know.y, corr_juge_know.y))
+
+glimpse(data_trust)
+
+rm(afro_w6)
+
+
+afro_w5 <- read.csv("Data/Data_Raw/afb_full_r5.csv_")
+
+afro_w5%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w5%<>%
+  select(respno, q60a, q60b, q60g)%>%
+  rename(id=respno)
+
+afro_w5%<>%
+  mutate(round=5)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q60a, q60b, q60g)%>%
+ rename(corr_pres_know=q60a,
+         corr_dep_know=q60b,
+         corr_juge_know=q60g)
+
+
+data_trust <- left_join(data_trust, afro_w5, by="id_unique")
+
+data_trust%<>%
+  mutate(corr_pres_know = case_when(
+    round == 5 ~ corr_pres_know.y,
+    round %in% c(6,7) ~ corr_pres_know.x),
+    corr_dep_know = case_when(
+    round == 5 ~ corr_dep_know.y,
+    round %in% c(6,7) ~ corr_dep_know.x),
+    corr_juge_know = case_when(
+    round == 5 ~ corr_juge_know.y,
+    round %in% c(6,7) ~ corr_juge_know.x))
+
+data_trust%<>%
+  select(-c(corr_pres_know.x, corr_dep_know.x, corr_juge_know.x, corr_pres_know.y, corr_dep_know.y, corr_juge_know.y))
+
+
+rm(afro_w5)
+
+afro_w8 <- read_sav("Data/Data_Raw/R8.Merge_34ctry_2nov21.release.w.local.info.sav")
+
+afro_w8%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w8%<>%
+  select(RESPNO, Q42A, Q42B, Q42G)%>%
+  rename(id=RESPNO)
+
+afro_w8%<>%
+  mutate(round=8)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q42A, Q42B, Q42G)%>%
+rename(corr_pres_know=Q42A,
+         corr_dep_know=Q42B,
+         corr_juge_know=Q42G)
+
+data_trust <- left_join(data_trust, afro_w8, by="id_unique")
+
+
+data_trust%<>%
+  mutate(corr_pres_know = case_when(
+    round == 8 ~ corr_pres_know.y,
+    round %in% c(5,6,7) ~ corr_pres_know.x),
+    corr_dep_know = case_when(
+    round == 8 ~ corr_dep_know.y,
+    round %in% c(5,6,7) ~ corr_dep_know.x),
+    corr_juge_know = case_when(
+    round == 8 ~ corr_juge_know.y,
+    round %in% c(5,6,7) ~ corr_juge_know.x))
+
+data_trust%<>%
+  select(-c(corr_pres_know.x, corr_dep_know.x, corr_juge_know.x, corr_pres_know.y, corr_dep_know.y, corr_juge_know.y))
+
+
+rm(afro_w8)
+
+data_trust%<>%
+  mutate(corr_pres_know = if_else(corr_pres_know %in% c(0, 1, 2, 3, 4, 9), corr_pres_know, NA_real_),
+         corr_dep_know = if_else(corr_dep_know %in% c(0, 1, 2, 3, 4, 9), corr_dep_know, NA_real_),
+         corr_juge_know = if_else(corr_juge_know %in% c(0, 1, 2, 3, 4, 9), corr_juge_know, NA_real_))
+
+data_trust %<>%
+  mutate(corr_pres_know = if_else(!is.na(corr_pres_know) & corr_pres_know %in% c(0, 1, 2, 3, 4), 0,
+                             if_else(!is.na(corr_pres_know) & corr_pres_know == 9, 1, corr_pres_know)),
+         corr_dep_know = if_else(!is.na(corr_dep_know) & corr_dep_know %in% c(0, 1, 2, 3, 4), 0,
+                             if_else(!is.na(corr_dep_know) & corr_dep_know == 9, 1, corr_dep_know)),
+         corr_juge_know = if_else(!is.na(corr_juge_know) & corr_juge_know %in% c(0, 1, 2, 3, 4), 0,
+                             if_else(!is.na(corr_juge_know) & corr_juge_know == 9, 1, corr_juge_know))
+         )
+
+glimpse(data_trust)
+
+data_trust%<>%
+ group_by(id_unique)%>%
+  mutate(weighted_inst_corr_know = ifelse(all(is.na(c(corr_pres_know, corr_dep_know, corr_juge_know))), NA, weighted.mean(c(corr_pres_know, corr_dep_know, corr_juge_know), na.rm = TRUE)))%>%
+  ungroup()
+
+data_trust %<>%
+  mutate(mean_inst_corr_know = (corr_pres_know+ corr_dep_know + corr_juge_know) / 
+           rowSums(!is.na(cbind(corr_pres_know, corr_dep_know, corr_juge_know))))
+
+
+
+saveRDS(data_trust, file="Data/Data_RDS/final_df5.rds")
+
+write_dta(data_trust, "Data/Data_dta/final_df5.dta")
+
+```
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/final_df5.rds")
+
+countries <- unique(data_trust$ISO)
+
+qog <- read.csv("Data/Data_raw/qog_std_ts_jan24.csv")
+
+qog %<>%
+  filter(year%in%c(2011, 2014, 2016, 2019))
+
+qog%<>%
+  filter(ccodealp %in% countries)
+
+qog%<>%
+  select(year, ccodealp, aii_q55, aii_q56, vdem_mecorrpt, vdem_polyarchy)%>%
+  rename(ISO=ccodealp, med_free=aii_q55, citiz_self_censor=aii_q56, vdem_med_free=vdem_mecorrpt)
+
+
+qog%<>%
+  rename(round=year)%>%
+  mutate(round=case_when(round==2011 ~ 5,
+                   round==2014 ~ 6,
+                   round==2016 ~ 7,
+                   round==2019 ~ 8))
+
+
+data_trust %<>% left_join(qog, by=c("ISO", "round"))
+
+glimpse(data_trust)
+
+
+
+saveRDS(data_trust, file="Data/Data_RDS/final_df5.rds")
+write_dta(data_trust, "Data/Data_dta/final_df5.dta")
+```
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/final_df5.rds")
+countries_adm1 <- c("GHA","KEN","MOZ", "MWI","NGA","TZA","UGA","ZMB", "ZWE")
+countries_adm2 <- c("BEN", "BFA", "BWA", "CIV", "CMR", "GIN", "LBR", "MLI", "NAM", "NER", "SLE")
+
+data_trust$internet_news <- as.numeric(as.character(data_trust$internet_news))
+
+data_trust %<>%
+  group_by(NAME_2, round) %>%
+  mutate(internet_news_adm2 = if_else(!is.na(NAME_2), mean(internet_news, na.rm = TRUE), NA_real_)) %>%
+  ungroup()
+
+data_trust %<>%
+  group_by(NAME_1, round) %>%
+  mutate(internet_news_adm1 = if_else(!is.na(NAME_1), mean(internet_news, na.rm = TRUE), NA_real_)) %>%
+  ungroup()
+
+data_trust %<>%
+  mutate(internet_news_region = case_when(
+    ISO %in% countries_adm1 ~ internet_news_adm1,
+    TRUE ~ internet_news_adm2))
+
+data_trust%>%
+  select(internet_news, internet_news_adm2, internet_news_adm1, internet_news_region)%>%
+  summary()
+
+saveRDS(data_trust, file="Data/Data_RDS/final_df5.rds")
+write_dta(data_trust, "Data/Data_dta/final_df5.dta")
+
+```
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/final_df5.rds")
+
+data_trust%<>%
+  mutate(EA_unique2 = if_else(!is.na(id_unique), paste0(id_unique,ccode), NA))
+
+saveRDS(data_trust, file="Data/Data_RDS/final_df5.rds")
+write_dta(data_trust, "Data/Data_dta/final_df5.dta")
+
+```
+
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/final_df5.rds")
+
+afro_w8 <- read_sav("Data/Data_Raw/R8.Merge_34ctry_2nov21.release.w.local.info.sav")
+
+afro_w8%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w8%<>%
+  select(RESPNO, Q83)%>%
+  rename(id=RESPNO)
+
+afro_w8%<>%
+  mutate(round=8)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q83)%>%
+rename(trust_gen=Q83)
+
+data_trust <- left_join(data_trust, afro_w8, by="id_unique")
+
+
+
+rm(afro_w8)
+
+data_trust%>%
+  select(trust_gen)%>%
+  summary()
+
+data_trust%<>%
+  mutate(trust_gen = if_else(trust_gen %in% c(0, 1), trust_gen, NA_real_))
+
+
+afro_w5 <- read.csv("Data/Data_Raw/afb_full_r5.csv_")
+
+afro_w5%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w5%<>%
+  select(respno, q87)%>%
+  rename(id=respno)
+
+afro_w5%<>%
+  mutate(round=5)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q87)%>%
+ rename(trust_gen=q87)
+
+
+data_trust <- left_join(data_trust, afro_w5, by="id_unique")
+
+data_trust%<>%
+  mutate(trust_gen = case_when(
+    round == 5 ~ trust_gen.y,
+    round %in% c(6,7,8) ~ trust_gen.x))
+
+data_trust%<>%
+  select(-c(trust_gen.x, trust_gen.y))
+
+
+rm(afro_w5)
+
+data_trust%<>%
+  mutate(trust_gen = if_else(trust_gen %in% c(0, 1), trust_gen, NA_real_))
+
+
+
+saveRDS(data_trust, file="Data/Data_RDS/final_df5.rds")
+write_dta(data_trust, "Data/Data_dta/final_df5.dta")
+
+```
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/final_df6.rds")
+
+afro_w7 <- read_sav("Data/Data_Raw/R7_Merged data_34ctry_4Dec18.sav")
+
+afro_w7%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+afro_w7%<>%
+  select(RESPNO, Q29, Q32)%>%
+  rename(id=RESPNO)
+
+afro_w7%<>%
+  mutate(round=7)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q29, Q32)%>%
+  rename(check_citiz=Q29,
+         check_parl=Q32)
+
+data_trust <- left_join(data_trust, afro_w7, by="id_unique")
+
+rm(afro_w7)
+
+afro_w6 <- read.csv("Data/Data_Raw/afb_full_r6.csv_")
+
+afro_w6%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w6%<>%
+  select(respno, q31, q34)%>%
+  rename(id=respno)
+
+afro_w6%<>%
+  mutate(round=6)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q31, q34)%>%
+ rename(check_citiz=q31,
+        check_parl=q34)
+
+
+data_trust <- left_join(data_trust, afro_w6, by="id_unique")
+
+data_trust%<>%
+  mutate(check_citiz = case_when(
+    round == 6 ~ check_citiz.y,
+    round == 7 ~ check_citiz.x),
+    check_parl=case_when(
+      round==6 ~ check_parl.y,
+      round==7 ~ check_parl.x
+    ))
+
+data_trust%<>%
+  select(-c(check_citiz.x, check_citiz.y, check_parl.x, check_parl.y))
+
+glimpse(data_trust)
+
+rm(afro_w6)
+
+
+afro_w5 <- read.csv("Data/Data_Raw/afb_full_r5.csv_")
+
+afro_w5%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w5%<>%
+  select(respno, q33, q36)%>%
+  rename(id=respno)
+
+afro_w5%<>%
+  mutate(round=5)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q33, q36)%>%
+ rename(check_citiz=q33,
+        check_parl=q36)
+
+
+data_trust <- left_join(data_trust, afro_w5, by="id_unique")
+
+data_trust%<>%
+  mutate(check_citiz = case_when(
+    round == 5 ~ check_citiz.y,
+    round %in% c(6,7) ~ check_citiz.x),
+    check_parl = case_when(
+    round == 5 ~ check_parl.y,
+    round %in% c(6,7) ~ check_parl.x)
+    )
+
+data_trust%<>%
+  select(-c(check_citiz.x, check_citiz.y, check_parl.x, check_parl.y))
+
+
+rm(afro_w5)
+
+afro_w8 <- read_sav("Data/Data_Raw/R8.Merge_34ctry_2nov21.release.w.local.info.sav")
+
+afro_w8%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w8%<>%
+  select(RESPNO, Q22, Q29)%>%
+  rename(id=RESPNO)
+
+afro_w8%<>%
+  mutate(round=8)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q22, Q29)%>%
+  rename(check_citiz=Q22,
+         check_parl=Q29)
+
+data_trust <- left_join(data_trust, afro_w8, by="id_unique")
+
+
+data_trust%<>%
+  mutate(check_citiz = case_when(
+    round == 8 ~ check_citiz.y,
+    round %in% c(5,6,7) ~ check_citiz.x),
+    check_parl = case_when(
+    round == 8 ~ check_parl.y,
+    round %in% c(5,6,7) ~ check_parl.x))
+
+data_trust%<>%
+  select(-c(check_citiz.x, check_citiz.y, check_parl.x, check_parl.y))
+
+
+rm(afro_w8)
+
+data_trust%<>%
+  mutate(check_citiz = if_else(check_citiz %in% c(1, 2, 3, 4, 5), check_citiz, NA_real_))%>%
+  mutate(check_parl = if_else(check_parl %in% c(1, 2, 3, 4, 5), check_citiz, NA_real_))
+
+
+data_trust %<>%
+  mutate(check_citiz_bin = case_when(
+    !is.na(check_citiz) & check_citiz %in% c(1, 2, 5) ~ 0,
+    !is.na(check_citiz) & check_citiz %in% c(3, 4) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+data_trust %<>%
+  mutate(check_parl_bin = case_when(
+    !is.na(check_parl) & check_parl %in% c(1, 2, 5) ~ 0,
+    !is.na(check_parl) & check_parl %in% c(3, 4) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+
+glimpse(data_trust)
+
+data_trust%<>%
+  group_by(id_unique)%>%
+  mutate(weighted_check_mean = ifelse(all(is.na(c(check_citiz_bin, check_parl_bin))), NA, mean(c(check_citiz_bin, check_parl_bin), na.rm = TRUE)))%>%
+  ungroup()
+
+
+saveRDS(data_trust, file="Data/Data_RDS/final_df5.rds")
+
+write_dta(data_trust, "Data/Data_dta/final_df5.dta")
+```
+
+```{r}
+data_trust %<>%
+  mutate(satis_demo_bin = case_when(
+    !is.na(satis_demo) & satis_demo %in% c(0, 1, 2) ~ 0,
+    !is.na(satis_demo) & satis_demo %in% c(3, 4) ~ 1,
+    TRUE ~ NA_real_
+  ))
+
+saveRDS(data_trust, file="Data/Data_RDS/final_df5.rds")
+write_dta(data_trust, "Data/Data_dta/final_df5.dta")
+
+```
+
+```{r}
+data_trust%>%
+  distinct(ISO, .keep_all = TRUE)%>%
+  select(ISO, area_0_km2)%>%
+  View()
+```
+
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/final_df6.rds")
+
+data_trust %<>%
+  mutate(mean_inst_trust_2 = (trust_pres+ trust_parl) / 
+           rowSums(!is.na(cbind(trust_pres, trust_parl))))
+
+data_trust %<>%
+  mutate(mean_inst_corr_2 = (corr_pres+ corr_dep) / 
+           rowSums(!is.na(cbind(corr_pres, corr_dep))))
+
+
+data_trust %<>%
+ group_by(id_unique)%>%
+  mutate(weighted_inst_trust_2 = ifelse(all(is.na(c(trust_pres, trust_parl))), NA, weighted.mean(c(trust_pres, trust_parl), na.rm = TRUE)))%>%
+  ungroup()
+
+data_trust %<>%
+ group_by(id_unique)%>%
+  mutate(weighted_inst_corr_2 = ifelse(all(is.na(c(corr_pres, corr_dep))), NA, weighted.mean(c(corr_pres, corr_dep), na.rm = TRUE)))%>%
+  ungroup()
+
+
+data_trust%>%
+  select(mean_inst_trust, weighted_inst_trust, mean_inst_corr, weighted_inst_corr, mean_inst_trust_2, weighted_inst_trust_2, mean_inst_corr_2, weighted_inst_corr_2)%>%
+  summary()
+
+
+saveRDS(data_trust, file="Data/Data_RDS/final_df6.rds")
+write_dta(data_trust, "Data/Data_dta/final_df6.dta")
+```
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/final_df6.rds")
+
+data_trust%<>%
+  select(-perf_pres)
+
+afro_w7 <- read_sav("Data/Data_Raw/R7_Merged data_34ctry_4Dec18.sav")
+
+afro_w7%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+afro_w7%<>%
+  select(RESPNO, Q56A, Q56B, Q56C, Q56D, Q56E, Q56F, Q56G, Q56H, Q56I, Q56K, Q56L, Q56M,
+         Q99, Q58A, Q58B, Q58D)%>%
+  rename(id=RESPNO)
+
+afro_w7%<>%
+  mutate(round=7)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique,  Q56A, Q56B, Q56C, Q56D, Q56E, Q56F, Q56G, Q56H, Q56I, Q56K, Q56L, Q56M,
+         Q99,
+         Q58A, Q58B, Q58D)%>%
+  rename(perf_eco=Q56A,
+         perf_poor=Q56B,
+         perf_job=Q56C,
+         perf_price=Q56D,
+         perf_ineq=Q56E,
+         perf_crime=Q56F,
+         perf_health=Q56G,
+         perf_educ=Q56H,
+         perf_water=Q56I,
+         perf_corr=Q56K,
+         perf_road=Q56L,
+         perf_elect=Q56M,
+         vote_no=Q99,
+         perf_pres=Q58A,
+         perf_parl=Q58B,
+         perf_trad=Q58D)
+
+data_trust <- left_join(data_trust, afro_w7, by="id_unique")
+
+rm(afro_w7)
+
+
+afro_w6 <- read.csv("Data/Data_Raw/afb_full_r6.csv_")
+
+afro_w6%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w6%<>%
+  select(respno, q66a, q66b, q66c, q66d, q66e, q66f, q66g, q66h, q66i, q66k, q66l, q66m,
+         q99,
+         q68a, q68b, q68d)%>%
+  rename(id=respno)
+
+afro_w6%<>%
+  mutate(round=6)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q66a, q66b, q66c, q66d, q66e, q66f, q66g, q66h, q66i, q66k, q66l, q66m,
+         q99,
+         q68a, q68b, q68d)%>%
+ rename(perf_eco=q66a,
+        perf_poor=q66b,
+        perf_job=q66c,
+        perf_price=q66d,
+        perf_ineq=q66e,
+        perf_crime=q66f,
+        perf_health=q66g,
+        perf_educ=q66h,
+        perf_water=q66i,
+        perf_corr=q66k,
+        perf_road=q66l,
+        perf_elect=q66m,
+        vote_no=q99,
+        perf_pres=q68a,
+        perf_parl=q68b,
+        perf_trad=q68d)
+
+
+data_trust <- left_join(data_trust, afro_w6, by="id_unique")
+
+glimpse(data_trust)
+
+data_trust%<>%
+  mutate(perf_eco = case_when(
+    round == 6 ~ perf_eco.y,
+    round == 7 ~ perf_eco.x),
+    perf_poor = case_when(
+    round == 6 ~ perf_poor.y,
+    round == 7 ~ perf_poor.x),
+    perf_job = case_when(
+    round == 6 ~ perf_job.y,
+    round == 7 ~ perf_job.x),
+    perf_price = case_when(
+    round == 6 ~ perf_price.y,
+    round == 7 ~ perf_price.x),
+    perf_ineq = case_when(
+    round == 6 ~ perf_ineq.y,
+    round == 7 ~ perf_ineq.x),
+    perf_crime = case_when(
+    round == 6 ~ perf_crime.y,
+    round == 7 ~ perf_crime.x),
+    perf_health = case_when(
+    round == 6 ~ perf_health.y,
+    round == 7 ~ perf_health.x),
+    perf_educ = case_when(
+    round == 6 ~ perf_educ.y,
+    round == 7 ~ perf_educ.x),
+    perf_water = case_when(
+    round == 6 ~ perf_water.y,
+    round == 7 ~ perf_water.x),
+    perf_corr = case_when(
+    round == 6 ~ perf_corr.y,
+    round == 7 ~ perf_corr.x),
+    perf_road = case_when(
+    round == 6 ~ perf_road.y,
+    round == 7 ~ perf_road.x),
+    perf_elect = case_when(
+    round == 6 ~ perf_elect.y,
+    round == 7 ~ perf_elect.x),
+    vote_no = case_when(
+    round == 6 ~ vote_no.y,
+    round == 7 ~ vote_no.x),
+    perf_pres = case_when(
+    round == 6 ~ perf_pres.y,
+    round == 7 ~ perf_pres.x),
+    perf_parl = case_when(
+    round == 6 ~ perf_parl.y,
+    round == 7 ~ perf_parl.x),
+    perf_trad = case_when(
+    round == 6 ~ perf_trad.y,
+    round == 7 ~ perf_trad.x)
+    )
+
+
+
+data_trust%<>%
+  select(-c(perf_eco.x, perf_poor.x, perf_job.x, perf_price.x, perf_ineq.x, perf_crime.x, perf_health.x, perf_educ.x, perf_water.x, perf_corr.x, perf_road.x, perf_elect.x, vote_no.x, perf_pres.x, perf_parl.x, perf_trad.x,
+            perf_eco.y, perf_poor.y, perf_job.y, perf_price.y, perf_ineq.y, perf_crime.y, perf_health.y, perf_educ.y, perf_water.y, perf_corr.y, perf_road.y, perf_elect.y, vote_no.y, perf_pres.y, perf_parl.y, perf_trad.y))
+
+glimpse(data_trust)
+
+rm(afro_w6)
+
+
+afro_w5 <- read.csv("Data/Data_Raw/afb_full_r5.csv_")
+
+afro_w5%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w5%<>%
+  select(respno, q65a, q65b, q65c, q65d, q65e, q65f, q65g, q65h, q65i, q65k, q65n, q65o,
+         q99,
+         q71a, q71b)%>%
+  rename(id=respno)
+
+afro_w5%<>%
+  mutate(round=5)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique,q65a, q65b, q65c, q65d, q65e, q65f, q65g, q65h, q65i, q65k, q65n, q65o,
+         q99,
+         q71a, q71b)%>%
+ rename(perf_eco=q65a,
+        perf_poor=q65b,
+        perf_job=q65c,
+        perf_price=q65d,
+        perf_ineq=q65e,
+        perf_crime=q65f,
+        perf_health=q65g,
+        perf_educ=q65h,
+        perf_water=q65i,
+        perf_corr=q65k,
+        perf_road=q65n,
+        perf_elect=q65o,
+        vote_no=q99,
+        perf_pres=q71a,
+        perf_parl=q71b)
+
+
+data_trust <- left_join(data_trust, afro_w5, by="id_unique")
+
+glimpse(data_trust)
+
+data_trust%<>%
+  mutate(across(c(perf_eco.x, perf_poor.x, perf_job.x, perf_price.x, perf_ineq.x, 
+                  perf_crime.x, perf_health.x, perf_educ.x, perf_water.x, 
+                  perf_corr.x, perf_road.x, perf_elect.x, vote_no.x, 
+                  perf_pres.x, perf_parl.x,perf_eco.y, perf_poor.y, perf_job.y, perf_price.y, perf_ineq.y, 
+                  perf_crime.y, perf_health.y, perf_educ.y, perf_water.y, 
+                  perf_corr.y, perf_road.y, perf_elect.y, vote_no.y, 
+                  perf_pres.y, perf_parl.y), ~ as.numeric(.)))
+
+data_trust%<>%
+  mutate(perf_eco = case_when(
+    round == 5 ~ perf_eco.y,
+    round %in% c(6,7) ~ perf_eco.x),
+    perf_poor = case_when(
+    round == 5 ~ perf_poor.y,
+    round %in% c(6,7) ~ perf_poor.x),
+    perf_job = case_when(
+    round == 5 ~ perf_job.y,
+    round %in% c(6,7) ~ perf_job.x),
+    perf_price = case_when(
+    round == 5 ~ perf_price.y,
+    round %in% c(6,7) ~ perf_price.x),
+    perf_ineq = case_when(
+    round == 5 ~ perf_ineq.y,
+    round %in% c(6,7) ~ perf_ineq.x),
+    perf_crime = case_when(
+    round == 5 ~ perf_crime.y,
+    round %in% c(6,7) ~ perf_crime.x),
+    perf_health = case_when(
+    round == 5 ~ perf_health.y,
+    round %in% c(6,7) ~ perf_health.x),
+    perf_educ = case_when(
+    round == 5 ~ perf_educ.y,
+    round %in% c(6,7) ~ perf_educ.x),
+    perf_water = case_when(
+    round == 5 ~ perf_water.y,
+    round %in% c(6,7) ~ perf_water.x),
+    perf_corr = case_when(
+    round == 5 ~ perf_corr.y,
+    round %in% c(6,7) ~ perf_corr.x),
+    perf_road = case_when(
+    round == 5 ~ perf_road.y,
+    round %in% c(6,7) ~ perf_road.x),
+    perf_elect = case_when(
+    round == 5 ~ perf_elect.y,
+    round %in% c(6,7) ~ perf_elect.x),
+    vote_no = case_when(
+    round == 5 ~ vote_no.y,
+    round %in% c(6,7) ~ vote_no.x),
+    perf_pres = case_when(
+    round == 5 ~ perf_pres.y,
+    round %in% c(6,7) ~ perf_pres.x),
+    perf_parl = case_when(
+    round == 5 ~ perf_parl.y,
+    round %in% c(6,7) ~ perf_parl.x)
+    )
+
+
+
+
+data_trust%<>%
+  select(-c(perf_eco.x, perf_poor.x, perf_job.x, perf_price.x, perf_ineq.x, perf_crime.x, perf_health.x, perf_educ.x, perf_water.x, perf_corr.x, perf_road.x, perf_elect.x, vote_no.x, perf_pres.x, perf_parl.x,
+            perf_eco.y, perf_poor.y, perf_job.y, perf_price.y, perf_ineq.y, perf_crime.y, perf_health.y, perf_educ.y, perf_water.y, perf_corr.y, perf_road.y, perf_elect.y, vote_no.y, perf_pres.y, perf_parl.y))
+
+
+rm(afro_w5)
+
+afro_w8 <- read_sav("Data/Data_Raw/R8.Merge_34ctry_2nov21.release.w.local.info.sav")
+
+afro_w8%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w8%<>%
+  select(RESPNO, Q50A, Q50B, Q50C, Q50D, Q50E, Q50F, Q50G, Q50H, Q50I, Q50J, Q50K, Q50L,
+         Q99,
+         Q51A, Q51B, Q51D)%>%
+  rename(id=RESPNO)
+
+afro_w8%<>%
+  mutate(round=8)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q50A, Q50B, Q50C, Q50D, Q50E, Q50F, Q50G, Q50H, Q50I, Q50J, Q50K, Q50L,
+         Q99,
+         Q51A, Q51B, Q51D)%>%
+  rename(perf_eco=Q50A,
+         perf_poor=Q50B,
+         perf_job=Q50C,
+         perf_price=Q50D,
+         perf_ineq=Q50E,
+         perf_crime=Q50F,
+         perf_health=Q50G,
+         perf_educ=Q50H,
+         perf_water=Q50I,
+         perf_corr=Q50J,
+         perf_road=Q50K,
+         perf_elect=Q50L,
+         vote_no=Q99,
+         perf_pres=Q51A,
+         perf_parl=Q51B,
+         perf_trad=Q51D)
+
+data_trust <- left_join(data_trust, afro_w8, by="id_unique")
+
+
+data_trust%<>%
+  mutate(perf_eco = case_when(
+    round == 8 ~ perf_eco.y,
+    round %in% c(5,6,7) ~ perf_eco.x),
+    perf_poor = case_when(
+    round == 8 ~ perf_poor.y,
+    round %in% c(5,6,7) ~ perf_poor.x),
+    perf_job = case_when(
+    round == 8 ~ perf_job.y,
+    round %in% c(5,6,7) ~ perf_job.x),
+    perf_price = case_when(
+    round == 8 ~ perf_price.y,
+    round %in% c(5,6,7) ~ perf_price.x),
+    perf_ineq = case_when(
+    round == 8 ~ perf_ineq.y,
+    round %in% c(5,6,7) ~ perf_ineq.x),
+    perf_crime = case_when(
+    round == 8 ~ perf_crime.y,
+    round %in% c(5,6,7) ~ perf_crime.x),
+    perf_health = case_when(
+    round == 8 ~ perf_health.y,
+    round %in% c(5,6,7) ~ perf_health.x),
+    perf_educ = case_when(
+    round == 8 ~ perf_educ.y,
+    round %in% c(5,6,7) ~ perf_educ.x),
+    perf_water = case_when(
+    round == 8 ~ perf_water.y,
+    round %in% c(5,6,7) ~ perf_water.x),
+    perf_corr = case_when(
+    round == 8 ~ perf_corr.y,
+    round %in% c(5,6,7) ~ perf_corr.x),
+    perf_road = case_when(
+    round == 8 ~ perf_road.y,
+    round %in% c(5,6,7) ~ perf_road.x),
+    perf_elect = case_when(
+    round == 8 ~ perf_elect.y,
+    round %in% c(5,6,7) ~ perf_elect.x),
+    vote_no = case_when(
+    round == 8 ~ vote_no.y,
+    round %in% c(5,6,7) ~ vote_no.x),
+    perf_pres = case_when(
+    round == 8 ~ perf_pres.y,
+    round %in% c(5,6,7) ~ perf_pres.x),
+    perf_parl = case_when(
+    round == 8 ~ perf_parl.y,
+    round %in% c(5,6,7) ~ perf_parl.x),
+    perf_trad = case_when(
+    round == 8 ~ perf_trad.y,
+    round %in% c(5,6,7) ~ perf_trad.x)
+    )
+
+data_trust%<>%
+  select(-c(perf_eco.x, perf_poor.x, perf_job.x, perf_price.x, perf_ineq.x, perf_crime.x, perf_health.x, perf_educ.x, perf_water.x, perf_corr.x, perf_road.x, perf_elect.x, vote_no.x, perf_pres.x, perf_parl.x, perf_trad.x,
+            perf_eco.y, perf_poor.y, perf_job.y, perf_price.y, perf_ineq.y, perf_crime.y, perf_health.y, perf_educ.y, perf_water.y, perf_corr.y, perf_road.y, perf_elect.y, vote_no.y, perf_pres.y, perf_parl.y, perf_trad.y))
+
+
+rm(afro_w8)
+
+data_trust%<>%
+  mutate(perf_eco = if_else(perf_eco %in% c(1, 2, 3, 4), perf_eco, NA_real_))%>%
+  mutate(perf_poor = if_else(perf_poor %in% c(1, 2, 3, 4), perf_poor, NA_real_))%>%
+  mutate(perf_job = if_else(perf_job %in% c(1, 2, 3, 4), perf_job, NA_real_))%>%
+  mutate(perf_price = if_else(perf_price %in% c(1, 2, 3, 4), perf_price, NA_real_))%>%
+  mutate(perf_ineq = if_else(perf_ineq %in% c(1, 2, 3, 4), perf_ineq, NA_real_))%>%
+  mutate(perf_crime = if_else(perf_crime %in% c(1, 2, 3, 4), perf_crime, NA_real_))%>%
+  mutate(perf_health = if_else(perf_health %in% c(1, 2, 3, 4), perf_health, NA_real_))%>%
+  mutate(perf_educ = if_else(perf_educ %in% c(1, 2, 3, 4), perf_educ, NA_real_))%>%
+  mutate(perf_water = if_else(perf_water %in% c(1, 2, 3, 4), perf_water, NA_real_))%>%
+  mutate(perf_corr = if_else(perf_corr %in% c(1, 2, 3, 4), perf_corr, NA_real_))%>%
+  mutate(perf_road = if_else(perf_road %in% c(1, 2, 3, 4), perf_road, NA_real_))%>%
+  mutate(perf_elect = if_else(perf_elect %in% c(1, 2, 3, 4), perf_elect, NA_real_))%>%
+  mutate(perf_pres = if_else(perf_pres %in% c(1, 2, 3, 4), perf_pres, NA_real_))%>%
+  mutate(perf_parl = if_else(perf_parl %in% c(1, 2, 3, 4), perf_parl, NA_real_))%>%
+  mutate(perf_trad = if_else(perf_trad %in% c(1, 2, 3, 4), perf_trad, NA_real_))%>%
+  mutate(vote_no=ifelse(vote_no == 9997, 1, 
+                      ifelse(vote_no %in% c(9995, 9998, 9999, -1), NA_real_, 0)))
+
+
+glimpse(data_trust)
+
+
+data_trust%<>%
+  group_by(id_unique)%>%
+  mutate(weighted_perf_obj = ifelse(all(is.na(c(perf_eco, perf_poor, perf_job, perf_price, perf_ineq, perf_crime, perf_health, perf_educ, perf_water, perf_corr, perf_road, perf_elect))), NA, mean(c(perf_eco, perf_poor, perf_job, perf_price, perf_ineq, perf_crime, perf_health, perf_educ, perf_water, perf_corr, perf_road, perf_elect), na.rm = TRUE)))%>%
+  ungroup()
+
+data_trust%<>%
+  group_by(id_unique)%>%
+  mutate(weighted_perf_pol = ifelse(all(is.na(c(perf_pres, perf_parl))), NA, mean(c(perf_pres, perf_parl), na.rm = TRUE)))%>%
+  ungroup()
+
+saveRDS(data_trust, file="Data/Data_RDS/final_df6.rds")
+write_dta(data_trust, "Data/Data_dta/final_df6.dta")
+```
+
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/final_df6.rds")
+
+data_trust%<>%
+  select(-perf_pres)
+
+afro_w7 <- read_sav("Data/Data_Raw/R7_Merged data_34ctry_4Dec18.sav")
+
+afro_w7%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+afro_w7%<>%
+  select(RESPNO, Q56A, Q56B, Q56C, Q56D, Q56E, Q56F, Q56G, Q56H, Q56I, Q56K, Q56L, Q56M,
+         Q99, Q58A, Q58B, Q58D)%>%
+  rename(id=RESPNO)
+
+afro_w7%<>%
+  mutate(round=7)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique,  Q56A, Q56B, Q56C, Q56D, Q56E, Q56F, Q56G, Q56H, Q56I, Q56K, Q56L, Q56M,
+         Q99,
+         Q58A, Q58B, Q58D)%>%
+  rename(perf_eco=Q56A,
+         perf_poor=Q56B,
+         perf_job=Q56C,
+         perf_price=Q56D,
+         perf_ineq=Q56E,
+         perf_crime=Q56F,
+         perf_health=Q56G,
+         perf_educ=Q56H,
+         perf_water=Q56I,
+         perf_corr=Q56K,
+         perf_road=Q56L,
+         perf_elect=Q56M,
+         vote_no=Q99,
+         perf_pres=Q58A,
+         perf_parl=Q58B,
+         perf_trad=Q58D)
+
+data_trust <- left_join(data_trust, afro_w7, by="id_unique")
+
+rm(afro_w7)
+
+
+afro_w6 <- read.csv("Data/Data_Raw/afb_full_r6.csv_")
+
+afro_w6%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w6%<>%
+  select(respno, q66a, q66b, q66c, q66d, q66e, q66f, q66g, q66h, q66i, q66k, q66l, q66m,
+         q99,
+         q68a, q68b, q68d)%>%
+  rename(id=respno)
+
+afro_w6%<>%
+  mutate(round=6)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q66a, q66b, q66c, q66d, q66e, q66f, q66g, q66h, q66i, q66k, q66l, q66m,
+         q99,
+         q68a, q68b, q68d)%>%
+ rename(perf_eco=q66a,
+        perf_poor=q66b,
+        perf_job=q66c,
+        perf_price=q66d,
+        perf_ineq=q66e,
+        perf_crime=q66f,
+        perf_health=q66g,
+        perf_educ=q66h,
+        perf_water=q66i,
+        perf_corr=q66k,
+        perf_road=q66l,
+        perf_elect=q66m,
+        vote_no=q99,
+        perf_pres=q68a,
+        perf_parl=q68b,
+        perf_trad=q68d)
+
+
+data_trust <- left_join(data_trust, afro_w6, by="id_unique")
+
+glimpse(data_trust)
+
+data_trust%<>%
+  mutate(perf_eco = case_when(
+    round == 6 ~ perf_eco.y,
+    round == 7 ~ perf_eco.x),
+    perf_poor = case_when(
+    round == 6 ~ perf_poor.y,
+    round == 7 ~ perf_poor.x),
+    perf_job = case_when(
+    round == 6 ~ perf_job.y,
+    round == 7 ~ perf_job.x),
+    perf_price = case_when(
+    round == 6 ~ perf_price.y,
+    round == 7 ~ perf_price.x),
+    perf_ineq = case_when(
+    round == 6 ~ perf_ineq.y,
+    round == 7 ~ perf_ineq.x),
+    perf_crime = case_when(
+    round == 6 ~ perf_crime.y,
+    round == 7 ~ perf_crime.x),
+    perf_health = case_when(
+    round == 6 ~ perf_health.y,
+    round == 7 ~ perf_health.x),
+    perf_educ = case_when(
+    round == 6 ~ perf_educ.y,
+    round == 7 ~ perf_educ.x),
+    perf_water = case_when(
+    round == 6 ~ perf_water.y,
+    round == 7 ~ perf_water.x),
+    perf_corr = case_when(
+    round == 6 ~ perf_corr.y,
+    round == 7 ~ perf_corr.x),
+    perf_road = case_when(
+    round == 6 ~ perf_road.y,
+    round == 7 ~ perf_road.x),
+    perf_elect = case_when(
+    round == 6 ~ perf_elect.y,
+    round == 7 ~ perf_elect.x),
+    vote_no = case_when(
+    round == 6 ~ vote_no.y,
+    round == 7 ~ vote_no.x),
+    perf_pres = case_when(
+    round == 6 ~ perf_pres.y,
+    round == 7 ~ perf_pres.x),
+    perf_parl = case_when(
+    round == 6 ~ perf_parl.y,
+    round == 7 ~ perf_parl.x),
+    perf_trad = case_when(
+    round == 6 ~ perf_trad.y,
+    round == 7 ~ perf_trad.x)
+    )
+
+
+
+data_trust%<>%
+  select(-c(perf_eco.x, perf_poor.x, perf_job.x, perf_price.x, perf_ineq.x, perf_crime.x, perf_health.x, perf_educ.x, perf_water.x, perf_corr.x, perf_road.x, perf_elect.x, vote_no.x, perf_pres.x, perf_parl.x, perf_trad.x,
+            perf_eco.y, perf_poor.y, perf_job.y, perf_price.y, perf_ineq.y, perf_crime.y, perf_health.y, perf_educ.y, perf_water.y, perf_corr.y, perf_road.y, perf_elect.y, vote_no.y, perf_pres.y, perf_parl.y, perf_trad.y))
+
+glimpse(data_trust)
+
+rm(afro_w6)
+
+
+afro_w5 <- read.csv("Data/Data_Raw/afb_full_r5.csv_")
+
+afro_w5%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w5%<>%
+  select(respno, q65a, q65b, q65c, q65d, q65e, q65f, q65g, q65h, q65i, q65k, q65n, q65o,
+         q99,
+         q71a, q71b)%>%
+  rename(id=respno)
+
+afro_w5%<>%
+  mutate(round=5)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique,q65a, q65b, q65c, q65d, q65e, q65f, q65g, q65h, q65i, q65k, q65n, q65o,
+         q99,
+         q71a, q71b)%>%
+ rename(perf_eco=q65a,
+        perf_poor=q65b,
+        perf_job=q65c,
+        perf_price=q65d,
+        perf_ineq=q65e,
+        perf_crime=q65f,
+        perf_health=q65g,
+        perf_educ=q65h,
+        perf_water=q65i,
+        perf_corr=q65k,
+        perf_road=q65n,
+        perf_elect=q65o,
+        vote_no=q99,
+        perf_pres=q71a,
+        perf_parl=q71b)
+
+
+data_trust <- left_join(data_trust, afro_w5, by="id_unique")
+
+glimpse(data_trust)
+
+data_trust%<>%
+  mutate(across(c(perf_eco.x, perf_poor.x, perf_job.x, perf_price.x, perf_ineq.x, 
+                  perf_crime.x, perf_health.x, perf_educ.x, perf_water.x, 
+                  perf_corr.x, perf_road.x, perf_elect.x, vote_no.x, 
+                  perf_pres.x, perf_parl.x,perf_eco.y, perf_poor.y, perf_job.y, perf_price.y, perf_ineq.y, 
+                  perf_crime.y, perf_health.y, perf_educ.y, perf_water.y, 
+                  perf_corr.y, perf_road.y, perf_elect.y, vote_no.y, 
+                  perf_pres.y, perf_parl.y), ~ as.numeric(.)))
+
+data_trust%<>%
+  mutate(perf_eco = case_when(
+    round == 5 ~ perf_eco.y,
+    round %in% c(6,7) ~ perf_eco.x),
+    perf_poor = case_when(
+    round == 5 ~ perf_poor.y,
+    round %in% c(6,7) ~ perf_poor.x),
+    perf_job = case_when(
+    round == 5 ~ perf_job.y,
+    round %in% c(6,7) ~ perf_job.x),
+    perf_price = case_when(
+    round == 5 ~ perf_price.y,
+    round %in% c(6,7) ~ perf_price.x),
+    perf_ineq = case_when(
+    round == 5 ~ perf_ineq.y,
+    round %in% c(6,7) ~ perf_ineq.x),
+    perf_crime = case_when(
+    round == 5 ~ perf_crime.y,
+    round %in% c(6,7) ~ perf_crime.x),
+    perf_health = case_when(
+    round == 5 ~ perf_health.y,
+    round %in% c(6,7) ~ perf_health.x),
+    perf_educ = case_when(
+    round == 5 ~ perf_educ.y,
+    round %in% c(6,7) ~ perf_educ.x),
+    perf_water = case_when(
+    round == 5 ~ perf_water.y,
+    round %in% c(6,7) ~ perf_water.x),
+    perf_corr = case_when(
+    round == 5 ~ perf_corr.y,
+    round %in% c(6,7) ~ perf_corr.x),
+    perf_road = case_when(
+    round == 5 ~ perf_road.y,
+    round %in% c(6,7) ~ perf_road.x),
+    perf_elect = case_when(
+    round == 5 ~ perf_elect.y,
+    round %in% c(6,7) ~ perf_elect.x),
+    vote_no = case_when(
+    round == 5 ~ vote_no.y,
+    round %in% c(6,7) ~ vote_no.x),
+    perf_pres = case_when(
+    round == 5 ~ perf_pres.y,
+    round %in% c(6,7) ~ perf_pres.x),
+    perf_parl = case_when(
+    round == 5 ~ perf_parl.y,
+    round %in% c(6,7) ~ perf_parl.x)
+    )
+
+
+
+
+data_trust%<>%
+  select(-c(perf_eco.x, perf_poor.x, perf_job.x, perf_price.x, perf_ineq.x, perf_crime.x, perf_health.x, perf_educ.x, perf_water.x, perf_corr.x, perf_road.x, perf_elect.x, vote_no.x, perf_pres.x, perf_parl.x,
+            perf_eco.y, perf_poor.y, perf_job.y, perf_price.y, perf_ineq.y, perf_crime.y, perf_health.y, perf_educ.y, perf_water.y, perf_corr.y, perf_road.y, perf_elect.y, vote_no.y, perf_pres.y, perf_parl.y))
+
+
+rm(afro_w5)
+
+afro_w8 <- read_sav("Data/Data_Raw/R8.Merge_34ctry_2nov21.release.w.local.info.sav")
+
+afro_w8%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w8%<>%
+  select(RESPNO, Q50A, Q50B, Q50C, Q50D, Q50E, Q50F, Q50G, Q50H, Q50I, Q50J, Q50K, Q50L,
+         Q99,
+         Q51A, Q51B, Q51D)%>%
+  rename(id=RESPNO)
+
+afro_w8%<>%
+  mutate(round=8)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q50A, Q50B, Q50C, Q50D, Q50E, Q50F, Q50G, Q50H, Q50I, Q50J, Q50K, Q50L,
+         Q99,
+         Q51A, Q51B, Q51D)%>%
+  rename(perf_eco=Q50A,
+         perf_poor=Q50B,
+         perf_job=Q50C,
+         perf_price=Q50D,
+         perf_ineq=Q50E,
+         perf_crime=Q50F,
+         perf_health=Q50G,
+         perf_educ=Q50H,
+         perf_water=Q50I,
+         perf_corr=Q50J,
+         perf_road=Q50K,
+         perf_elect=Q50L,
+         vote_no=Q99,
+         perf_pres=Q51A,
+         perf_parl=Q51B,
+         perf_trad=Q51D)
+
+data_trust <- left_join(data_trust, afro_w8, by="id_unique")
+
+
+data_trust%<>%
+  mutate(perf_eco = case_when(
+    round == 8 ~ perf_eco.y,
+    round %in% c(5,6,7) ~ perf_eco.x),
+    perf_poor = case_when(
+    round == 8 ~ perf_poor.y,
+    round %in% c(5,6,7) ~ perf_poor.x),
+    perf_job = case_when(
+    round == 8 ~ perf_job.y,
+    round %in% c(5,6,7) ~ perf_job.x),
+    perf_price = case_when(
+    round == 8 ~ perf_price.y,
+    round %in% c(5,6,7) ~ perf_price.x),
+    perf_ineq = case_when(
+    round == 8 ~ perf_ineq.y,
+    round %in% c(5,6,7) ~ perf_ineq.x),
+    perf_crime = case_when(
+    round == 8 ~ perf_crime.y,
+    round %in% c(5,6,7) ~ perf_crime.x),
+    perf_health = case_when(
+    round == 8 ~ perf_health.y,
+    round %in% c(5,6,7) ~ perf_health.x),
+    perf_educ = case_when(
+    round == 8 ~ perf_educ.y,
+    round %in% c(5,6,7) ~ perf_educ.x),
+    perf_water = case_when(
+    round == 8 ~ perf_water.y,
+    round %in% c(5,6,7) ~ perf_water.x),
+    perf_corr = case_when(
+    round == 8 ~ perf_corr.y,
+    round %in% c(5,6,7) ~ perf_corr.x),
+    perf_road = case_when(
+    round == 8 ~ perf_road.y,
+    round %in% c(5,6,7) ~ perf_road.x),
+    perf_elect = case_when(
+    round == 8 ~ perf_elect.y,
+    round %in% c(5,6,7) ~ perf_elect.x),
+    vote_no = case_when(
+    round == 8 ~ vote_no.y,
+    round %in% c(5,6,7) ~ vote_no.x),
+    perf_pres = case_when(
+    round == 8 ~ perf_pres.y,
+    round %in% c(5,6,7) ~ perf_pres.x),
+    perf_parl = case_when(
+    round == 8 ~ perf_parl.y,
+    round %in% c(5,6,7) ~ perf_parl.x),
+    perf_trad = case_when(
+    round == 8 ~ perf_trad.y,
+    round %in% c(5,6,7) ~ perf_trad.x)
+    )
+
+data_trust%<>%
+  select(-c(perf_eco.x, perf_poor.x, perf_job.x, perf_price.x, perf_ineq.x, perf_crime.x, perf_health.x, perf_educ.x, perf_water.x, perf_corr.x, perf_road.x, perf_elect.x, vote_no.x, perf_pres.x, perf_parl.x, perf_trad.x,
+            perf_eco.y, perf_poor.y, perf_job.y, perf_price.y, perf_ineq.y, perf_crime.y, perf_health.y, perf_educ.y, perf_water.y, perf_corr.y, perf_road.y, perf_elect.y, vote_no.y, perf_pres.y, perf_parl.y, perf_trad.y))
+
+
+rm(afro_w8)
+
+data_trust%<>%
+  mutate(perf_eco = if_else(perf_eco %in% c(1, 2, 3, 4), perf_eco, NA_real_))%>%
+  mutate(perf_poor = if_else(perf_poor %in% c(1, 2, 3, 4), perf_poor, NA_real_))%>%
+  mutate(perf_job = if_else(perf_job %in% c(1, 2, 3, 4), perf_job, NA_real_))%>%
+  mutate(perf_price = if_else(perf_price %in% c(1, 2, 3, 4), perf_price, NA_real_))%>%
+  mutate(perf_ineq = if_else(perf_ineq %in% c(1, 2, 3, 4), perf_ineq, NA_real_))%>%
+  mutate(perf_crime = if_else(perf_crime %in% c(1, 2, 3, 4), perf_crime, NA_real_))%>%
+  mutate(perf_health = if_else(perf_health %in% c(1, 2, 3, 4), perf_health, NA_real_))%>%
+  mutate(perf_educ = if_else(perf_educ %in% c(1, 2, 3, 4), perf_educ, NA_real_))%>%
+  mutate(perf_water = if_else(perf_water %in% c(1, 2, 3, 4), perf_water, NA_real_))%>%
+  mutate(perf_corr = if_else(perf_corr %in% c(1, 2, 3, 4), perf_corr, NA_real_))%>%
+  mutate(perf_road = if_else(perf_road %in% c(1, 2, 3, 4), perf_road, NA_real_))%>%
+  mutate(perf_elect = if_else(perf_elect %in% c(1, 2, 3, 4), perf_elect, NA_real_))%>%
+  mutate(perf_pres = if_else(perf_pres %in% c(1, 2, 3, 4), perf_pres, NA_real_))%>%
+  mutate(perf_parl = if_else(perf_parl %in% c(1, 2, 3, 4), perf_parl, NA_real_))%>%
+  mutate(perf_trad = if_else(perf_trad %in% c(1, 2, 3, 4), perf_trad, NA_real_))%>%
+  mutate(vote_no=ifelse(vote_no == 9997, 1, 
+                      ifelse(vote_no %in% c(9995, 9998, 9999, -1), NA_real_, 0)))
+
+
+glimpse(data_trust)
+
+
+data_trust%<>%
+  group_by(id_unique)%>%
+  mutate(weighted_perf_obj = ifelse(all(is.na(c(perf_eco, perf_poor, perf_job, perf_price, perf_ineq, perf_crime, perf_health, perf_educ, perf_water, perf_corr, perf_road, perf_elect))), NA, mean(c(perf_eco, perf_poor, perf_job, perf_price, perf_ineq, perf_crime, perf_health, perf_educ, perf_water, perf_corr, perf_road, perf_elect), na.rm = TRUE)))%>%
+  ungroup()
+
+data_trust%<>%
+  group_by(id_unique)%>%
+  mutate(weighted_perf_pol = ifelse(all(is.na(c(perf_pres, perf_parl))), NA, mean(c(perf_pres, perf_parl), na.rm = TRUE)))%>%
+  ungroup()
+
+saveRDS(data_trust, file="Data/Data_RDS/final_df6.rds")
+write_dta(data_trust, "Data/Data_dta/final_df6.dta")
+```
+
+```{r}
+data_trust%<>%
+  group_by(id_unique)%>%
+  mutate(weighted_inst_know_2 = ifelse(all(is.na(c(know_pres, know_parl))), NA, mean(c(know_pres, know_parl), na.rm = TRUE)))%>%
+  ungroup()
+
+saveRDS(data_trust, file="Data/Data_RDS/final_df6.rds")
+write_dta(data_trust, "Data/Data_dta/final_df6.dta")
+```
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/final_df6.rds")
+
+afro_w7 <- read_sav("Data/Data_Raw/R7_Merged data_34ctry_4Dec18.sav")
+
+afro_w7%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+afro_w7%<>%
+  select(RESPNO, Q25A, Q25E, Q54B)%>%
+  rename(id=RESPNO)
+
+afro_w7%<>%
+  mutate(round=7)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q25A, Q25E, Q54B)%>%
+  rename(contact_counc=Q25A,
+         contact_trad=Q25E,
+         listen_counc=Q54B)
+
+data_trust <- left_join(data_trust, afro_w7, by="id_unique")
+
+rm(afro_w7)
+
+
+afro_w6 <- read.csv("Data/Data_Raw/afb_full_r6.csv_")
+
+afro_w6%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w6%<>%
+  select(respno, q24a, q24e, q59b)%>%
+  rename(id=respno)
+
+afro_w6%<>%
+  mutate(round=6)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q24a, q24e, q59b)%>%
+ rename(contact_counc=q24a,
+        contact_trad=q24e,
+        listen_counc=q59b)
+
+
+data_trust <- left_join(data_trust, afro_w6, by="id_unique")
+
+glimpse(data_trust)
+
+data_trust%<>%
+  mutate(contact_counc = case_when(
+    round == 6 ~ contact_counc.y,
+    round == 7 ~ contact_counc.x),
+    contact_trad = case_when(
+    round == 6 ~ contact_trad.y,
+    round == 7 ~ contact_trad.x),
+    listen_counc = case_when(
+    round == 6 ~ listen_counc.y,
+    round == 7 ~ listen_counc.x))
+
+
+
+data_trust%<>%
+  select(-c(contact_counc.x, contact_counc.y, contact_trad.x, contact_trad.y, listen_counc.x, listen_counc.y))
+
+glimpse(data_trust)
+
+rm(afro_w6)
+
+
+afro_w5 <- read.csv("Data/Data_Raw/afb_full_r5.csv_")
+
+afro_w5%<>%
+  filter(!is.na(latitude))%>%
+  filter(!is.na(locationlevel2))%>%
+  filter(!duplicated(respno))
+
+afro_w5%<>%
+  select(respno, q30a, q62b)%>%
+  rename(id=respno)
+
+afro_w5%<>%
+  mutate(round=5)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, q30a, q62b)%>%
+ rename(contact_counc=q30a,
+        listen_counc=q62b)
+
+
+data_trust <- left_join(data_trust, afro_w5, by="id_unique")
+
+glimpse(data_trust)
+
+
+data_trust%<>%
+  mutate(contact_counc = case_when(
+    round == 5 ~ contact_counc.y,
+    round %in% c(6,7) ~ contact_counc.x),
+    listen_counc = case_when(
+    round == 5 ~ listen_counc.y,
+    round %in% c(6,7) ~ listen_counc.x))
+
+
+
+
+data_trust%<>%
+  select(-c(contact_counc.x, contact_counc.y, listen_counc.x, listen_counc.y))
+
+
+rm(afro_w5)
+
+afro_w8 <- read_sav("Data/Data_Raw/R8.Merge_34ctry_2nov21.release.w.local.info.sav")
+
+afro_w8%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w8%<>%
+  select(RESPNO, Q12A, Q12D, Q38B, Q38C)%>%
+  rename(id=RESPNO)
+
+afro_w8%<>%
+  mutate(round=8)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q12A, Q12D, Q38B, Q38C)%>%
+  rename(contact_counc=Q12A,
+         contact_trad=Q12D,
+         listen_counc=Q38B,
+         listen_trad=Q38C)
+
+data_trust <- left_join(data_trust, afro_w8, by="id_unique")
+
+
+data_trust%<>%
+  mutate(contact_counc = case_when(
+    round == 8 ~ contact_counc.y,
+    round %in% c(5,6,7) ~ contact_counc.x),
+    contact_trad = case_when(
+    round == 8 ~ contact_trad.y,
+    round %in% c(5,6,7) ~ contact_trad.x),
+    listen_counc = case_when(
+    round == 8 ~ listen_counc.y,
+    round %in% c(5,6,7) ~ listen_counc.x))
+
+data_trust%<>%
+  select(-c(contact_counc.x, contact_counc.y, contact_trad.x, contact_trad.y, listen_counc.x, listen_counc.y))
+
+rm(afro_w8)
+
+glimpse(data_trust)
+
+data_trust%<>%
+  mutate(contact_counc = if_else(contact_counc %in% c(0, 1, 2, 3), contact_counc, NA_real_))%>%
+  mutate(contact_trad = if_else(contact_trad %in% c(0, 1, 2, 3), contact_trad, NA_real_))%>%
+  mutate(listen_counc = if_else(listen_counc %in% c(0, 1, 2, 3), listen_counc, NA_real_))%>%
+  mutate(listen_counc = if_else(listen_counc %in% c(0, 1, 2, 3), listen_counc, NA_real_))
+
+
+glimpse(data_trust)
+
+data_trust%<>%
+  mutate(commu = as.numeric(commu),
+    prob = as.numeric(prob))
+
+data_trust %<>%
+  group_by(id_unique) %>%
+  mutate(weighted_local_1 = rowMeans(
+      cbind(commu, prob), 
+      na.rm = TRUE
+    )
+  ) %>%
+  ungroup()
+
+data_trust %<>%
+  group_by(id_unique) %>%
+  mutate(weighted_local_2 = rowMeans(
+      cbind(commu, prob, contact_counc), 
+      na.rm = TRUE
+    )
+  ) %>%
+  ungroup()
+
+data_trust %<>%
+  group_by(id_unique) %>%
+  mutate(weighted_local_3 = rowMeans(
+      cbind(commu, prob, contact_trad), 
+      na.rm = TRUE
+    )
+  ) %>%
+  ungroup()
+
+
+data_trust %<>%
+  group_by(id_unique) %>%
+  mutate(weighted_local_4 = rowMeans(
+      cbind(contact_counc, contact_trad, listen_counc, listen_trad), 
+      na.rm = TRUE
+    )
+  ) %>%
+  ungroup()
+
+
+data_trust %<>%
+  group_by(id_unique) %>%
+  mutate(weighted_local_5 = rowMeans(
+      cbind(contact_counc, contact_trad), 
+      na.rm = TRUE
+    )
+  ) %>%
+  ungroup()
+
+
+data_trust %<>%
+  group_by(id_unique) %>%
+  mutate(weighted_local_6 = rowMeans(
+      cbind(listen_counc, listen_trad), 
+      na.rm = TRUE
+    )
+  ) %>%
+  ungroup()
+
+data_trust %<>%
+  group_by(id_unique) %>%
+  mutate(weighted_local_7 = rowMeans(
+      cbind(contact_trad, listen_trad), 
+      na.rm = TRUE
+    )
+  ) %>%
+  ungroup()
+
+
+saveRDS(data_trust, file="Data/Data_RDS/final_df6.rds")
+write_dta(data_trust, "Data/Data_dta/final_df6.dta")
+```
+
+
+```{r}
+data_trust%>%
+  select(ethnie)%>%
+  summary()
+
+data_trust <- readRDS("Data/Data_RDS/final_df6.rds")
+
+afro_w8 <- read_sav("Data/Data_Raw/R8.Merge_34ctry_2nov21.release.w.local.info.sav")
+
+afro_w8%<>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+
+afro_w8%<>%
+  select(RESPNO, Q81)%>%
+  rename(id=RESPNO)
+
+afro_w8%<>%
+  mutate(round=8)%>%
+  mutate(id_unique=paste0(id,round))%>%
+  select(id_unique, Q81)%>%
+  rename(ethnie=Q81)
+
+data_trust <- left_join(data_trust, afro_w8, by="id_unique")
+
+
+data_trust%<>%
+  mutate(ethnie = case_when(
+    round == 8 ~ ethnie.y,
+    round %in% c(5,6,7) ~ ethnie.x))
+
+data_trust%<>%
+  select(-c(ethnie.x, ethnie.y))
+
+rm(afro_w8)
+
+glimpse(data_trust)
+
+data_trust%<>%
+  mutate(ethnie = if_else(ethnie %in% c(9990, 9995, 9998, 9999, -1, 94),NA_real_ , ethnie))
+
+glimpse(data_trust)
+
+
+saveRDS(data_trust, file="Data/Data_RDS/final_df6.rds")
+write_dta(data_trust, "Data/Data_dta/final_df6.dta")
+```
+
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/final_df6.rds")
+
+glimpse(data_trust)
+
+data_trust%<>%
+  select(-rsf_index)
+
+countries <- unique(data_trust$ISO)
+
+year2012 <- read.csv("data/data_Raw/rsf/2012.csv", sep=";", stringsAsFactors=TRUE)
+
+year2012%<>%
+  filter(ISO%in%countries)%>%
+  select(ISO, Score.N)%>%
+  rename(rsf_index=Score.N)%>%
+  mutate(rsf_index=as.numeric(rsf_index))%>%
+  mutate(round=5)
+
+year2012%>%
+  select(rsf_index)%>%
+  summary()
+
+year2014 <- read.csv("data/data_Raw/rsf/2014.csv", sep=";", stringsAsFactors=TRUE)
+
+year2014%<>%
+  filter(ISO%in%countries)%>%
+  select(ISO, Score.N)%>%
+  rename(rsf_index=Score.N)%>%
+  mutate(rsf_index=as.numeric(rsf_index))%>%
+  mutate(round=6)
+
+year2014%>%
+  select(rsf_index)%>%
+  summary()
+
+year2016 <- read.csv("data/data_Raw/rsf/2016.csv", sep=";", stringsAsFactors=TRUE)
+
+year2016%<>%
+  filter(ISO%in%countries)%>%
+  select(ISO, Score.N)%>%
+  rename(rsf_index=Score.N)%>%
+  mutate(rsf_index=as.numeric(rsf_index))%>%
+  mutate(round=7)
+
+year2016%>%
+  select(rsf_index)%>%
+  summary()
+
+year2019 <- read.csv("data/data_Raw/rsf/2019.csv", sep=";", stringsAsFactors=TRUE)
+
+year2019%<>%
+  filter(ISO%in%countries)%>%
+  select(ISO, Score.N)%>%
+  rename(rsf_index=Score.N)%>%
+  mutate(rsf_index=as.numeric(rsf_index))%>%
+  mutate(round=8)
+
+year2019%>%
+  select(rsf_index)%>%
+  summary()
+
+data_trust <- data_trust %>% left_join(year2012,by=c("ISO", "round"))
+data_trust <- data_trust %>% left_join(year2014,by=c("ISO", "round"))
+
+data_trust%<>%
+  mutate(rsf_index=case_when(
+           round==5~rsf_index.x,
+           round==6~rsf_index.y))
+
+data_trust%<>%
+  select(-rsf_index.x, -rsf_index.y)
+
+data_trust <- data_trust %>% left_join(year2016,by=c("ISO", "round"))
+
+data_trust%<>%
+  mutate(rsf_index=case_when(
+           round%in%c(5,6)~rsf_index.x,
+           round==7~rsf_index.y))
+
+data_trust%<>%
+  select(-rsf_index.x, -rsf_index.y)
+
+data_trust <- data_trust %>% left_join(year2019,by=c("ISO", "round"))
+
+data_trust%<>%
+  mutate(rsf_index=case_when(
+           round%in%c(5,6,7)~rsf_index.x,
+           round==8~rsf_index.y))
+
+data_trust%<>%
+  select(-rsf_index.x, -rsf_index.y)
+
+
+
+data_trust%>%
+  select(rsf_index)%>%
+  summary()
+
+saveRDS(data_trust, file="Data/Data_RDS/final_df6.rds")
+write_dta(data_trust, "Data/Data_dta/final_df6.dta")
+
+
+```
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/final_df6.rds")
+
+glimpse(data_trust)
+
+qog <- read.csv("Data/Data_raw/qog_std_ts_jan24.csv")
+
+qog%<>%
+  select(year, ccodealp, fhp_mcpp5)%>%
+  rename(ISO=ccodealp, fh_med_index=fhp_mcpp5)
+
+qog%<>%
+  rename(round=year)%>%
+  mutate(round=case_when(round==2011 ~ 5,
+                   round==2014 ~ 6,
+                   round==2016 ~ 7,
+                   round==2019 ~ 8))
+
+
+data_trust %<>% left_join(qog, by=c("ISO", "round"))
+
+glimpse(data_trust)
+
+data_trust%>%
+  select(fh_med_index)%>%
+  summary()
+
+
+saveRDS(data_trust, file="Data/Data_RDS/final_df6.rds")
+write_dta(data_trust, "Data/Data_dta/final_df6.dta")
+
+
+```
+
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/final_df6.rds")
+
+afro_w8 <- read_sav("Data/Data_Raw/R8.Merge_34ctry_2nov21.release.w.local.info.sav")
+
+afro_w8_filter <- afro_w8%>%
+  filter(!is.na(EA_GPS_LA))%>%
+  filter(!is.na(LOCATION.LEVEL.2))%>%
+  filter(!duplicated(RESPNO))
+
+removed_rows <- anti_join(afro_w8, afro_w8_filter, by = colnames(afro_w8))
+
+
+afro_w8_filter%>%
+  filter(COUNTRY==3)%>%
+  select(Q41A)%>%
+  filter(Q41A!=9)%>%
+  summary()
+
+data_trust%>%
+  filter(ISO=="BEN", round==8)%>%
+  select(trust_pres)%>%
+  summary()
+
+```
+
+
+```{r}
+data_trust <- readRDS("Data/Data_RDS/final_df6.rds")
+
+data_trust%<>%
+  mutate(sex=as.numeric(sex))
+
+afro_w8 <- read_sav("Data/Data_Raw/R8.Merge_34ctry_2nov21.release.w.local.info.sav")
+
+afro_w8 %<>%
+  filter(!is.na(EA_GPS_LA), !is.na(LOCATION.LEVEL.2)) %>%
+  filter(!duplicated(RESPNO)) %>%
+  select(RESPNO, Q1, Q101) %>%
+  rename(id = RESPNO,
+         age = Q1,
+         sex = Q101) %>%
+  mutate(round = 8,
+         id_unique = paste0(id, round)) %>%
+  select(id_unique, age, sex)
+
+data_trust <- left_join(data_trust, afro_w8, by="id_unique")
+
+data_trust%<>%
+  mutate(age = case_when(
+    round == 8 ~ age.y,
+    round %in% c(5,6,7) ~ age.x),
+    sex = case_when(
+    round == 8 ~ sex.y,
+    round %in% c(5,6,7) ~ sex.x))
+
+data_trust%<>%
+  select(-c(age.x, age.y, sex.x, sex.y))
+
+saveRDS(data_trust, file="Data/Data_RDS/final_df6.rds")
+write_dta(data_trust, "Data/Data_dta/final_df6.dta")
+
+```
+
+```{r}
+data_trust%>%
+  filter(round==7)%>%
+  distinct(cname)
+
+data_trust%>%
+  distinct(cname)
+
+afro_w7%>%
+  filter(COUNTRY==6)%>%
+  View()
+
+```
+

@@ -1,0 +1,484 @@
+\documentclass[11pt]{article}
+
+\usepackage[]{graphicx} % omit 'demo' option in real doc.
+\usepackage[]{color}
+%% maxwidth is the original width if it is less than linewidth
+%% otherwise use linewidth (to make sure the graphics do not exceed the margin)
+\makeatletter
+\def\maxwidth{ %
+  \ifdim\Gin@nat@width>\linewidth
+    \linewidth
+  \else
+    \Gin@nat@width
+  \fi
+}
+\makeatother
+
+\definecolor{fgcolor}{rgb}{0.345, 0.345, 0.345}
+\newcommand{\hlnum}[1]{\textcolor[rgb]{0.686,0.059,0.569}{#1}}%
+\newcommand{\hlstr}[1]{\textcolor[rgb]{0.192,0.494,0.8}{#1}}%
+\newcommand{\hlcom}[1]{\textcolor[rgb]{0.678,0.584,0.686}{\textit{#1}}}%
+\newcommand{\hlopt}[1]{\textcolor[rgb]{0,0,0}{#1}}%
+\newcommand{\hlstd}[1]{\textcolor[rgb]{0.345,0.345,0.345}{#1}}%
+\newcommand{\hlkwa}[1]{\textcolor[rgb]{0.161,0.373,0.58}{\textbf{#1}}}%
+\newcommand{\hlkwb}[1]{\textcolor[rgb]{0.69,0.353,0.396}{#1}}%
+\newcommand{\hlkwc}[1]{\textcolor[rgb]{0.333,0.667,0.333}{#1}}%
+\newcommand{\hlkwd}[1]{\textcolor[rgb]{0.737,0.353,0.396}{\textbf{#1}}}%
+
+\usepackage{framed}
+\makeatletter
+\newenvironment{kframe}{%
+ \def\at@end@of@kframe{}%
+ \ifinner\ifhmode%
+  \def\at@end@of@kframe{\end{minipage}}%
+  \begin{minipage}{\columnwidth}%
+ \fi\fi%
+ \def\FrameCommand##1{\hskip\@totalleftmargin \hskip-\fboxsep
+ \colorbox{shadecolor}{##1}\hskip-\fboxsep
+     % There is no \\@totalrightmargin, so:
+     \hskip-\linewidth \hskip-\@totalleftmargin \hskip\columnwidth}%
+ \MakeFramed {\advance\hsize-\width
+   \@totalleftmargin\z@ \linewidth\hsize
+   \@setminipage}}%
+ {\par\unskip\endMakeFramed%
+ \at@end@of@kframe}
+\makeatother
+
+\definecolor{shadecolor}{rgb}{.97, .97, .97}
+\definecolor{messagecolor}{rgb}{0, 0, 0}
+\definecolor{warningcolor}{rgb}{1, 0, 1}
+\definecolor{errorcolor}{rgb}{1, 0, 0}
+\newenvironment{knitrout}{}{} % an empty environment to be redefined in TeX
+
+\usepackage{alltt}
+
+\usepackage{hyperref}
+\hypersetup{
+        colorlinks=true,
+        breaklinks,
+        allcolors=[RGB]{128,0,0}
+}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{crimson}
+
+\usepackage{geometry}
+\geometry{verbose,tmargin=1in,bmargin=1in,lmargin=1in,rmargin=1in}
+\usepackage{url}
+\usepackage{dcolumn}
+\usepackage{ctable}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{setspace}
+\usepackage{rotating}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{seqsplit}
+\usepackage{amsmath,amsfonts,amssymb,amsthm}
+\usepackage{soul}
+\usepackage{float}
+%\usepackage{longtable}
+
+
+\usepackage{bbding} % checkmark symbol
+\usepackage{comment} % checkmark symbol
+
+\renewcommand{\textfraction}{0.05}
+\renewcommand{\topfraction}{0.8}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\floatpagefraction}{0.75}
+
+%Bibliography
+\usepackage{natbib}
+%\usepackage[autostyle]{csquotes}
+%\usepackage[backend=bibtex, style=authoryear, natbib=true]{biblatex}
+%\addbibresource{CCH.bib}
+
+%%For Hypotheses and Subhypotheses
+%\usepackage{ntheorem}
+\newtheorem{hyp}{Hypothesis}
+\makeatletter
+\newcounter{subhyp}
+\let\savedc@hyp\c@hyp
+\newenvironment{subhyp}
+ {%
+  \setcounter{subhyp}{0}%
+  \stepcounter{hyp}%
+  \edef\saved@hyp{\thehyp}% Save the current value of hyp
+  \let\c@hyp\c@subhyp     % Now hyp is subhyp
+  \renewcommand{\thehyp}{\saved@hyp\alph{hyp}}%
+ }
+ {}
+\newcommand{\normhyp}{%
+  \let\c@hyp\savedc@hyp % revert to the old one
+  \renewcommand\thehyp{\arabic{hyp}}%
+}
+\makeatother
+%%%
+
+\setcounter{MaxMatrixCols}{10}
+
+\theoremstyle{plain}
+\newtheorem{prop}{\protect\propositionname}
+\theoremstyle{plain}
+\newtheorem{thm}{\protect\theoremname}
+\makeatother
+\providecommand{\examplename}{Example}
+\providecommand{\propositionname}{Proposition}
+\providecommand{\theoremname}{Theorem}
+\newcommand{\bi}{\begin{itemize}}
+\newcommand{\ei}{\end{itemize}}
+\newcommand{\bb}{\begin{block}}
+\newcommand{\eb}{\end{block}}
+\newcommand{\bmath}{\begin{eqnarray}}
+\newcommand{\emath}{\end{eqnarray}}
+\newcommand{\bmathnn}{\begin{eqnarray*}}
+\newcommand{\emathnn}{\end{eqnarray*}}
+\newtheorem{theorem}{{Theorem}}%[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{prediction}{Prediction}
+\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem{observation}[theorem]{Observation}
+\newtheorem{claim}[theorem]{{Claim}}
+\newtheorem{example}[theorem]{{Example}}
+\newtheorem{corollary}[theorem]{{Corollary}}
+\newtheorem{remark}[theorem]{{Remark}}
+\newtheorem{assumptions}[theorem]{{Assumptions}}
+\newtheorem*{thm1star}{{Theorem \mathbf{1^*}}}
+\newtheorem*{thm2star}{{Theorem \mathbf{2^*}}}
+\newtheorem*{theorem*}{Theorem}
+\newtheorem*{lemma*}{Lemma}
+
+
+%For nice tables
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{threeparttable}
+\usepackage{tabulary}
+\newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
+
+%Expectation opperator
+\newcommand{\Expect}{{\rm I\kern-.3em E}}
+
+%Significance commands
+\newcommand*{\SuperScriptSameStyle}[1]{%
+  \ensuremath{%
+    \mathchoice
+      {{}^{\displaystyle #1}}%
+      {{}^{\textstyle #1}}%
+      {{}^{\scriptstyle #1}}%
+      {{}^{\scriptscriptstyle #1}}%
+  }%
+}
+
+\newcommand*{\oneS}{\SuperScriptSameStyle{*}}
+\newcommand*{\twoS}{\SuperScriptSameStyle{**}}
+\newcommand*{\threeS}{\SuperScriptSameStyle{*{*}*}}
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\def\bibfont{\normalfont\normalsize}
+
+\usepackage{epstopdf}
+\epstopdfDeclareGraphicsRule{.tif}{png}{.png}{convert #1 \OutputFile}
+\AppendGraphicsExtensions{.tif}
+\usepackage{svg}
+\begin{document}
+
+
+
+\title{\textsc{Trust, Internet and Nation Building in Africa}
+
+\vspace{0.75cm} \underline{Preliminary and incomplete }}
+
+\vspace{1cm}
+\author{Illan Barriola\footnote{CRED, Université Paris Panthéon-Assas. Mail: illan.barriola@u-paris2.fr}\\ Rédha Chaba\footnote{LEMMA, Université Paris Panthéon-Assas, Mail: redha.chaba@u-paris2.fr}}
+
+
+\date{ \today}
+
+\maketitle
+
+\onehalfspacing
+
+\section*{Research question}
+
+How does the diffusion of mobile internet affect political accountability in remote areas?
+\section*{Hypothesis}
+\begin{enumerate}
+  \item Living in remote areas is associated with higher levels of institutional trust.
+  \item Increased internet access mitigates spatial disparities in the levels of institutional trust.
+  \item Increased internet access strengthens ethnic over national identity in remote areas
+\end{enumerate}
+
+\begin{table}[H]
+  \sffamily
+  \caption{{H1}}
+  \centering
+  %\footnotesize
+  \resizebox{14cm}{!}{
+  \begin{tabular}{@{\extracolsep{5pt}} l c c c c c c}
+  \\
+  \toprule
+  \toprule
+  &  \multicolumn{6}{c}{{Trust in institutions}}  \\
+  \cmidrule(r){2-7}
+  & \multicolumn{2}{c}{{OLS}} & \multicolumn{2}{c}{{BDD: 50km}} & \multicolumn{2}{c}{{BDD: 40km}}\\
+      \cmidrule(r){2-3}
+      \cmidrule(r){4-5}
+      \cmidrule(r){6-7}
+      & \multicolumn{1}{c}{{(1)}} &  \multicolumn{1}{c}{{(2)}}  & \multicolumn{1}{c}{{(3)}} &  \multicolumn{1}{c}{{(4)}} & \multicolumn{1}{c}{{(5)}} & \multicolumn{1}{c}{(6)}\\
+   \midrule
+
+   Distance to the capital &       0.224***&       0.322*** &  0.403*** & 0.361**& 0.444*** & 0.362**\\
+   \medskip
+   &      (0.03)   &      (0.03)  & (0.13)     & (0.15)& (0.14)     & (0.17) \\
+
+   \midrule
+  Standard controls  & Yes & Yes & Yes & Yes& Yes & Yes  \\
+  Country X Round FE       & No & Yes& No & Yes& No & Yes\\
+  Murdock's area FE & No & No & Yes& Yes& Yes& Yes\\
+  Observations      &     83,877   &       83,877  & 18,129       & 18,129 & 16,744       & 16,744\\
+  Adjusted-R$^2$        &       0.021   &       0.052   & 0.135       & 0.181 & 0.137       & 0.184 \\
+
+                        \bottomrule
+  \multicolumn{7}{p{12cm}}{\footnotesize \emph{Notes}:}
+  \end{tabular}
+  }
+  \end{table}
+  
+  \begin{table}[H]
+    \sffamily
+    \caption{{H2}}
+    \centering
+    %\footnotesize
+    \resizebox{14cm}{!}{
+    \begin{tabular}{@{\extracolsep{5pt}} l c c c c c c}
+    \\
+    \toprule
+    \toprule
+    & \multicolumn{1}{c}{{OLS}} & \multicolumn{3}{c}{{First Stage}} & \multicolumn{1}{c}{{2SLS}}\\
+        \cmidrule(r){2-2}
+        \cmidrule(r){3-5}
+        \cmidrule(r){6-6}
+        & \multicolumn{1}{c}{{Trust in institutions}} & \multicolumn{1}{c}{{Internet use}} & \multicolumn{1}{c}{{}} &  \multicolumn{1}{c}{{Distance $\times$ Internet use}} & \multicolumn{1}{c}{{Trust in institutions}}\\
+        \cmidrule(r){2-2}
+        \cmidrule(r){3-3}
+        \cmidrule(r){5-5}
+        \cmidrule(r){6-6}
+
+        & \multicolumn{1}{c}{{(1)}} & \multicolumn{1}{c}{{(2)}} & \multicolumn{1}{c}{{}} &  \multicolumn{1}{c}{{(3)}} & \multicolumn{1}{c}{{(4)}}\\
+        
+        \midrule
+  
+Distance to the capital&    0.353*** &&&&0.533***\\
+     \smallskip
+     &      (0.03)  &&&&  (0.117) \\
+Internet use   &      -0.012** &&&&-0.316\\
+\smallskip   &      (0.01)  &&&&  (0.24) \\
+
+Distance to the capital $\times$ Internet use&         -0.054*** &&&&-0.437***\\
+\smallskip  &      (0.01) &&&& (0.14)  \\
+
+
+Internet coverage && 0.179*** && -0.184*** &  &  \\
+\smallskip&& (0.06) && (0.03) \\
+Distance to the capital city $\times$ Internet coverage&& 0.063 && 0.733*** &  & \\
+\medskip&& (0.10) && (0.07)\\
+
+     \midrule
+    SW \emph{F} - Internet coverage &-&-& 16.12&- &-\\
+    SW \emph{F} - Distance $\times$ Internet coverage &-&-& 90.80&-&-\\
+    Standard controls  & Yes & Yes &&  Yes & Yes  \\
+    Country X Round FE       & Yes & Yes& & Yes & Yes \\
+    Observations       &       83,877 & 83,877 & & 83,877 & 83,877 \\
+    Adjusted-R$^2$    &       0.164 &  0.358 & &   0.262 & - \\
+    Endogeneity test \emph{p}-value & -& - & - & -& 0.00\\ 
+  
+                          \bottomrule
+    \multicolumn{5}{p{8cm}}{\footnotesize \emph{Notes}:}
+    \end{tabular}
+    }
+    \end{table}
+
+
+
+      \begin{table}[H]
+        \sffamily
+        \caption{{H2 : National outcomes}}
+        \centering
+        %\footnotesize
+        \resizebox{14cm}{!}{
+        \begin{tabular}{@{\extracolsep{5pt}} l c c c}
+        \\
+        \toprule
+        \toprule
+        & \multicolumn{3}{c}{{2SLS}}\\
+            \cmidrule(r){2-4}
+            & \multicolumn{1}{c}{{Satisfaction in democracy}} & \multicolumn{1}{c}{{Democracy extent}} & \multicolumn{1}{c}{{Trust in ruling party}} \\
+            \cmidrule(r){2-2}
+            \cmidrule(r){3-3}
+            \cmidrule(r){4-4}
+  
+    
+            & \multicolumn{1}{c}{{(1)}} & \multicolumn{1}{c}{{(2)}} & \multicolumn{1}{c}{{(3)}}\\
+            
+            \midrule
+      
+    Distance to the capital&  0.316*** & 0.342*** & 0.444***\\
+         \smallskip
+         & (0.10)& (0.09) & (0.13)\\
+    Internet use     & -0.251 & -0.148 & -0.574**\\
+    \smallskip      & (0.19) & (0.17)& (0.26)\\
+    
+    Distance to the capital $\times$ Internet use&   -0.229*  & -0.315***  & -0.356** \\
+    \smallskip & (0.12) & (0.11) & (0.16)\\
+    
+         \midrule
+        Standard controls  & Yes & Yes &Yes  \\
+        Country X Round FE       & Yes & Yes& Yes \\
+        Observations       &       85,017 & 83,786 & 86,489\\
+        Endogeneity test \emph{p}-value & 0.03 & 0.01& 0.00\\ 
+      
+                              \bottomrule
+        \multicolumn{4}{p{8cm}}{\footnotesize \emph{Notes}:}
+        \end{tabular}
+        }
+        \end{table}
+  
+
+        \begin{table}[H]
+          \sffamily
+          \caption{{Corruption perception}}
+          \centering
+          %\footnotesize
+          \resizebox{14cm}{!}{
+          \begin{tabular}{@{\extracolsep{5pt}} l c c c}
+          \\
+          \toprule
+          \toprule
+          & \multicolumn{3}{c}{{2SLS}}\\
+              \cmidrule(r){2-4}
+              & \multicolumn{1}{c}{{President}} & \multicolumn{1}{c}{{Parliament}} & \multicolumn{1}{c}{{Judiciary}} \\
+              \cmidrule(r){2-2}
+              \cmidrule(r){3-3}
+              \cmidrule(r){4-4}
+    
+      
+              & \multicolumn{1}{c}{{(1)}} & \multicolumn{1}{c}{{(2)}} & \multicolumn{1}{c}{{(3)}}\\
+              
+              \midrule
+        
+      Distance to the capital& -0.286***  & -0.302***  & -0.296***  \\
+           \smallskip
+           & (0.09)& (0.08) & (0.08)  \\
+      Internet use   & 0.242 & 0.057  & 0.089\\
+      \smallskip  & (0.17) & (0.15)& (0.17)  \\
+      
+      Distance to the capital $\times$ Internet use& 0.277***   & 0.321***   & 0.336***   \\
+      \smallskip  & (0.10) & (0.09) & (0.10) \\
+      
+           \midrule
+          Standard controls  & Yes & Yes &Yes  \\
+          Country X Round FE       & Yes & Yes& Yes \\
+          Observations       &       80,370& 81,590 & 81,705\\
+          Endogeneity test \emph{p}-value & 0.01 & 0.00 & 0.00\\ 
+        
+                                \bottomrule
+          \multicolumn{4}{p{8cm}}{\footnotesize \emph{Notes}:}
+          \end{tabular}
+          }
+          \end{table}
+
+
+          \begin{table}[H]
+            \sffamily
+            \caption{{Local}}
+            \centering
+            %\footnotesize
+            \resizebox{14cm}{!}{
+            \begin{tabular}{@{\extracolsep{5pt}} l c c }
+            \\
+            \toprule
+            \toprule
+            & \multicolumn{2}{c}{{2SLS}}\\
+                \cmidrule(r){2-3}
+                & \multicolumn{1}{c}{{Local corruption}} & \multicolumn{1}{c}{{National identity}} \\
+                \cmidrule(r){2-2}
+                \cmidrule(r){3-3}
+              
+                & \multicolumn{1}{c}{{(1)}} & \multicolumn{1}{c}{{(2)}}\\
+                
+                \midrule
+          
+        Distance to the capital&    -0.202** & 0.182 \\
+             \smallskip
+             & (0.08)  & (0.12) \\
+        Internet use   &   0.160 & 0.167  \\
+        \smallskip    & (0.16) & (0.25)  \\
+        
+        Distance to the capital $\times$ Internet use&   0.129  & -0.406***   \\
+        \smallskip  & (0.09)& (0.15)   \\
+        
+             \midrule
+            Standard controls  & Yes & Yes\\
+            Country X Round FE & Yes & Yes \\
+            Observations       &  79,545   & 88,078  \\
+            Endogeneity test \emph{p}-value & 0.16 & 0.06\\ 
+          
+                                  \bottomrule
+            \multicolumn{3}{p{8cm}}{\footnotesize \emph{Notes}:}
+            \end{tabular}
+            }
+            \end{table}
+
+
+
+            \begin{table}[H]
+              \sffamily
+              \caption{{Heterogeneity}}
+              \centering
+              %\footnotesize
+              \resizebox{14cm}{!}{
+              \begin{tabular}{@{\extracolsep{5pt}} l c c c c}
+              \\
+              \toprule
+              \toprule
+              & \multicolumn{4}{c}{{2SLS}}\\
+                  \cmidrule(r){2-5}
+                  & \multicolumn{2}{c}{{Institutions}} & \multicolumn{2}{c}{{Medias}} \\
+                  \cmidrule(r){2-3}
+                  \cmidrule(r){4-5}
+                  & \multicolumn{1}{c}{{Democratic}} & \multicolumn{1}{c}{{Autocratic}}& \multicolumn{1}{c}{{Free}} & \multicolumn{1}{c}{{Captured}} \\
+                  \cmidrule(r){2-2}
+                  \cmidrule(r){3-3}
+                  \cmidrule(r){4-4}
+                  \cmidrule(r){5-5}
+
+                
+                  & \multicolumn{1}{c}{{(1)}} & \multicolumn{1}{c}{{(2)}} & \multicolumn{1}{c}{{(3)}} & \multicolumn{1}{c}{{(4)}}\\
+                  
+                  \midrule
+            
+          Distance to the capital& 0.363 & 0.683*** & 0.364** & 0.719***\\
+               \smallskip
+               & (0.25)   & (0.15) & (0.17)  & (0.13)   \\
+          Internet use & -0.643 & -0.065  & -0.498* & 0.080\\
+          \smallskip    & (0.48) & (0.31) & (0.27)& (0.27) \\
+          
+          Distance to the capital $\times$ Internet use & -0.217 & -0.638*** & -0.303 & -0.581*** \\
+          \smallskip & (0.28) & (0.20)& (0.22) & (0.17) \\
+          
+               \midrule
+              Standard controls  & Yes & Yes& Yes & Yes\\
+              Country X Round FE & Yes & Yes & Yes & Yes\\
+              Observations  & 44,434  & 39,443  & 36,872  & 47,005   \\
+              Endogeneity test \emph{p}-value & 0.00 & 0.03 & 0.04 & 0.00 \\ 
+            
+                                    \bottomrule
+              \multicolumn{5}{p{8cm}}{\footnotesize \emph{Notes}:}
+              \end{tabular}
+              }
+              \end{table}
+\end{document}
