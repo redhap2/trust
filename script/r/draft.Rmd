@@ -40,11 +40,7 @@ levels %<>%
   summarise(levels_nb = first(level))
 
 print(levels, n=40)
-```
 
-#Adm setup
-
-```{r}
 cty_adm1 <- levels%>%
   filter(levels_nb>=1)%>%
   pull(country)
@@ -258,7 +254,6 @@ remove(bdd, country_data, country_data_result, country_data_sf, result, roads_sf
 ```
 
 ```{r}
-
 tiff_file <- "data/data_raw/geography/desert/desert.tif"
 
 desert_wgs84 <- rast(tiff_file)
@@ -271,7 +266,7 @@ print(binary_raster)
 
 plot(binary_raster, main = "Desert Map", col = rev(heat.colors(100)))
 
-desert_r5_adm1 <- data.frame()
+desert_adm1_df <- data.frame()
 
 for (country in cty_adm1) {
   
@@ -291,24 +286,24 @@ for (country in cty_adm1) {
   desert_adm1 <- exactextractr::exact_extract(binary_raster_masked, regions, 'mean')
   
   regions$desert_adm1 <- desert_adm1
-  regions_df <- regions %>%
+  
+  country_results <- regions %>%
     as.data.frame() %>%
     rename(iso = GID_0) %>%
-    select(iso, NAME_1, desert_adm1) %>%
-    mutate(round = 5)
+    select(iso, NAME_1, desert_adm1)
   
-  desert_r5_adm1 <- rbind(desert_r5_adm1, regions_df)
+  desert_adm1_df <- rbind(desert_adm1_df, country_results)
 }
 
-desert_r5_adm1 %<>%
+desert_adm1_df %<>%
   mutate(across(everything(), ~ ifelse(is.nan(.), NA, .)))
 
-print(glimpse(desert_r5_adm1))
+print(glimpse(desert_adm1_df))
 
-saveRDS(desert_r5_adm1, file="data/data_rds/geo_ctrl/desert_r5_adm1.rds")
+saveRDS(desert_adm1_df, file="data/data_rds/geo_ctrl/desert_adm1.rds")
 
 
-desert_r5_adm2 <- data.frame()
+desert_adm2_df <- data.frame()
 
 for (country in cty_adm2) {
   
@@ -328,21 +323,21 @@ for (country in cty_adm2) {
   desert_adm2 <- exactextractr::exact_extract(binary_raster_masked, regions, 'mean')
   
   regions$desert_adm2 <- desert_adm2
-  regions_df <- regions %>%
+  
+  country_results <- regions %>%
     as.data.frame() %>%
     rename(iso = GID_0) %>%
-    select(iso, NAME_2, desert_adm2) %>%
-    mutate(round = 5)
+    select(iso, NAME_2, desert_adm2)
   
-  desert_r5_adm2 <- rbind(desert_r5_adm2, regions_df)
+  desert_adm2_df <- rbind(desert_adm2_df, country_results)
 }
 
-desert_r5_adm2 %<>%
+desert_adm2_df %<>%
   mutate(across(everything(), ~ ifelse(is.nan(.), NA, .)))
 
-print(glimpse(desert_r5_adm2))
+print(glimpse(desert_adm2_df))
 
-saveRDS(desert_r5_adm2, file="data/data_rds/geo_ctrl/desert_r5_adm2.rds")
+saveRDS(desert_adm2_df, file="data/data_rds/geo_ctrl/desert_adm2.rds")
 ```
 
 ```{r}
@@ -354,7 +349,7 @@ print(elevation_wgs84)
 
 plot(elevation_wgs84, main = "Elevation Map", col = terrain.colors(100), breaks = seq(-1000, 3000, by = 100))
 
-elevation_r5_adm1 <- data.frame()
+elevation_adm1_df <- data.frame()
 
 for (country in cty_adm1) {
   
@@ -374,24 +369,23 @@ for (country in cty_adm1) {
   elevation_adm1 <- exactextractr::exact_extract(elevation_wgs84_masked, regions, 'mean')
   
   regions$elevation_adm1 <- elevation_adm1
-  regions_df <- regions %>%
+  
+  country_results <- regions %>%
     as.data.frame() %>%
     rename(iso = GID_0) %>%
-    select(iso, NAME_1, elevation_adm1) %>%
-    mutate(round = 5)
+    select(iso, NAME_1, elevation_adm1)
   
-  elevation_r5_adm1 <- rbind(elevation_r5_adm1, regions_df)
+  elevation_adm1_df <- rbind(elevation_adm1_df, country_results)
 }
 
-elevation_r5_adm1 %<>%
+elevation_adm1_df %<>%
   mutate(across(everything(), ~ ifelse(is.nan(.), NA, .)))
 
-print(glimpse(elevation_r5_adm1))
+print(glimpse(elevation_adm1_df))
 
-saveRDS(elevation_r5_adm1, file="data/data_rds/geo_ctrl/elevation_r5_adm1.rds")
+saveRDS(elevation_adm1_df, file="data/data_rds/geo_ctrl/elevation_adm1.rds")
 
-
-elevation_r5_adm2 <- data.frame()
+elevation_adm2_df <- data.frame()
 
 for (country in cty_adm2) {
   
@@ -411,20 +405,395 @@ for (country in cty_adm2) {
   elevation_adm2 <- exactextractr::exact_extract(elevation_wgs84_masked, regions, 'mean')
   
   regions$elevation_adm2 <- elevation_adm2
-  regions_df <- regions %>%
+  
+  country_results <- regions %>%
     as.data.frame() %>%
     rename(iso = GID_0) %>%
-    select(iso, NAME_2, elevation_adm2) %>%
-    mutate(round = 5)
+    select(iso, NAME_2, elevation_adm2)
   
-  elevation_r5_adm2 <- rbind(elevation_r5_adm2, regions_df)
+  elevation_adm2_df <- rbind(elevation_adm2_df, country_results)
 }
 
-elevation_r5_adm2 %<>%
+elevation_adm2_df %<>%
   mutate(across(everything(), ~ ifelse(is.nan(.), NA, .)))
 
-print(glimpse(elevation_r5_adm2))
+print(glimpse(elevation_adm2_df))
 
-saveRDS(elevation_r5_adm2, file="data/data_rds/geo_ctrl/elevation_r5_adm2.rds")
+saveRDS(elevation_adm2_df, file="data/data_rds/geo_ctrl/elevation_adm2.rds")
 ```
 
+```{r}
+library(viridis)
+
+tiff_file <- "data/data_raw/geography/precipitation/CHELSA_bio12_1981-2010_V.2.1.tif"
+
+precipitation_wgs84 <- rast(tiff_file)
+
+print(precipitation_wgs84)
+
+africa_extent <- ext(-20, 60, -40, 40)
+
+precipitation_africa <- crop(precipitation_wgs84, africa_extent)
+
+plot(precipitation_africa, main = "Precipitation Map of Africa", col = viridis(100), breaks = seq(0, 3000, by = 100))
+
+precipitation_adm1_df <- data.frame()
+
+for (country in cty_adm1) {
+  
+  shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_1.shp")
+  regions <- st_read(shapefile) %>% st_make_valid()
+  
+  shapefile_path <- paste0("data/data_raw/gadm/gadm41_", country, "_0.shp")
+  country_shp <- vect(shapefile_path)
+  
+  if (!identical(crs(precipitation_wgs84), crs(country_shp))) {
+    country_shp <- project(country_shp, crs(precipitation_wgs84))
+  }
+  
+  precipitation_wgs84_cropped <- crop(precipitation_wgs84, country_shp)
+  precipitation_wgs84_masked <- mask(precipitation_wgs84_cropped, country_shp)
+  
+  precipitation_adm1 <- exactextractr::exact_extract(precipitation_wgs84_masked, regions, 'mean')
+  
+  regions$precipitation_adm1 <- precipitation_adm1
+  
+  country_results <- regions %>%
+    as.data.frame() %>%
+    rename(iso = GID_0) %>%
+    select(iso, NAME_1, precipitation_adm1)
+  
+  precipitation_adm1_df <- rbind(precipitation_adm1_df, country_results)
+}
+
+precipitation_adm1_df %<>%
+  mutate(across(everything(), ~ ifelse(is.nan(.), NA, .)))
+
+print(glimpse(precipitation_adm1_df))
+
+saveRDS(precipitation_adm1_df, file="data/data_rds/geo_ctrl/precipitation_adm1.rds")
+
+
+precipitation_adm2_df <- data.frame()
+
+for (country in cty_adm2) {
+  
+  shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_2.shp")
+  regions <- st_read(shapefile) %>% st_make_valid()
+  
+  shapefile_path <- paste0("data/data_raw/gadm/gadm41_", country, "_0.shp")
+  country_shp <- vect(shapefile_path)
+  
+  if (!identical(crs(precipitation_wgs84), crs(country_shp))) {
+    country_shp <- project(country_shp, crs(precipitation_wgs84))
+  }
+  
+  precipitation_wgs84_cropped <- crop(precipitation_wgs84, country_shp)
+  precipitation_wgs84_masked <- mask(precipitation_wgs84_cropped, country_shp)
+  
+  precipitation_adm2 <- exactextractr::exact_extract(precipitation_wgs84_masked, regions, 'mean')
+  
+  regions$precipitation_adm2 <- precipitation_adm2
+  
+  country_results <- regions %>%
+    as.data.frame() %>%
+    rename(iso = GID_0) %>%
+    select(iso, NAME_2, precipitation_adm2)
+  
+  precipitation_adm2_df <- rbind(precipitation_adm2_df, country_results)
+}
+
+precipitation_adm2_df %<>%
+  mutate(across(everything(), ~ ifelse(is.nan(.), NA, .)))
+
+print(glimpse(precipitation_adm2_df))
+
+saveRDS(precipitation_adm2_df, file="data/data_rds/geo_ctrl/precipitation_adm2.rds")
+```
+
+```{r}
+shapefile_directory <- "data/data_raw/gadm/"
+
+shapefile_names <- list.files(shapefile_directory, pattern = "*_2.shp", full.names = TRUE)
+
+adm2_shapefiles <- lapply(shapefile_names, st_read)
+adm2_combined <- do.call(rbind, adm2_shapefiles)
+
+adm2_combined_merged <- merge(adm2_combined, precipitation_adm2, by.x = "NAME_2", by.y = "NAME_2", all.x = TRUE)
+
+library(ggplot2)
+
+ggplot() +
+  geom_sf(data = adm2_combined_merged, aes(fill = precipitation_adm2), color = "black", size = 0.25) +
+  scale_fill_viridis(name = "Precipitation (mm)", option = "plasma", na.value = "grey") +
+  labs(title = "Precipitation Map of Africa",
+       subtitle = "Regional Precipitation Values") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 12),
+    legend.position = "bottom"
+  )
+
+```
+
+
+```{r}
+tiff_file <- "data/data_raw/geography/temperature/CHELSA_bio1_1981-2010_V.2.1.tif"
+
+temp_mean_wgs84 <- rast(tiff_file)
+
+print(temp_mean_wgs84)
+
+africa_extent <- ext(-20, 60, -40, 40)
+
+temp_mean_africa <- crop(temp_mean_wgs84, africa_extent)
+
+plot(temp_mean_africa, main = "temp_mean Map of Africa", col = rev(heat.colors(100)), breaks = seq(0, 50, by = 1))
+
+temp_mean_adm1_df <- data.frame()
+
+for (country in cty_adm1) {
+  
+  shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_1.shp")
+  regions <- st_read(shapefile) %>% st_make_valid()
+  
+  shapefile_path <- paste0("data/data_raw/gadm/gadm41_", country, "_0.shp")
+  country_shp <- vect(shapefile_path)
+  
+  if (!identical(crs(temp_mean_wgs84), crs(country_shp))) {
+    country_shp <- project(country_shp, crs(temp_mean_wgs84))
+  }
+  
+  temp_mean_wgs84_cropped <- crop(temp_mean_wgs84, country_shp)
+  temp_mean_wgs84_masked <- mask(temp_mean_wgs84_cropped, country_shp)
+  
+  temp_mean_adm1 <- exactextractr::exact_extract(temp_mean_wgs84_masked, regions, 'mean')
+  
+  regions$temp_mean_adm1 <- temp_mean_adm1
+  
+  country_results <- regions %>%
+    as.data.frame() %>%
+    rename(iso = GID_0) %>%
+    select(iso, NAME_1, temp_mean_adm1)
+  
+  temp_mean_adm1_df <- rbind(temp_mean_adm1_df, country_results)
+}
+
+temp_mean_adm1_df %<>%
+  mutate(across(everything(), ~ ifelse(is.nan(.), NA, .)))
+
+print(glimpse(temp_mean_adm1_df))
+
+saveRDS(temp_mean_adm1_df, file="data/data_rds/geo_ctrl/temp_mean_adm1.rds")
+
+
+temp_mean_adm2_df <- data.frame()
+
+for (country in cty_adm2) {
+  
+  shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_2.shp")
+  regions <- st_read(shapefile) %>% st_make_valid()
+  
+  shapefile_path <- paste0("data/data_raw/gadm/gadm41_", country, "_0.shp")
+  country_shp <- vect(shapefile_path)
+  
+  if (!identical(crs(temp_mean_wgs84), crs(country_shp))) {
+    country_shp <- project(country_shp, crs(temp_mean_wgs84))
+  }
+  
+  temp_mean_wgs84_cropped <- crop(temp_mean_wgs84, country_shp)
+  temp_mean_wgs84_masked <- mask(temp_mean_wgs84_cropped, country_shp)
+  
+  temp_mean_adm2 <- exactextractr::exact_extract(temp_mean_wgs84_masked, regions, 'mean')
+  
+  regions$temp_mean_adm2 <- temp_mean_adm2
+  
+  country_results <- regions %>%
+    as.data.frame() %>%
+    rename(iso = GID_0) %>%
+    select(iso, NAME_2, temp_mean_adm2)
+  
+  temp_mean_adm2_df <- rbind(temp_mean_adm2_df, country_results)
+}
+
+temp_mean_adm2_df %<>%
+  mutate(across(everything(), ~ ifelse(is.nan(.), NA, .)))
+
+print(glimpse(temp_mean_adm2_df))
+
+saveRDS(temp_mean_adm2_df, file="data/data_rds/geo_ctrl/temp_mean_adm2.rds")
+```
+
+```{r}
+tiff_file <- "data/data_raw/geography/temperature/CHELSA_bio5_1981-2010_V.2.1.tif"
+
+temp_max_wgs84 <- rast(tiff_file)
+
+print(temp_max_wgs84)
+
+africa_extent <- ext(-20, 60, -40, 40)
+
+temp_max_africa <- crop(temp_max_wgs84, africa_extent)
+
+plot(temp_max_africa, main = "temp_max Map of Africa", col = rev(heat.colors(100)), breaks = seq(0, 50, by = 1))
+
+temp_max_adm1_df <- data.frame()
+
+for (country in cty_adm1) {
+  
+  shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_1.shp")
+  regions <- st_read(shapefile) %>% st_make_valid()
+  
+  shapefile_path <- paste0("data/data_raw/gadm/gadm41_", country, "_0.shp")
+  country_shp <- vect(shapefile_path)
+  
+  if (!identical(crs(temp_max_wgs84), crs(country_shp))) {
+    country_shp <- project(country_shp, crs(temp_max_wgs84))
+  }
+  
+  temp_max_wgs84_cropped <- crop(temp_max_wgs84, country_shp)
+  temp_max_wgs84_masked <- mask(temp_max_wgs84_cropped, country_shp)
+  
+  temp_max_adm1 <- exactextractr::exact_extract(temp_max_wgs84_masked, regions, 'mean')
+  
+  regions$temp_max_adm1 <- temp_max_adm1
+  
+  country_results <- regions %>%
+    as.data.frame() %>%
+    rename(iso = GID_0) %>%
+    select(iso, NAME_1, temp_max_adm1)
+  
+  temp_max_adm1_df <- rbind(temp_max_adm1_df, country_results)
+}
+
+temp_max_adm1_df %<>%
+  mutate(across(everything(), ~ ifelse(is.nan(.), NA, .)))
+
+print(glimpse(temp_max_adm1_df))
+
+saveRDS(temp_max_adm1_df, file="data/data_rds/geo_ctrl/temp_max_adm1.rds")
+
+temp_max_adm2_df <- data.frame()
+
+for (country in cty_adm2) {
+  
+  shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_2.shp")
+  regions <- st_read(shapefile) %>% st_make_valid()
+  
+  shapefile_path <- paste0("data/data_raw/gadm/gadm41_", country, "_0.shp")
+  country_shp <- vect(shapefile_path)
+  
+  if (!identical(crs(temp_max_wgs84), crs(country_shp))) {
+    country_shp <- project(country_shp, crs(temp_max_wgs84))
+  }
+  
+  temp_max_wgs84_cropped <- crop(temp_max_wgs84, country_shp)
+  temp_max_wgs84_masked <- mask(temp_max_wgs84_cropped, country_shp)
+  
+  temp_max_adm2 <- exactextractr::exact_extract(temp_max_wgs84_masked, regions, 'mean')
+  
+  regions$temp_max_adm2 <- temp_max_adm2
+  
+  country_results <- regions %>%
+    as.data.frame() %>%
+    rename(iso = GID_0) %>%
+    select(iso, NAME_2, temp_max_adm2)
+  
+  temp_max_adm2_df <- rbind(temp_max_adm2_df, country_results)
+}
+
+temp_max_adm2_df %<>%
+  mutate(across(everything(), ~ ifelse(is.nan(.), NA, .)))
+
+print(glimpse(temp_max_adm2_df))
+
+saveRDS(temp_max_adm2_df, file="data/data_rds/geo_ctrl/temp_max_adm2.rds")
+```
+
+```{r}
+tiff_file <- "data/data_raw/geography/temperature/CHELSA_bio6_1981-2010_V.2.1.tif"
+
+temp_min_wgs84 <- rast(tiff_file)
+
+print(temp_min_wgs84)
+
+africa_extent <- ext(-20, 60, -40, 40)
+
+temp_min_africa <- crop(temp_min_wgs84, africa_extent)
+
+plot(temp_min_africa, main = "temp_min Map of Africa", col = viridis(100), breaks = seq(-20, 30, by = 1))
+
+temp_min_adm1_df <- data.frame()
+
+for (country in cty_adm1) {
+  
+  shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_1.shp")
+  regions <- st_read(shapefile) %>% st_make_valid()
+  
+  shapefile_path <- paste0("data/data_raw/gadm/gadm41_", country, "_0.shp")
+  country_shp <- vect(shapefile_path)
+  
+  if (!identical(crs(temp_min_wgs84), crs(country_shp))) {
+    country_shp <- project(country_shp, crs(temp_min_wgs84))
+  }
+  
+  temp_min_wgs84_cropped <- crop(temp_min_wgs84, country_shp)
+  temp_min_wgs84_masked <- mask(temp_min_wgs84_cropped, country_shp)
+  
+  temp_min_adm1 <- exactextractr::exact_extract(temp_min_wgs84_masked, regions, 'mean')
+  
+  regions$temp_min_adm1 <- temp_min_adm1
+  
+  country_results <- regions %>%
+    as.data.frame() %>%
+    rename(iso = GID_0) %>%
+    select(iso, NAME_1, temp_min_adm1)
+  
+  temp_min_adm1_df <- rbind(temp_min_adm1_df, country_results)
+}
+
+temp_min_adm1_df %<>%
+  mutate(across(everything(), ~ ifelse(is.nan(.), NA, .)))
+
+print(glimpse(temp_min_adm1_df))
+
+saveRDS(temp_min_adm1_df, file="data/data_rds/geo_ctrl/temp_min_adm1.rds")
+
+
+temp_min_adm2_df <- data.frame()
+
+for (country in cty_adm2) {
+  
+  shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_2.shp")
+  regions <- st_read(shapefile) %>% st_make_valid()
+  
+  shapefile_path <- paste0("data/data_raw/gadm/gadm41_", country, "_0.shp")
+  country_shp <- vect(shapefile_path)
+  
+  if (!identical(crs(temp_min_wgs84), crs(country_shp))) {
+    country_shp <- project(country_shp, crs(temp_min_wgs84))
+  }
+  
+  temp_min_wgs84_cropped <- crop(temp_min_wgs84, country_shp)
+  temp_min_wgs84_masked <- mask(temp_min_wgs84_cropped, country_shp)
+  
+  temp_min_adm2 <- exactextractr::exact_extract(temp_min_wgs84_masked, regions, 'mean')
+  
+  regions$temp_min_adm2 <- temp_min_adm2
+  
+  country_results <- regions %>%
+    as.data.frame() %>%
+    rename(iso = GID_0) %>%
+    select(iso, NAME_2, temp_min_adm2)
+  
+  temp_min_adm2_df <- rbind(temp_min_adm2_df, country_results)
+}
+
+temp_min_adm2_df %<>%
+  mutate(across(everything(), ~ ifelse(is.nan(.), NA, .)))
+
+print(glimpse(temp_min_adm2_df))
+
+saveRDS(temp_min_adm2_df, file="data/data_rds/geo_ctrl/temp_min_adm2.rds")
+```
