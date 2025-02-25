@@ -260,7 +260,11 @@ desert_wgs84 <- rast(tiff_file)
 
 print(desert_wgs84)
 
-binary_raster <- ifel(!is.na(desert_wgs84), 1, 0)
+africa_extent <- ext(-30, 60, -40, 40)
+
+destert_africa <- crop(desert_wgs84, africa_extent)
+
+binary_raster <- ifel(!is.na(desert_africa), 1, 0)
 
 print(binary_raster)
 
@@ -431,7 +435,7 @@ precipitation_wgs84 <- rast(tiff_file)
 
 print(precipitation_wgs84)
 
-africa_extent <- ext(-20, 60, -40, 40)
+africa_extent <- ext(-30, 60, -40, 40)
 
 precipitation_africa <- crop(precipitation_wgs84, africa_extent)
 
@@ -545,7 +549,7 @@ temp_mean_wgs84 <- rast(tiff_file)
 
 print(temp_mean_wgs84)
 
-africa_extent <- ext(-20, 60, -40, 40)
+africa_extent <- ext(-30, 60, -40, 40)
 
 temp_mean_africa <- crop(temp_mean_wgs84, africa_extent)
 
@@ -632,7 +636,7 @@ temp_max_wgs84 <- rast(tiff_file)
 
 print(temp_max_wgs84)
 
-africa_extent <- ext(-20, 60, -40, 40)
+africa_extent <- ext(-30, 60, -40, 40)
 
 temp_max_africa <- crop(temp_max_wgs84, africa_extent)
 
@@ -718,7 +722,7 @@ temp_min_wgs84 <- rast(tiff_file)
 
 print(temp_min_wgs84)
 
-africa_extent <- ext(-20, 60, -40, 40)
+africa_extent <- ext(-30, 60, -40, 40)
 
 temp_min_africa <- crop(temp_min_wgs84, africa_extent)
 
@@ -797,3 +801,93 @@ print(glimpse(temp_min_adm2_df))
 
 saveRDS(temp_min_adm2_df, file="data/data_rds/geo_ctrl/temp_min_adm2.rds")
 ```
+
+```{r}
+tiff_file <- "data/data_raw/geography/mountain/k3binary.tif"
+
+mountain_wgs84 <- rast(tiff_file)
+
+print(mountain_wgs84)
+
+africa_extent <- ext(-30, 60, -40, 40)
+
+mountain_africa <- crop(mountain_wgs84, africa_extent)
+
+binary_raster <- ifel(!is.na(mountain_africa), 1, 0)
+
+plot(binary_raster, main = "mountain Map of Africa", col = viridis(100))
+
+mountain_adm1_df <- data.frame()
+
+for (country in cty_adm1) {
+  
+  shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_1.shp")
+  regions <- st_read(shapefile) %>% st_make_valid()
+  
+  shapefile_path <- paste0("data/data_raw/gadm/gadm41_", country, "_0.shp")
+  country_shp <- vect(shapefile_path)
+  
+  if (!identical(crs(binary_raster), crs(country_shp))) {
+    country_shp <- project(country_shp, crs(binary_raster))
+  }
+  
+  binary_raster_cropped <- crop(binary_raster, country_shp)
+  binary_raster_masked <- mask(binary_raster_cropped, country_shp)
+  
+  mountain_adm1 <- exactextractr::exact_extract(binary_raster_masked, regions, 'mean')
+  
+  regions$mountain_adm1 <- mountain_adm1
+  
+  country_results <- regions %>%
+    as.data.frame() %>%
+    rename(iso = GID_0) %>%
+    select(iso, NAME_1, mountain_adm1)
+  
+  mountain_adm1_df <- rbind(mountain_adm1_df, country_results)
+}
+
+mountain_adm1_df %<>%
+  mutate(across(everything(), ~ ifelse(is.nan(.), NA, .)))
+
+print(glimpse(mountain_adm1_df))
+
+saveRDS(mountain_adm1_df, file="data/data_rds/geo_ctrl/mountain_adm1.rds")
+
+
+mountain_adm2_df <- data.frame()
+
+for (country in cty_adm2) {
+  
+  shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_2.shp")
+  regions <- st_read(shapefile) %>% st_make_valid()
+  
+  shapefile_path <- paste0("data/data_raw/gadm/gadm41_", country, "_0.shp")
+  country_shp <- vect(shapefile_path)
+  
+  if (!identical(crs(binary_raster), crs(country_shp))) {
+    country_shp <- project(country_shp, crs(binary_raster))
+  }
+  
+  binary_raster_cropped <- crop(binary_raster, country_shp)
+  binary_raster_masked <- mask(binary_raster_cropped, country_shp)
+  
+  mountain_adm2 <- exactextractr::exact_extract(binary_raster_masked, regions, 'mean')
+  
+  regions$mountain_adm2 <- mountain_adm2
+  
+  country_results <- regions %>%
+    as.data.frame() %>%
+    rename(iso = GID_0) %>%
+    select(iso, NAME_2, mountain_adm2)
+  
+  mountain_adm2_df <- rbind(mountain_adm2_df, country_results)
+}
+
+mountain_adm2_df %<>%
+  mutate(across(everything(), ~ ifelse(is.nan(.), NA, .)))
+
+print(glimpse(mountain_adm2_df))
+
+saveRDS(mountain_adm2_df, file="data/data_rds/geo_ctrl/mountain_adm2.rds")
+```
+
