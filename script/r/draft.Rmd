@@ -1,4 +1,69 @@
 ```{r}
+setwd("~/working_paper/trust/")
+getwd()
+```
+
+```{r packages, echo=FALSE, }
+library(haven)
+library(dplyr)
+select <- dplyr::select
+library(magrittr)
+library(stringr)
+library(geosphere)
+library(purrr)
+library(kableExtra)
+library(tidyr)
+library(readxl)
+library(sf)
+library(exactextractr)
+library(raster)
+library(rgdal)
+library(ncdf4)
+library(terra)
+```
+
+#Levels
+
+```{r}
+folder_path <- "data/data_raw/gadm"
+
+files <- list.files(folder_path, full.names = TRUE)
+
+levels <- data.frame(file = files) %>%
+  mutate(country = str_extract(file, "(?<=_)[A-Z]{3}(?=_\\d)"),
+         level = as.integer(str_extract(file, "(?<=_)[0-9]+(?=\\.shp$)"))) %>%
+  arrange(country, desc(level)) %>%
+  distinct(country, .keep_all = TRUE)
+
+levels %<>%
+  group_by(country) %>%
+  summarise(levels_nb = first(level))
+
+print(levels, n=40)
+```
+
+#Adm setup
+
+```{r}
+cty_adm1 <- levels%>%
+  filter(levels_nb>=1)%>%
+  pull(country)
+
+cty_adm2 <- levels%>%
+  filter(levels_nb>=2)%>%
+  pull(country)
+
+cty_adm3 <- levels%>%
+  filter(levels_nb>=3)%>%
+  pull(country)
+
+cty_adm4 <- levels%>%
+  filter(levels_nb>=4)%>%
+  pull(country)
+```
+
+
+```{r}
 library(ggplot2)
 library(dplyr)
 library(maps)
@@ -193,7 +258,6 @@ remove(bdd, country_data, country_data_result, country_data_sf, result, roads_sf
 ```
 
 ```{r}
-library(terra)
 
 tiff_file <- "data/data_raw/geography/desert/desert.tif"
 
@@ -280,3 +344,87 @@ print(glimpse(desert_r5_adm2))
 
 saveRDS(desert_r5_adm2, file="data/data_rds/geo_ctrl/desert_r5_adm2.rds")
 ```
+
+```{r}
+tiff_file <- "data/data_raw/geography/elevation/elevation.tif"
+
+elevation_wgs84 <- rast(tiff_file)
+
+print(elevation_wgs84)
+
+plot(elevation_wgs84, main = "Elevation Map", col = terrain.colors(100), breaks = seq(-1000, 3000, by = 100))
+
+elevation_r5_adm1 <- data.frame()
+
+for (country in cty_adm1) {
+  
+  shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_1.shp")
+  regions <- st_read(shapefile) %>% st_make_valid()
+  
+  shapefile_path <- paste0("data/data_raw/gadm/gadm41_", country, "_0.shp")
+  country_shp <- vect(shapefile_path)
+  
+  if (!identical(crs(elevation_wgs84), crs(country_shp))) {
+    country_shp <- project(country_shp, crs(elevation_wgs84))
+  }
+  
+  elevation_wgs84_cropped <- crop(elevation_wgs84, country_shp)
+  elevation_wgs84_masked <- mask(elevation_wgs84_cropped, country_shp)
+  
+  elevation_adm1 <- exactextractr::exact_extract(elevation_wgs84_masked, regions, 'mean')
+  
+  regions$elevation_adm1 <- elevation_adm1
+  regions_df <- regions %>%
+    as.data.frame() %>%
+    rename(iso = GID_0) %>%
+    select(iso, NAME_1, elevation_adm1) %>%
+    mutate(round = 5)
+  
+  elevation_r5_adm1 <- rbind(elevation_r5_adm1, regions_df)
+}
+
+elevation_r5_adm1 %<>%
+  mutate(across(everything(), ~ ifelse(is.nan(.), NA, .)))
+
+print(glimpse(elevation_r5_adm1))
+
+saveRDS(elevation_r5_adm1, file="data/data_rds/geo_ctrl/elevation_r5_adm1.rds")
+
+
+elevation_r5_adm2 <- data.frame()
+
+for (country in cty_adm2) {
+  
+  shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_2.shp")
+  regions <- st_read(shapefile) %>% st_make_valid()
+  
+  shapefile_path <- paste0("data/data_raw/gadm/gadm41_", country, "_0.shp")
+  country_shp <- vect(shapefile_path)
+  
+  if (!identical(crs(elevation_wgs84), crs(country_shp))) {
+    country_shp <- project(country_shp, crs(elevation_wgs84))
+  }
+  
+  elevation_wgs84_cropped <- crop(elevation_wgs84, country_shp)
+  elevation_wgs84_masked <- mask(elevation_wgs84_cropped, country_shp)
+  
+  elevation_adm2 <- exactextractr::exact_extract(elevation_wgs84_masked, regions, 'mean')
+  
+  regions$elevation_adm2 <- elevation_adm2
+  regions_df <- regions %>%
+    as.data.frame() %>%
+    rename(iso = GID_0) %>%
+    select(iso, NAME_2, elevation_adm2) %>%
+    mutate(round = 5)
+  
+  elevation_r5_adm2 <- rbind(elevation_r5_adm2, regions_df)
+}
+
+elevation_r5_adm2 %<>%
+  mutate(across(everything(), ~ ifelse(is.nan(.), NA, .)))
+
+print(glimpse(elevation_r5_adm2))
+
+saveRDS(elevation_r5_adm2, file="data/data_rds/geo_ctrl/elevation_r5_adm2.rds")
+```
+
