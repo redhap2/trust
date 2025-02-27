@@ -892,8 +892,6 @@ saveRDS(mountain_adm2_df, file="data/data_rds/geo_ctrl/mountain_adm2.rds")
 ```
 
 ```{r}
-data_final_r <- readRDS("data/data_rds/data_final_r.rds")
-
 desert_adm1 <- readRDS("data/data_rds/geo_ctrl/desert_adm1.rds")
 desert_adm2 <- readRDS("data/data_rds/geo_ctrl/desert_adm2.rds")
 
@@ -1027,10 +1025,52 @@ data_geo %<>% left_join(expanded_data, by=c("iso", "NAME_1", "NAME_2", "round"))
 
 rm(temp_mean)
 
+data_final_r <- readRDS("data/data_rds/data_final_r.rds")
+
 data_final_r %<>% left_join(data_geo, by=c("iso", "NAME_1", "NAME_2", "round"))
 
-saveRDS(data_final_r, file="data/data_rds/data_27_05_25.rds")
+countries_adm1 <- c("GHA","KEN","MOZ", "MWI","NGA","TZA","UGA","ZMB", "ZWE")
+countries_adm2 <- c("BEN", "BFA", "BWA", "CIV", "CMR", "GIN", "LBR", "MLI", "NAM", "NER", "SLE")
 
-write_dta(data_final_r, "data/data_dta/data_27_05_25.dta")
+data_final_r %<>%
+mutate(desert_region = case_when(
+    iso %in% countries_adm1 ~ desert_adm1,
+    iso %in% countries_adm2 ~ desert_adm2, 
+    TRUE ~ NA_integer_
+  ))%>%
+mutate(elevation_region = case_when(
+    iso %in% countries_adm1 ~ elevation_adm1,
+    iso %in% countries_adm2 ~ elevation_adm2, 
+    TRUE ~ NA_integer_
+  ))%>%
+mutate(mountain_region = case_when(
+    iso %in% countries_adm1 ~ mountain_adm1,
+    iso %in% countries_adm2 ~ mountain_adm2, 
+    TRUE ~ NA_integer_
+  ))%>%
+mutate(precipitation_region = case_when(
+    iso %in% countries_adm1 ~ precipitation_adm1,
+    iso %in% countries_adm2 ~ precipitation_adm2, 
+    TRUE ~ NA_integer_
+  ))%>%
+mutate(temp_max_region = case_when(
+    iso %in% countries_adm1 ~ temp_max_adm1,
+    iso %in% countries_adm2 ~ temp_max_adm2, 
+    TRUE ~ NA_integer_
+  ))%>%
+mutate(temp_min_region = case_when(
+    iso %in% countries_adm1 ~ temp_min_adm1,
+    iso %in% countries_adm2 ~ temp_min_adm2, 
+    TRUE ~ NA_integer_
+  ))%>%
+mutate(temp_mean_region = case_when(
+    iso %in% countries_adm1 ~ temp_mean_adm1,
+    iso %in% countries_adm2 ~ temp_mean_adm2, 
+    TRUE ~ NA_integer_
+  ))
+
+saveRDS(data_final_r, file="data/data_rds/data_27_02_25.rds")
+
+write_dta(data_final_r, "data/data_dta/data_27_02_25.dta")
 ```
 
