@@ -262,7 +262,7 @@ print(desert_wgs84)
 
 africa_extent <- ext(-30, 60, -40, 40)
 
-destert_africa <- crop(desert_wgs84, africa_extent)
+desert_africa <- crop(desert_wgs84, africa_extent)
 
 binary_raster <- ifel(!is.na(desert_africa), 1, 0)
 
@@ -331,7 +331,7 @@ for (country in cty_adm2) {
   country_results <- regions %>%
     as.data.frame() %>%
     rename(iso = GID_0) %>%
-    select(iso, NAME_2, desert_adm2)
+    select(iso, NAME_1, NAME_2, desert_adm2)
   
   desert_adm2_df <- rbind(desert_adm2_df, country_results)
 }
@@ -413,7 +413,7 @@ for (country in cty_adm2) {
   country_results <- regions %>%
     as.data.frame() %>%
     rename(iso = GID_0) %>%
-    select(iso, NAME_2, elevation_adm2)
+    select(iso, NAME_1, NAME_2, elevation_adm2)
   
   elevation_adm2_df <- rbind(elevation_adm2_df, country_results)
 }
@@ -439,7 +439,7 @@ africa_extent <- ext(-30, 60, -40, 40)
 
 precipitation_africa <- crop(precipitation_wgs84, africa_extent)
 
-plot(precipitation_africa, main = "Precipitation Map of Africa", col = viridis(100), breaks = seq(0, 3000, by = 100))
+plot(precipitation_africa, main = "Precipitation Map of Africa", col = rev(viridis(100)))
 
 precipitation_adm1_df <- data.frame()
 
@@ -502,7 +502,7 @@ for (country in cty_adm2) {
   country_results <- regions %>%
     as.data.frame() %>%
     rename(iso = GID_0) %>%
-    select(iso, NAME_2, precipitation_adm2)
+    select(iso, NAME_1, NAME_2, precipitation_adm2)
   
   precipitation_adm2_df <- rbind(precipitation_adm2_df, country_results)
 }
@@ -553,7 +553,7 @@ africa_extent <- ext(-30, 60, -40, 40)
 
 temp_mean_africa <- crop(temp_mean_wgs84, africa_extent)
 
-plot(temp_mean_africa, main = "temp_mean Map of Africa", col = rev(heat.colors(100)), breaks = seq(0, 50, by = 1))
+plot(temp_mean_africa, main = "temp_mean Map of Africa", col = rev(heat.colors(100)))
 
 temp_mean_adm1_df <- data.frame()
 
@@ -616,7 +616,7 @@ for (country in cty_adm2) {
   country_results <- regions %>%
     as.data.frame() %>%
     rename(iso = GID_0) %>%
-    select(iso, NAME_2, temp_mean_adm2)
+    select(iso, NAME_1, NAME_2, temp_mean_adm2)
   
   temp_mean_adm2_df <- rbind(temp_mean_adm2_df, country_results)
 }
@@ -702,7 +702,7 @@ for (country in cty_adm2) {
   country_results <- regions %>%
     as.data.frame() %>%
     rename(iso = GID_0) %>%
-    select(iso, NAME_2, temp_max_adm2)
+    select(iso, NAME_1, NAME_2, temp_max_adm2)
   
   temp_max_adm2_df <- rbind(temp_max_adm2_df, country_results)
 }
@@ -789,7 +789,7 @@ for (country in cty_adm2) {
   country_results <- regions %>%
     as.data.frame() %>%
     rename(iso = GID_0) %>%
-    select(iso, NAME_2, temp_min_adm2)
+    select(iso, NAME_1, NAME_2, temp_min_adm2)
   
   temp_min_adm2_df <- rbind(temp_min_adm2_df, country_results)
 }
@@ -878,7 +878,7 @@ for (country in cty_adm2) {
   country_results <- regions %>%
     as.data.frame() %>%
     rename(iso = GID_0) %>%
-    select(iso, NAME_2, mountain_adm2)
+    select(iso, NAME_1, NAME_2, mountain_adm2)
   
   mountain_adm2_df <- rbind(mountain_adm2_df, country_results)
 }
@@ -889,5 +889,148 @@ mountain_adm2_df %<>%
 print(glimpse(mountain_adm2_df))
 
 saveRDS(mountain_adm2_df, file="data/data_rds/geo_ctrl/mountain_adm2.rds")
+```
+
+```{r}
+data_final_r <- readRDS("data/data_rds/data_final_r.rds")
+
+desert_adm1 <- readRDS("data/data_rds/geo_ctrl/desert_adm1.rds")
+desert_adm2 <- readRDS("data/data_rds/geo_ctrl/desert_adm2.rds")
+
+desert <- merge(desert_adm1, desert_adm2, by = c("iso", "NAME_1"), all = TRUE)
+
+rm(desert_adm1, desert_adm2)
+
+rounds <- data.frame(round = rep(5:8, each = nrow(desert)))
+
+expanded_data <- desert[rep(1:nrow(desert), times = 4), ]
+
+expanded_data$round <- rounds$round
+
+expanded_data <- expanded_data %>% distinct(iso, NAME_1, NAME_2, round, .keep_all = TRUE)
+
+data_geo <- expanded_data
+
+rm(desert)
+
+elevation_adm1 <- readRDS("data/data_rds/geo_ctrl/elevation_adm1.rds")
+elevation_adm2 <- readRDS("data/data_rds/geo_ctrl/elevation_adm2.rds")
+
+elevation <- merge(elevation_adm1, elevation_adm2, by = c("iso", "NAME_1"), all = TRUE)
+
+rm(elevation_adm1, elevation_adm2)
+
+rounds <- data.frame(round = rep(5:8, each = nrow(elevation)))
+
+expanded_data <- elevation[rep(1:nrow(elevation), times = 4), ]
+
+expanded_data$round <- rounds$round
+
+expanded_data <- expanded_data %>% distinct(iso, NAME_1, NAME_2, round, .keep_all = TRUE)
+
+data_geo %<>% left_join(expanded_data, by=c("iso", "NAME_1", "NAME_2", "round"))
+
+rm(elevation)
+
+mountain_adm1 <- readRDS("data/data_rds/geo_ctrl/mountain_adm1.rds")
+mountain_adm2 <- readRDS("data/data_rds/geo_ctrl/mountain_adm2.rds")
+
+mountain <- merge(mountain_adm1, mountain_adm2, by = c("iso", "NAME_1"), all = TRUE)
+
+rm(mountain_adm1, mountain_adm2)
+
+rounds <- data.frame(round = rep(5:8, each = nrow(mountain)))
+
+expanded_data <- mountain[rep(1:nrow(mountain), times = 4), ]
+
+expanded_data$round <- rounds$round
+
+expanded_data <- expanded_data %>% distinct(iso, NAME_1, NAME_2, round, .keep_all = TRUE)
+
+data_geo %<>% left_join(expanded_data, by=c("iso", "NAME_1", "NAME_2", "round"))
+
+rm(mountain)
+
+precipitation_adm1 <- readRDS("data/data_rds/geo_ctrl/precipitation_adm1.rds")
+precipitation_adm2 <- readRDS("data/data_rds/geo_ctrl/precipitation_adm2.rds")
+
+precipitation <- merge(precipitation_adm1, precipitation_adm2, by = c("iso", "NAME_1"), all = TRUE)
+
+rm(precipitation_adm1, precipitation_adm2)
+
+rounds <- data.frame(round = rep(5:8, each = nrow(precipitation)))
+
+expanded_data <- precipitation[rep(1:nrow(precipitation), times = 4), ]
+
+expanded_data$round <- rounds$round
+
+expanded_data <- expanded_data %>% distinct(iso, NAME_1, NAME_2, round, .keep_all = TRUE)
+
+data_geo %<>% left_join(expanded_data, by=c("iso", "NAME_1", "NAME_2", "round"))
+
+rm(precipitation)
+
+temp_max_adm1 <- readRDS("data/data_rds/geo_ctrl/temp_max_adm1.rds")
+temp_max_adm2 <- readRDS("data/data_rds/geo_ctrl/temp_max_adm2.rds")
+
+temp_max <- merge(temp_max_adm1, temp_max_adm2, by = c("iso", "NAME_1"), all = TRUE)
+
+rm(temp_max_adm1, temp_max_adm2)
+
+rounds <- data.frame(round = rep(5:8, each = nrow(temp_max)))
+
+expanded_data <- temp_max[rep(1:nrow(temp_max), times = 4), ]
+
+expanded_data$round <- rounds$round
+
+expanded_data <- expanded_data %>% distinct(iso, NAME_1, NAME_2, round, .keep_all = TRUE)
+
+data_geo %<>% left_join(expanded_data, by=c("iso", "NAME_1", "NAME_2", "round"))
+
+rm(temp_max)
+
+temp_min_adm1 <- readRDS("data/data_rds/geo_ctrl/temp_min_adm1.rds")
+temp_min_adm2 <- readRDS("data/data_rds/geo_ctrl/temp_min_adm2.rds")
+
+temp_min <- merge(temp_min_adm1, temp_min_adm2, by = c("iso", "NAME_1"), all = TRUE)
+
+rm(temp_min_adm1, temp_min_adm2)
+
+rounds <- data.frame(round = rep(5:8, each = nrow(temp_min)))
+
+expanded_data <- temp_min[rep(1:nrow(temp_min), times = 4), ]
+
+expanded_data$round <- rounds$round
+
+expanded_data <- expanded_data %>% distinct(iso, NAME_1, NAME_2, round, .keep_all = TRUE)
+
+data_geo %<>% left_join(expanded_data, by=c("iso", "NAME_1", "NAME_2", "round"))
+
+rm(temp_min)
+
+temp_mean_adm1 <- readRDS("data/data_rds/geo_ctrl/temp_mean_adm1.rds")
+temp_mean_adm2 <- readRDS("data/data_rds/geo_ctrl/temp_mean_adm2.rds")
+
+temp_mean <- merge(temp_mean_adm1, temp_mean_adm2, by = c("iso", "NAME_1"), all = TRUE)
+
+rm(temp_mean_adm1, temp_mean_adm2)
+
+rounds <- data.frame(round = rep(5:8, each = nrow(temp_mean)))
+
+expanded_data <- temp_mean[rep(1:nrow(temp_mean), times = 4), ]
+
+expanded_data$round <- rounds$round
+
+expanded_data <- expanded_data %>% distinct(iso, NAME_1, NAME_2, round, .keep_all = TRUE)
+
+data_geo %<>% left_join(expanded_data, by=c("iso", "NAME_1", "NAME_2", "round"))
+
+rm(temp_mean)
+
+data_final_r %<>% left_join(data_geo, by=c("iso", "NAME_1", "NAME_2", "round"))
+
+saveRDS(data_final_r, file="data/data_rds/data_27_05_25.rds")
+
+write_dta(data_final_r, "data/data_dta/data_27_05_25.dta")
 ```
 
