@@ -693,3 +693,64 @@ reghdfe assoc_a dist_cap_max_norm dist_sndncap_max_norm $ind_controls if spl==1,
 reghdfe commu_a dist_cap_max_norm dist_sndncap_max_norm $ind_controls if spl==1, absorb(i.country_round i.murdock_names) cluster(cluster_bdd)
 reghdfe prob_a  dist_cap_max_norm dist_sndncap_max_norm $ind_controls if spl==1, absorb(i.country_round i.murdock_names) cluster(cluster_bdd)
 }
+
+
+
+
+
+
+
+global mypath "C:\Users\Redha CHABA\Documents\working_paper\trust"
+
+use "${mypath}\data\data_dta\data_27_02_25.dta", clear
+
+
+
+global ind_controls age age_2 i.sex i.educ_sec i.bin_rural i.bin_conditions_eco i.bin_conditions_country i.bin_emp night_region_log pop_region_log area_region_log tele_news paper_news radio_news disc_pol_a pres_adm1 distance_to_road
+*bin_unfair_eth: removes observations
+global cty_controls gdppc_log area_log vdem_polyarchy cor_index i.color_num i.gov_num
+
+
+gen cvg_region_pot_dist=dist_cap_max_norm*cvg_region_pot
+gen lis_region_tv=lis_region*tv
+gen lis_region_tv_dist=dist_cap_max_norm*lis_region_tv
+
+** ols interaction
+
+noisily{
+	cls
+
+reghdfe pol_trust c.dist_cap_max_norm##c.cvg_region_pot dist_sndncap_max_norm $ind_controls if spl==1, absorb(i.country_round) cluster(i.region_time)
+
+reghdfe pol_trust c.dist_cap_max_norm##c.cvg_region_pot dist_sndncap_max_norm $ind_controls desert_region elevation_region mountain_region precipitation_region temp_max_region temp_min_region temp_mean_region if spl==1, absorb(i.country_round) cluster(i.region_time)
+}
+** first stage
+gen cvg_region_pot_dist=dist_cap_max_norm*cvg_region_pot
+gen lis_region_tv=lis_region*tv
+gen lis_region_tv_dist=dist_cap_max_norm*lis_region_tv
+
+gen desert_region_tv=desert_region*tv
+gen precipitation_region_tv=precipitation_region*tv
+gen temp_max_region_tv=temp_max_region*tv
+gen temp_min_region_tv=temp_min_region*tv
+gen temp_mean_region_tv=temp_mean_region*tv
+gen elevation_region_tv=elevation_region*tv
+gen mountain_region_tv=mountain_region*tv
+
+noisily{
+	cls
+ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_region_tv lis_region_tv_dist)  dist_sndncap_max_norm $ind_controls if spl==1, absorb(i.country_round) cluster(region_time) endog(cvg_region_pot cvg_region_pot_dist) ffirst
+
+ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_region_tv lis_region_tv_dist)  dist_sndncap_max_norm $ind_controls if spl==1, absorb(i.country_round) cluster(region_time) endog(cvg_region_pot cvg_region_pot_dist) ffirst
+}
+
+
+ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_region_tv lis_region_tv_dist)  dist_sndncap_max_norm $ind_controls if spl==1, absorb(i.country_round) cluster(region_time) endog(cvg_region_pot cvg_region_pot_dist) ffirst
+
+ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_region_tv lis_region_tv_dist)  dist_sndncap_max_norm $ind_controls desert_region_tv elevation_region_tv mountain_region_tv precipitation_region_tv temp_mean_region_tv temp_max_region_tv temp_min_region_tv if spl==1, absorb(i.country_round) cluster(region_time) endog(cvg_region_pot cvg_region_pot_dist) ffirst
+
+ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_region_tv lis_region_tv_dist)  dist_sndncap_max_norm $ind_controls desert_region elevation_region mountain_region if spl==1, absorb(i.country_round) cluster(region_time) endog(cvg_region_pot cvg_region_pot_dist) ffirst
+
+ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_region_tv lis_region_tv_dist)  dist_sndncap_max_norm $ind_controls desert_region_tv elevation_region_tv mountain_region_tv if spl==1, absorb(i.country_round) cluster(region_time) endog(cvg_region_pot cvg_region_pot_dist) ffirst
+
+ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_region_tv lis_region_tv_dist)  dist_sndncap_max_norm $ind_controls desert_region_tv mountain_region_tv if spl==1, absorb(i.country_round) cluster(region_time) endog(cvg_region_pot cvg_region_pot_dist) ffirst
