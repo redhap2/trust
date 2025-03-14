@@ -141,11 +141,7 @@ levels %<>%
   summarise(levels_nb = first(level))
 
 print(levels, n=40)
-```
 
-#Adm setup
-
-```{r}
 cty_adm1 <- levels%>%
   filter(levels_nb>=1)%>%
   pull(country)
@@ -232,7 +228,6 @@ rc <- function(x) {
 }
 ```
 
-
 #3G
 
 ##Round 5 (2012)
@@ -241,8 +236,6 @@ rc <- function(x) {
 
 ```{r}
 ggg_r5_adm1 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm1) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2012 - GeoTIFF/Data_MCE/ByCountry/MCE_3G/MCE_", country, "3G_2012.tif")
@@ -278,7 +271,7 @@ for (country in cty_adm1) {
     }
 
     if (!compareRaster(ggg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 3G per square kilometer: 3G raster*population density raster
@@ -308,8 +301,6 @@ for (country in cty_adm1) {
       mutate(round = 5)
 
     ggg_r5_adm1 <- rbind(ggg_r5_adm1, regions)
-
-
 }
 
 ggg_r5_adm1 %<>%
@@ -317,15 +308,13 @@ ggg_r5_adm1 %<>%
 
 print(glimpse(ggg_r5_adm1))
 
-saveRDS(ggg_r5_adm1, file="data/data_rds/ggg_r5_adm1_bis.rds")
+saveRDS(ggg_r5_adm1, file="data/data_rds/ggg_r5_adm1.rds")
 ```
 
 ###adm2
 
 ```{r}
 ggg_r5_adm2 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm2) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2012 - GeoTIFF/Data_MCE/ByCountry/MCE_3G/MCE_", country, "3G_2012.tif")
@@ -361,7 +350,7 @@ for (country in cty_adm2) {
     }
 
     if (!compareRaster(ggg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 3G per square kilometer: 3G raster*population density raster
@@ -391,8 +380,6 @@ for (country in cty_adm2) {
       mutate(round = 5)
 
     ggg_r5_adm2 <- rbind(ggg_r5_adm2, regions)
-
-
 }
 
 ggg_r5_adm2 %<>%
@@ -400,15 +387,13 @@ ggg_r5_adm2 %<>%
 
 print(glimpse(ggg_r5_adm2))
 
-saveRDS(ggg_r5_adm2, file="data/data_rds/ggg_r5_adm2_bis.rds")
+saveRDS(ggg_r5_adm2, file="data/data_rds/ggg_r5_adm2.rds")
 ```
 
 ###adm3
 
 ```{r}
 ggg_r5_adm3 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm3) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2012 - GeoTIFF/Data_MCE/ByCountry/MCE_3G/MCE_", country, "3G_2012.tif")
@@ -444,7 +429,7 @@ for (country in cty_adm3) {
     }
 
     if (!compareRaster(ggg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 3G per square kilometer: 3G raster*population density raster
@@ -474,8 +459,6 @@ for (country in cty_adm3) {
       mutate(round = 5)
 
     ggg_r5_adm3 <- rbind(ggg_r5_adm3, regions)
-
-
 }
 
 ggg_r5_adm3 %<>%
@@ -483,20 +466,20 @@ ggg_r5_adm3 %<>%
 
 print(glimpse(ggg_r5_adm3))
 
-saveRDS(ggg_r5_adm3, file="data/data_rds/ggg_r5_adm3_bis.rds")
+saveRDS(ggg_r5_adm3, file="data/data_rds/ggg_r5_adm3.rds")
 ```
 
 ###adm_merge
 
 ```{r}
-ggg_r5_adm1 <- readRDS("data/data_rds/ggg_r5_adm1_bis.rds")
-ggg_r5_adm2 <- readRDS("data/data_rds/ggg_r5_adm2_bis.rds")
-ggg_r5_adm3 <- readRDS("data/data_rds/ggg_r5_adm3_bis.rds")
+ggg_r5_adm1 <- readRDS("data/data_rds/ggg_r5_adm1.rds")
+ggg_r5_adm2 <- readRDS("data/data_rds/ggg_r5_adm2.rds")
+ggg_r5_adm3 <- readRDS("data/data_rds/ggg_r5_adm3.rds")
 
 ggg_r5 <- merge(ggg_r5_adm1, ggg_r5_adm2, by = c("iso", "NAME_1", "round"), all = TRUE)
 ggg_r5 <- merge(ggg_r5, ggg_r5_adm3, by = c("iso", "NAME_1", "NAME_2", "round"), all = TRUE)
 
-saveRDS(ggg_r5, file="data/data_rds/ggg_r5_bis.rds")
+saveRDS(ggg_r5, file="data/data_rds/ggg_r5.rds")
 ```
 
 ##Round 6 (2015)
@@ -505,8 +488,6 @@ saveRDS(ggg_r5, file="data/data_rds/ggg_r5_bis.rds")
 
 ```{r}
 ggg_r6_adm1 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm1) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2015 - GeoTIFF/Data_MCE/ByCountry/MCE_3G/MCE_", country, "3G_2015.tif")
@@ -542,7 +523,7 @@ for (country in cty_adm1) {
     }
 
     if (!compareRaster(ggg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 3G per square kilometer: 3G raster*population density raster
@@ -572,8 +553,6 @@ for (country in cty_adm1) {
       mutate(round = 6)
 
     ggg_r6_adm1 <- rbind(ggg_r6_adm1, regions)
-
-
 }
 
 ggg_r6_adm1 %<>%
@@ -581,15 +560,13 @@ ggg_r6_adm1 %<>%
 
 print(glimpse(ggg_r6_adm1))
 
-saveRDS(ggg_r6_adm1, file="data/data_rds/ggg_r6_adm1_bis.rds")
+saveRDS(ggg_r6_adm1, file="data/data_rds/ggg_r6_adm1.rds")
 ```
 
 ###adm2
 
 ```{r}
 ggg_r6_adm2 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm2) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2015 - GeoTIFF/Data_MCE/ByCountry/MCE_3G/MCE_", country, "3G_2015.tif")
@@ -625,7 +602,7 @@ for (country in cty_adm2) {
     }
 
     if (!compareRaster(ggg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 3G per square kilometer: 3G raster*population density raster
@@ -655,8 +632,6 @@ for (country in cty_adm2) {
       mutate(round = 6)
 
     ggg_r6_adm2 <- rbind(ggg_r6_adm2, regions)
-
-
 }
 
 ggg_r6_adm2 %<>%
@@ -664,16 +639,13 @@ ggg_r6_adm2 %<>%
 
 print(glimpse(ggg_r6_adm2))
 
-saveRDS(ggg_r6_adm2, file="data/data_rds/ggg_r6_adm2_bis.rds")
-
+saveRDS(ggg_r6_adm2, file="data/data_rds/ggg_r6_adm2.rds")
 ```
 
 ###adm3
 
 ```{r}
 ggg_r6_adm3 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm3) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2015 - GeoTIFF/Data_MCE/ByCountry/MCE_3G/MCE_", country, "3G_2015.tif")
@@ -709,7 +681,7 @@ for (country in cty_adm3) {
     }
 
     if (!compareRaster(ggg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 3G per square kilometer: 3G raster*population density raster
@@ -739,8 +711,6 @@ for (country in cty_adm3) {
       mutate(round = 6)
 
     ggg_r6_adm3 <- rbind(ggg_r6_adm3, regions)
-
-
 }
 
 ggg_r6_adm3 %<>%
@@ -748,20 +718,20 @@ ggg_r6_adm3 %<>%
 
 print(glimpse(ggg_r6_adm3))
 
-saveRDS(ggg_r6_adm3, file="data/data_rds/ggg_r6_adm3_bis.rds")
+saveRDS(ggg_r6_adm3, file="data/data_rds/ggg_r6_adm3.rds")
 ```
 
 ###adm_merge
 
 ```{r}
-ggg_r6_adm1 <- readRDS("data/data_rds/ggg_r6_adm1_bis.rds")
-ggg_r6_adm2 <- readRDS("data/data_rds/ggg_r6_adm2_bis.rds")
-ggg_r6_adm3 <- readRDS("data/data_rds/ggg_r6_adm3_bis.rds")
+ggg_r6_adm1 <- readRDS("data/data_rds/ggg_r6_adm1.rds")
+ggg_r6_adm2 <- readRDS("data/data_rds/ggg_r6_adm2.rds")
+ggg_r6_adm3 <- readRDS("data/data_rds/ggg_r6_adm3.rds")
 
 ggg_r6 <- merge(ggg_r6_adm1, ggg_r6_adm2, by = c("iso", "NAME_1", "round"), all = TRUE)
 ggg_r6 <- merge(ggg_r6, ggg_r6_adm3, by = c("iso", "NAME_1", "NAME_2", "round"), all = TRUE)
 
-saveRDS(ggg_r6, file="data/data_rds/ggg_r6_bis.rds")
+saveRDS(ggg_r6, file="data/data_rds/ggg_r6.rds")
 ```
 
 ##Round 7 (2017)
@@ -770,8 +740,6 @@ saveRDS(ggg_r6, file="data/data_rds/ggg_r6_bis.rds")
 
 ```{r}
 ggg_r7_adm1 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm1) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2017 - GeoTIFF/Data_MCE/ByCountry/MCE_3G/MCE_", country, "3G_2017.tif")
@@ -807,7 +775,7 @@ for (country in cty_adm1) {
     }
 
     if (!compareRaster(ggg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 3G per square kilometer: 3G raster*population density raster
@@ -837,8 +805,6 @@ for (country in cty_adm1) {
       mutate(round = 7)
 
     ggg_r7_adm1 <- rbind(ggg_r7_adm1, regions)
-
-
 }
 
 ggg_r7_adm1 %<>%
@@ -846,15 +812,13 @@ ggg_r7_adm1 %<>%
 
 print(glimpse(ggg_r7_adm1))
 
-saveRDS(ggg_r7_adm1, file="data/data_rds/ggg_r7_adm1_bis.rds")
+saveRDS(ggg_r7_adm1, file="data/data_rds/ggg_r7_adm1.rds")
 ```
 
 ###adm2
 
 ```{r}
 ggg_r7_adm2 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm2) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2017 - GeoTIFF/Data_MCE/ByCountry/MCE_3G/MCE_", country, "3G_2017.tif")
@@ -890,7 +854,7 @@ for (country in cty_adm2) {
     }
 
     if (!compareRaster(ggg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 3G per square kilometer: 3G raster*population density raster
@@ -920,8 +884,6 @@ for (country in cty_adm2) {
       mutate(round = 7)
 
     ggg_r7_adm2 <- rbind(ggg_r7_adm2, regions)
-
-
 }
 
 ggg_r7_adm2 %<>%
@@ -929,15 +891,13 @@ ggg_r7_adm2 %<>%
 
 print(glimpse(ggg_r7_adm2))
 
-saveRDS(ggg_r7_adm2, file="data/data_rds/ggg_r7_adm2_bis.rds")
+saveRDS(ggg_r7_adm2, file="data/data_rds/ggg_r7_adm2.rds")
 ```
 
 ###adm3
 
 ```{r}
 ggg_r7_adm3 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm3) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2017 - GeoTIFF/Data_MCE/ByCountry/MCE_3G/MCE_", country, "3G_2017.tif")
@@ -973,7 +933,7 @@ for (country in cty_adm3) {
     }
 
     if (!compareRaster(ggg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 3G per square kilometer: 3G raster*population density raster
@@ -1003,8 +963,6 @@ for (country in cty_adm3) {
       mutate(round = 7)
 
     ggg_r7_adm3 <- rbind(ggg_r7_adm3, regions)
-
-
 }
 
 ggg_r7_adm3 %<>%
@@ -1012,20 +970,20 @@ ggg_r7_adm3 %<>%
 
 print(glimpse(ggg_r7_adm3))
 
-saveRDS(ggg_r7_adm3, file="data/data_rds/ggg_r7_adm3_bis.rds")
+saveRDS(ggg_r7_adm3, file="data/data_rds/ggg_r7_adm3.rds")
 ```
 
 ###adm_merge
 
 ```{r}
-ggg_r7_adm1 <- readRDS("data/data_rds/ggg_r7_adm1_bis.rds")
-ggg_r7_adm2 <- readRDS("data/data_rds/ggg_r7_adm2_bis.rds")
-ggg_r7_adm3 <- readRDS("data/data_rds/ggg_r7_adm3_bis.rds")
+ggg_r7_adm1 <- readRDS("data/data_rds/ggg_r7_adm1.rds")
+ggg_r7_adm2 <- readRDS("data/data_rds/ggg_r7_adm2.rds")
+ggg_r7_adm3 <- readRDS("data/data_rds/ggg_r7_adm3.rds")
 
 ggg_r7 <- merge(ggg_r7_adm1, ggg_r7_adm2, by = c("iso", "NAME_1", "round"), all = TRUE)
 ggg_r7 <- merge(ggg_r7, ggg_r7_adm3, by = c("iso", "NAME_1", "NAME_2", "round"), all = TRUE)
 
-saveRDS(ggg_r7, file="data/data_rds/ggg_r7_bis.rds")
+saveRDS(ggg_r7, file="data/data_rds/ggg_r7.rds")
 ```
 
 ##Round 8 (2020)
@@ -1034,8 +992,6 @@ saveRDS(ggg_r7, file="data/data_rds/ggg_r7_bis.rds")
 
 ```{r}
 ggg_r8_adm1 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm1) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2020 - GeoTIFF/Data_MCE/ByCountry/MCE_3G/MCE_", country, "3G_2020.tif")
@@ -1071,7 +1027,7 @@ for (country in cty_adm1) {
     }
 
     if (!compareRaster(ggg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 3G per square kilometer: 3G raster*population density raster
@@ -1101,8 +1057,6 @@ for (country in cty_adm1) {
       mutate(round = 8)
 
     ggg_r8_adm1 <- rbind(ggg_r8_adm1, regions)
-
-
 }
 
 ggg_r8_adm1 %<>%
@@ -1110,15 +1064,13 @@ ggg_r8_adm1 %<>%
 
 print(glimpse(ggg_r8_adm1))
 
-saveRDS(ggg_r8_adm1, file="data/data_rds/ggg_r8_adm1_bis.rds")
+saveRDS(ggg_r8_adm1, file="data/data_rds/ggg_r8_adm1.rds")
 ```
 
 ###adm2
 
 ```{r}
 ggg_r8_adm2 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm2) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2020 - GeoTIFF/Data_MCE/ByCountry/MCE_3G/MCE_", country, "3G_2020.tif")
@@ -1154,7 +1106,7 @@ for (country in cty_adm2) {
     }
 
     if (!compareRaster(ggg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 3G per square kilometer: 3G raster*population density raster
@@ -1184,8 +1136,6 @@ for (country in cty_adm2) {
       mutate(round = 8)
 
     ggg_r8_adm2 <- rbind(ggg_r8_adm2, regions)
-
-
 }
 
 ggg_r8_adm2 %<>%
@@ -1193,15 +1143,13 @@ ggg_r8_adm2 %<>%
 
 print(glimpse(ggg_r8_adm2))
 
-saveRDS(ggg_r8_adm2, file="data/data_rds/ggg_r8_adm2_bis.rds")
+saveRDS(ggg_r8_adm2, file="data/data_rds/ggg_r8_adm2.rds")
 ```
 
 ###adm3
 
 ```{r}
 ggg_r8_adm3 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm3) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2020 - GeoTIFF/Data_MCE/ByCountry/MCE_3G/MCE_", country, "3G_2020.tif")
@@ -1237,7 +1185,7 @@ for (country in cty_adm3) {
     }
 
     if (!compareRaster(ggg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 3G per square kilometer: 3G raster*population density raster
@@ -1267,8 +1215,6 @@ for (country in cty_adm3) {
       mutate(round = 8)
 
     ggg_r8_adm3 <- rbind(ggg_r8_adm3, regions)
-
-
 }
 
 ggg_r8_adm3 %<>%
@@ -1276,33 +1222,35 @@ ggg_r8_adm3 %<>%
 
 print(glimpse(ggg_r8_adm3))
 
-saveRDS(ggg_r8_adm3, file="data/data_rds/ggg_r8_adm3_bis.rds")
+saveRDS(ggg_r8_adm3, file="data/data_rds/ggg_r8_adm3.rds")
 ```
 
 ###adm_merge
 
 ```{r}
-ggg_r8_adm1 <- readRDS("data/data_rds/ggg_r8_adm1_bis.rds")
-ggg_r8_adm2 <- readRDS("data/data_rds/ggg_r8_adm2_bis.rds")
-ggg_r8_adm3 <- readRDS("data/data_rds/ggg_r8_adm3_bis.rds")
+ggg_r8_adm1 <- readRDS("data/data_rds/ggg_r8_adm1.rds")
+ggg_r8_adm2 <- readRDS("data/data_rds/ggg_r8_adm2.rds")
+ggg_r8_adm3 <- readRDS("data/data_rds/ggg_r8_adm3.rds")
 
 ggg_r8 <- merge(ggg_r8_adm1, ggg_r8_adm2, by = c("iso", "NAME_1", "round"), all = TRUE)
 ggg_r8 <- merge(ggg_r8, ggg_r8_adm3, by = c("iso", "NAME_1", "NAME_2", "round"), all = TRUE)
 
-saveRDS(ggg_r8, file="data/data_rds/ggg_r8_bis.rds")
+saveRDS(ggg_r8, file="data/data_rds/ggg_r8.rds")
 ```
 
+## Merge 3G
+
 ```{r}
-ggg_r5 <- readRDS("data/data_rds/ggg_r5_bis.rds")
-ggg_r6 <- readRDS("data/data_rds/ggg_r6_bis.rds")
-ggg_r7 <- readRDS("data/data_rds/ggg_r7_bis.rds")
-ggg_r8 <- readRDS("data/data_rds/ggg_r8_bis.rds")
+ggg_r5 <- readRDS("data/data_rds/ggg_r5.rds")
+ggg_r6 <- readRDS("data/data_rds/ggg_r6.rds")
+ggg_r7 <- readRDS("data/data_rds/ggg_r7.rds")
+ggg_r8 <- readRDS("data/data_rds/ggg_r8.rds")
 
 ggg_rounds <- list(ggg_r5, ggg_r6, ggg_r7, ggg_r8)
 
 ggg_stack <- bind_rows(ggg_rounds)
 
-saveRDS(ggg_stack, file="data/data_rds/ggg_stack_bis.rds")
+saveRDS(ggg_stack, file="data/data_rds/ggg_stack.rds")
 ```
 
 
@@ -1314,8 +1262,6 @@ saveRDS(ggg_stack, file="data/data_rds/ggg_stack_bis.rds")
 
 ```{r}
 gg_r5_adm1 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm1) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2012 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country, "2G_2012.tif")
@@ -1351,7 +1297,7 @@ for (country in cty_adm1) {
     }
 
     if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 2G per square kilometer: 2G raster*population density raster
@@ -1381,8 +1327,6 @@ for (country in cty_adm1) {
       mutate(round = 5)
 
     gg_r5_adm1 <- rbind(gg_r5_adm1, regions)
-
-
 }
 
 gg_r5_adm1 %<>%
@@ -1390,15 +1334,13 @@ gg_r5_adm1 %<>%
 
 print(glimpse(gg_r5_adm1))
 
-saveRDS(gg_r5_adm1, file="data/data_rds/gg_r5_adm1_bis.rds")
+saveRDS(gg_r5_adm1, file="data/data_rds/gg_r5_adm1.rds")
 ```
 
 ###adm2
 
 ```{r}
 gg_r5_adm2 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm2) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2012 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country, "2G_2012.tif")
@@ -1434,7 +1376,7 @@ for (country in cty_adm2) {
     }
 
     if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 2G per square kilometer: 2G raster*population density raster
@@ -1464,8 +1406,6 @@ for (country in cty_adm2) {
       mutate(round = 5)
 
     gg_r5_adm2 <- rbind(gg_r5_adm2, regions)
-
-
 }
 
 gg_r5_adm2 %<>%
@@ -1473,15 +1413,13 @@ gg_r5_adm2 %<>%
 
 print(glimpse(gg_r5_adm2))
 
-saveRDS(gg_r5_adm2, file="data/data_rds/gg_r5_adm2_bis.rds")
+saveRDS(gg_r5_adm2, file="data/data_rds/gg_r5_adm2.rds")
 ```
 
 ###adm3
 
 ```{r}
 gg_r5_adm3 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm3) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2012 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country, "2G_2012.tif")
@@ -1517,7 +1455,7 @@ for (country in cty_adm3) {
     }
 
     if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 2G per square kilometer: 2G raster*population density raster
@@ -1554,20 +1492,20 @@ gg_r5_adm3 %<>%
 
 print(glimpse(gg_r5_adm3))
 
-saveRDS(gg_r5_adm3, file="data/data_rds/gg_r5_adm3_bis.rds")
+saveRDS(gg_r5_adm3, file="data/data_rds/gg_r5_adm3.rds")
 ```
 
 ###adm_merge
 
 ```{r}
-gg_r5_adm1 <- readRDS("data/data_rds/gg_r5_adm1_bis.rds")
-gg_r5_adm2 <- readRDS("data/data_rds/gg_r5_adm2_bis.rds")
-gg_r5_adm3 <- readRDS("data/data_rds/gg_r5_adm3_bis.rds")
+gg_r5_adm1 <- readRDS("data/data_rds/gg_r5_adm1.rds")
+gg_r5_adm2 <- readRDS("data/data_rds/gg_r5_adm2.rds")
+gg_r5_adm3 <- readRDS("data/data_rds/gg_r5_adm3.rds")
 
 gg_r5 <- merge(gg_r5_adm1, gg_r5_adm2, by = c("iso", "NAME_1", "round"), all = TRUE)
 gg_r5 <- merge(gg_r5, gg_r5_adm3, by = c("iso", "NAME_1", "NAME_2", "round"), all = TRUE)
 
-saveRDS(gg_r5, file="data/data_rds/gg_r5_bis.rds")
+saveRDS(gg_r5, file="data/data_rds/gg_r5.rds")
 ```
 
 ##Round 6 (2015)
@@ -1576,8 +1514,6 @@ saveRDS(gg_r5, file="data/data_rds/gg_r5_bis.rds")
 
 ```{r}
 gg_r6_adm1 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm1) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2015 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country, "2G_2015.tif")
@@ -1613,7 +1549,7 @@ for (country in cty_adm1) {
     }
 
     if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 2G per square kilometer: 2G raster*population density raster
@@ -1643,8 +1579,6 @@ for (country in cty_adm1) {
       mutate(round = 6)
 
     gg_r6_adm1 <- rbind(gg_r6_adm1, regions)
-
-
 }
 
 gg_r6_adm1 %<>%
@@ -1652,15 +1586,13 @@ gg_r6_adm1 %<>%
 
 print(glimpse(gg_r6_adm1))
 
-saveRDS(gg_r6_adm1, file="data/data_rds/gg_r6_adm1_bis.rds")
+saveRDS(gg_r6_adm1, file="data/data_rds/gg_r6_adm1.rds")
 ```
 
 ###adm2
 
 ```{r}
 gg_r6_adm2 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm2) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2015 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country, "2G_2015.tif")
@@ -1696,7 +1628,7 @@ for (country in cty_adm2) {
     }
 
     if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 2G per square kilometer: 2G raster*population density raster
@@ -1726,8 +1658,6 @@ for (country in cty_adm2) {
       mutate(round = 6)
 
     gg_r6_adm2 <- rbind(gg_r6_adm2, regions)
-
-
 }
 
 gg_r6_adm2 %<>%
@@ -1735,15 +1665,13 @@ gg_r6_adm2 %<>%
 
 print(glimpse(gg_r6_adm2))
 
-saveRDS(gg_r6_adm2, file="data/data_rds/gg_r6_adm2_bis.rds")
+saveRDS(gg_r6_adm2, file="data/data_rds/gg_r6_adm2.rds")
 ```
 
 ###adm3
 
 ```{r}
 gg_r6_adm3 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm3) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2015 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country, "2G_2015.tif")
@@ -1779,7 +1707,7 @@ for (country in cty_adm3) {
     }
 
     if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 2G per square kilometer: 2G raster*population density raster
@@ -1809,8 +1737,6 @@ for (country in cty_adm3) {
       mutate(round = 6)
 
     gg_r6_adm3 <- rbind(gg_r6_adm3, regions)
-
-
 }
 
 gg_r6_adm3 %<>%
@@ -1818,21 +1744,20 @@ gg_r6_adm3 %<>%
 
 print(glimpse(gg_r6_adm3))
 
-saveRDS(gg_r6_adm3, file="data/data_rds/gg_r6_adm3_bis.rds")
+saveRDS(gg_r6_adm3, file="data/data_rds/gg_r6_adm3.rds")
 ```
 
 ###adm_merge
 
 ```{r}
-gg_r6_adm1 <- readRDS("data/data_rds/gg_r6_adm1_bis.rds")
-gg_r6_adm2 <- readRDS("data/data_rds/gg_r6_adm2_bis.rds")
-gg_r6_adm3 <- readRDS("data/data_rds/gg_r6_adm3_bis.rds")
+gg_r6_adm1 <- readRDS("data/data_rds/gg_r6_adm1.rds")
+gg_r6_adm2 <- readRDS("data/data_rds/gg_r6_adm2.rds")
+gg_r6_adm3 <- readRDS("data/data_rds/gg_r6_adm3.rds")
 
 gg_r6 <- merge(gg_r6_adm1, gg_r6_adm2, by = c("iso", "NAME_1", "round"), all = TRUE)
 gg_r6 <- merge(gg_r6, gg_r6_adm3, by = c("iso", "NAME_1", "NAME_2", "round"), all = TRUE)
 
-saveRDS(gg_r6, file="data/data_rds/gg_r6_bis.rds")
-
+saveRDS(gg_r6, file="data/data_rds/gg_r6.rds")
 ```
 
 ##Round 7 (2017)
@@ -1841,8 +1766,6 @@ saveRDS(gg_r6, file="data/data_rds/gg_r6_bis.rds")
 
 ```{r}
 gg_r7_adm1 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm1) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2017 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country, "2G_2017.tif")
@@ -1878,7 +1801,7 @@ for (country in cty_adm1) {
     }
 
     if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 2G per square kilometer: 2G raster*population density raster
@@ -1915,15 +1838,13 @@ gg_r7_adm1 %<>%
 
 print(glimpse(gg_r7_adm1))
 
-saveRDS(gg_r7_adm1, file="data/data_rds/gg_r7_adm1_bis.rds")
+saveRDS(gg_r7_adm1, file="data/data_rds/gg_r7_adm1.rds")
 ```
 
 ###adm2
 
 ```{r}
 gg_r7_adm2 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm2) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2017 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country, "2G_2017.tif")
@@ -1959,7 +1880,7 @@ for (country in cty_adm2) {
     }
 
     if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 2G per square kilometer: 2G raster*population density raster
@@ -1989,8 +1910,6 @@ for (country in cty_adm2) {
       mutate(round = 7)
 
     gg_r7_adm2 <- rbind(gg_r7_adm2, regions)
-
-
 }
 
 gg_r7_adm2 %<>%
@@ -1998,15 +1917,13 @@ gg_r7_adm2 %<>%
 
 print(glimpse(gg_r7_adm2))
 
-saveRDS(gg_r7_adm2, file="data/data_rds/gg_r7_adm2_bis.rds")
+saveRDS(gg_r7_adm2, file="data/data_rds/gg_r7_adm2.rds")
 ```
 
 ###adm3
 
 ```{r}
 gg_r7_adm3 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm3) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2017 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country, "2G_2017.tif")
@@ -2042,7 +1959,7 @@ for (country in cty_adm3) {
     }
 
     if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 2G per square kilometer: 2G raster*population density raster
@@ -2079,20 +1996,20 @@ gg_r7_adm3 %<>%
 
 print(glimpse(gg_r7_adm3))
 
-saveRDS(gg_r7_adm3, file="data/data_rds/gg_r7_adm3_bis.rds")
+saveRDS(gg_r7_adm3, file="data/data_rds/gg_r7_adm3.rds")
 ```
 
 ###adm_merge
 
 ```{r}
-gg_r7_adm1 <- readRDS("data/data_rds/gg_r7_adm1_bis.rds")
-gg_r7_adm2 <- readRDS("data/data_rds/gg_r7_adm2_bis.rds")
-gg_r7_adm3 <- readRDS("data/data_rds/gg_r7_adm3_bis.rds")
+gg_r7_adm1 <- readRDS("data/data_rds/gg_r7_adm1.rds")
+gg_r7_adm2 <- readRDS("data/data_rds/gg_r7_adm2.rds")
+gg_r7_adm3 <- readRDS("data/data_rds/gg_r7_adm3.rds")
 
 gg_r7 <- merge(gg_r7_adm1, gg_r7_adm2, by = c("iso", "NAME_1", "round"), all = TRUE)
 gg_r7 <- merge(gg_r7, gg_r7_adm3, by = c("iso", "NAME_1", "NAME_2", "round"), all = TRUE)
 
-saveRDS(gg_r7, file="data/data_rds/gg_r7_bis.rds")
+saveRDS(gg_r7, file="data/data_rds/gg_r7.rds")
 ```
 
 ##Round 8 (2020)
@@ -2101,8 +2018,6 @@ saveRDS(gg_r7, file="data/data_rds/gg_r7_bis.rds")
 
 ```{r}
 gg_r8_adm1 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm1) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2020 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country, "2G_2020.tif")
@@ -2138,7 +2053,7 @@ for (country in cty_adm1) {
     }
 
     if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 2G per square kilometer: 2G raster*population density raster
@@ -2175,15 +2090,13 @@ gg_r8_adm1 %<>%
 
 print(glimpse(gg_r8_adm1))
 
-saveRDS(gg_r8_adm1, file="data/data_rds/gg_r8_adm1_bis.rds")
+saveRDS(gg_r8_adm1, file="data/data_rds/gg_r8_adm1.rds")
 ```
 
 ###adm2
 
 ```{r}
 gg_r8_adm2 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm2) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2020 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country, "2G_2020.tif")
@@ -2219,7 +2132,7 @@ for (country in cty_adm2) {
     }
 
     if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 2G per square kilometer: 2G raster*population density raster
@@ -2249,8 +2162,6 @@ for (country in cty_adm2) {
       mutate(round = 8)
 
     gg_r8_adm2 <- rbind(gg_r8_adm2, regions)
-
-
 }
 
 gg_r8_adm2 %<>%
@@ -2258,15 +2169,13 @@ gg_r8_adm2 %<>%
 
 print(glimpse(gg_r8_adm2))
 
-saveRDS(gg_r8_adm2, file="data/data_rds/gg_r8_adm2_bis.rds")
+saveRDS(gg_r8_adm2, file="data/data_rds/gg_r8_adm2.rds")
 ```
 
 ###adm3
 
 ```{r}
 gg_r8_adm3 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
 
 for (country in cty_adm3) {
     tiff_file <- paste0("data/data_raw/collins_recode/Mobile Coverage Explorer v2020 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_", country, "2G_2020.tif")
@@ -2302,7 +2211,7 @@ for (country in cty_adm3) {
     }
 
     if (!compareRaster(gg_wgs84_masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
 #Number of people with potential access to 2G per square kilometer: 2G raster*population density raster
@@ -2339,120 +2248,170 @@ gg_r8_adm3 %<>%
 
 print(glimpse(gg_r8_adm3))
 
-saveRDS(gg_r8_adm3, file="data/data_rds/gg_r8_adm3_bis.rds")
+saveRDS(gg_r8_adm3, file="data/data_rds/gg_r8_adm3.rds")
 ```
 
 ###adm_merge
 
 ```{r}
-gg_r8_adm1 <- readRDS("data/data_rds/gg_r8_adm1_bis.rds")
-gg_r8_adm2 <- readRDS("data/data_rds/gg_r8_adm2_bis.rds")
-gg_r8_adm3 <- readRDS("data/data_rds/gg_r8_adm3_bis.rds")
+gg_r8_adm1 <- readRDS("data/data_rds/gg_r8_adm1.rds")
+gg_r8_adm2 <- readRDS("data/data_rds/gg_r8_adm2.rds")
+gg_r8_adm3 <- readRDS("data/data_rds/gg_r8_adm3.rds")
 
 gg_r8 <- merge(gg_r8_adm1, gg_r8_adm2, by = c("iso", "NAME_1", "round"), all = TRUE)
 gg_r8 <- merge(gg_r8, gg_r8_adm3, by = c("iso", "NAME_1", "NAME_2", "round"), all = TRUE)
 
-saveRDS(gg_r8, file="data/data_rds/gg_r8_bis.rds")
+saveRDS(gg_r8, file="data/data_rds/gg_r8.rds")
 ```
 
+## Merge 2G
+
 ```{r}
-gg_r5 <- readRDS("data/data_rds/gg_r5_bis.rds")
-gg_r6 <- readRDS("data/data_rds/gg_r6_bis.rds")
-gg_r7 <- readRDS("data/data_rds/gg_r7_bis.rds")
-gg_r8 <- readRDS("data/data_rds/gg_r8_bis.rds")
+gg_r5 <- readRDS("data/data_rds/gg_r5.rds")
+gg_r6 <- readRDS("data/data_rds/gg_r6.rds")
+gg_r7 <- readRDS("data/data_rds/gg_r7.rds")
+gg_r8 <- readRDS("data/data_rds/gg_r8.rds")
 
 gg_rounds <- list(gg_r5, gg_r6, gg_r7, gg_r8)
 
 gg_stack <- bind_rows(gg_rounds)
 
-saveRDS(gg_stack, file="data/data_rds/gg_stack_bis.rds")
+saveRDS(gg_stack, file="data/data_rds/gg_stack.rds")
 ```
 
-##Merge internet
+# Merge Internet
 
 ```{r}
-gg_stack <- readRDS("data/data_rds/gg_stack_bis.rds")
-ggg_stack <- readRDS("data/data_rds/ggg_stack_bis.rds")
+# -----------------------------------------------------------------------------
+# MERGING AND PROCESSING REGIONAL INTERNET DATA
+# -----------------------------------------------------------------------------
 
-int_stack_bis <- gg_stack %>%
+# -----------------------------------------------------------------------------
+# 1. LOAD DATA
+# -----------------------------------------------------------------------------
+gg_stack <- readRDS("data/data_rds/gg_stack.rds")
+ggg_stack <- readRDS("data/data_rds/ggg_stack.rds")
+
+# -----------------------------------------------------------------------------
+# 2. MERGE DATASETS
+# -----------------------------------------------------------------------------
+# Merge gg_stack with ggg_stack by region identifiers and round
+int_stack <- gg_stack %>%
   left_join(ggg_stack, by = c("iso", "NAME_1", "NAME_2", "NAME_3", "round"))
 
-saveRDS(int_stack_bis, file="data/data_rds/int_stack_bis.rds")
+# Save intermediate merged internet dataset
+saveRDS(int_stack, file = "data/data_rds/int_stack.rds")
 
-int_stack_bis <- readRDS("data/data_rds/int_stack_bis.rds")
+# -----------------------------------------------------------------------------
+# 3. CLEAN MERGED DATA
+# -----------------------------------------------------------------------------
+# Coalesce population variables from both datasets (take first non-NA value)
+int_stack %<>%
+  mutate(
+    pop_adm1 = coalesce(pop_adm1.x, pop_adm1.y),
+    pop_adm2 = coalesce(pop_adm2.x, pop_adm2.y),
+    pop_adm3 = coalesce(pop_adm3.x, pop_adm3.y)
+  )
 
-int_stack_bis%<>%
-  mutate(pop_adm1= coalesce(pop_adm1.x, pop_adm1.y))%>%
-  mutate(pop_adm2 = coalesce(pop_adm2.x, pop_adm2.y))%>%
-  mutate(pop_adm3 = coalesce(pop_adm3.x, pop_adm3.y))
-
-int_stack_bis%<>%
+# Remove duplicate columns ending with .x and .y
+int_stack %<>%
   select(-ends_with(".x"), -ends_with(".y"))
 
-data_final_nlp_bis <- readRDS("data/data_rds/data_final_nlp.rds")
+# -----------------------------------------------------------------------------
+# 4. MERGE WITH FINAL DATASET
+# -----------------------------------------------------------------------------
+# Load data_final dataset
+data_final <- readRDS("data/data_rds/data_final.rds")
 
-data_final_nlp_bis%<>%
-  select(-c("gg_pop_adm1","gg_adm1","gg_adm1_pot","gg_pop_adm2","gg_adm2","gg_adm2_pot","gg_pop_adm3","gg_adm3","gg_adm3_pot","ggg_pop_adm1","ggg_adm1","ggg_adm1_pot","ggg_pop_adm2","ggg_adm2","ggg_adm2_pot","ggg_pop_adm3","ggg_adm3","ggg_adm3_pot","pop_adm1","pop_adm2","pop_adm3", "gg_region_pot", "ggg_region_pot", "cvg_region_pot", "cvg_region_pot_2")) 
+# Merge final dataset with internet stack
+data_final %<>%
+  left_join(int_stack, by = c("iso", "NAME_1", "NAME_2", "NAME_3", "round"))
 
-data_final_nlp_bis %<>%
-  left_join(int_stack_bis, by = c("iso", "NAME_1", "NAME_2", "NAME_3", "round"))
+# -----------------------------------------------------------------------------
+# 5. REGION CLASSIFICATION
+# -----------------------------------------------------------------------------
+# Define country groups by administrative level
+countries_adm1 <- c("GHA", "KEN", "MOZ", "MWI", "NGA", "TZA", "UGA", "ZMB", "ZWE")
+countries_adm2 <- c("BEN", "BFA", "BWA", "CIV", "CMR", "GIN", "LBR", "MLI", "NAM", "NER", "SLE")
 
-data_final_nlp_bis%<>%
-mutate(gg_region_pot = case_when(
-    iso %in% c("GHA","KEN","MOZ", "MWI","NGA","TZA","UGA","ZMB", "ZWE") ~ gg_adm1_pot,
-    iso %in%  c("BEN", "BFA", "BWA", "CIV", "CMR", "GIN", "LBR", "MLI", "NAM", "NER", "SLE") ~ gg_adm2_pot, 
+# -----------------------------------------------------------------------------
+# 6. CREATE REGION POTENTIAL VARIABLES
+# -----------------------------------------------------------------------------
+# Generate region-specific variables based on country classification
+data_final %<>%
+  # Create gg region potential by admin level
+  mutate(gg_region_pot = case_when(
+    iso %in% countries_adm1 ~ gg_adm1_pot,
+    iso %in% countries_adm2 ~ gg_adm2_pot,
     TRUE ~ NA_integer_
-  ))%>%
-mutate(ggg_region_pot = case_when(
-    iso %in% c("GHA","KEN","MOZ", "MWI","NGA","TZA","UGA","ZMB", "ZWE") ~ ggg_adm1_pot,
-    iso %in%  c("BEN", "BFA", "BWA", "CIV", "CMR", "GIN", "LBR", "MLI", "NAM", "NER", "SLE") ~ ggg_adm2_pot, 
-    TRUE ~ NA_integer_))%>%
-  mutate(cvg_region_pot=ifelse(is.na(ggg_region_pot), gg_region_pot, ggg_region_pot))
-
-
-data_final_nlp_bis <- readRDS("data/data_rds/data_final_nlp_bis.rds")
-
-data_final_nlp_bis%<>%
-mutate(pop_region = case_when(
-    iso %in% c("GHA","KEN","MOZ", "MWI","NGA","TZA","UGA","ZMB", "ZWE") ~ pop_adm1,
-    iso %in% c("BEN", "BFA", "BWA", "CIV", "CMR", "GIN", "LBR", "MLI", "NAM", "NER", "SLE") ~ pop_adm2, 
+  )) %>%
+  # Create ggg region potential by admin level
+  mutate(ggg_region_pot = case_when(
+    iso %in% countries_adm1 ~ ggg_adm1_pot,
+    iso %in% countries_adm2 ~ ggg_adm2_pot,
     TRUE ~ NA_integer_
-  ))%>%
-  mutate(pop_region_log=log(pop_region+1))
+  )) %>%
+  # Create combined coverage variable, prioritizing 3G data
+  mutate(cvg_region_pot = ifelse(is.na(ggg_region_pot), gg_region_pot, ggg_region_pot))
 
-data_final_nlp_bis2%<>%
+# -----------------------------------------------------------------------------
+# 7. POPULATION VARIABLES
+# -----------------------------------------------------------------------------
+# Create region-specific population density variables
+data_final %<>%
+  mutate(pop_region = case_when(
+    iso %in% countries_adm1 ~ pop_adm1,
+    iso %in% countries_adm2 ~ pop_adm2,
+    TRUE ~ NA_integer_
+  )) %>%
+  mutate(pop_region_log = log(pop_region + 1))
+
+# -----------------------------------------------------------------------------
+# 8. CREATE REGION AND TIME IDENTIFIERS
+# -----------------------------------------------------------------------------
+# Generate unique IDs for regions and time periods
+data_final %<>%
+  # Create unique identifiers for administrative regions
   group_by(NAME_2) %>%
   mutate(name2_id = cur_group_id()) %>%
   ungroup() %>%
   group_by(NAME_1) %>%
-  mutate(name1_id = cur_group_id())%>%
-  ungroup()%>%
+  mutate(name1_id = cur_group_id()) %>%
+  ungroup() %>%
+  
+  # Create time-region identifiers for ADM1
   mutate(adm1_time = case_when(
-    iso %in% c("BEN", "BFA", "BWA", "CIV", "CMR", "GIN", "LBR", "MLI", "NAM", "NER", "SLE") ~ name1_id * 10000 + round,
+    iso %in% countries_adm1 ~ name1_id * 10000 + round,
     TRUE ~ NA_integer_
-  ))%>%
-mutate(adm1_time = as.integer(as.factor(adm1_time)))%>%
-mutate(adm2_time = case_when(
-    iso %in% c("GHA","KEN","MOZ", "MWI","NGA","TZA","UGA","ZMB", "ZWE") ~ name2_id * 10000 + round,
+  )) %>%
+  mutate(adm1_time = as.integer(as.factor(adm1_time))) %>%
+  
+  # Create time-region identifiers for ADM2
+  mutate(adm2_time = case_when(
+    iso %in% countries_adm2 ~ name2_id * 10000 + round,
     TRUE ~ NA_integer_
-  ))%>%
-mutate(adm2_time = as.integer(as.factor(adm2_time)))
+  )) %>%
+  mutate(adm2_time = as.integer(as.factor(adm2_time)))
 
-  data_final_nlp_bis2%<>%
-  mutate(country_round=as.numeric(paste0(round,ccode)))%>%
+# Create country-round and region-time identifiers
+data_final %<>%
+  mutate(country_round = as.numeric(paste0(round, ccode))) %>%
+  # Create general region-time identifier based on administrative level
   mutate(region_time = case_when(
-    iso %in%c("BEN", "BFA", "BWA", "CIV", "CMR", "GIN", "LBR", "MLI", "NAM", "NER", "SLE") ~ name2_id * 10000 + round, 
-    iso %in% c("GHA","KEN","MOZ", "MWI","NGA","TZA","UGA","ZMB", "ZWE") ~ name1_id * 10000 + round,
+    iso %in% countries_adm1 ~ name1_id * 10000 + round,
+    iso %in% countries_adm2 ~ name2_id * 10000 + round,
     TRUE ~ NA_integer_
-  ))%>%
+  )) %>%
   mutate(region_time = as.integer(as.factor(region_time)))
 
-  
-  
-  
-saveRDS(data_final_nlp_bis, file="data/data_rds/data_final_nlp_bis.rds")
-write_dta(data_final_nlp_bis, "data/data_dta/data.dta")
+# -----------------------------------------------------------------------------
+# 9. SAVE FINAL DATASETS
+# -----------------------------------------------------------------------------
+# Save as R and Stata files
+saveRDS(data_final, file = "data/data_rds/data_final.rds")
+write_dta(data_final, "data/data_dta/data_final.dta")
 ```
+
 
 #Nightlight
 
@@ -2468,8 +2427,8 @@ night_wgs84 <- raster(tiff_file)
 values(night_wgs84)[values(night_wgs84) < 0] <- 0
 
 night_r5_adm1 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
+
+
 
 for (country in cty_adm1) {
     shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_1.shp")
@@ -2519,8 +2478,8 @@ night_wgs84 <- raster(tiff_file)
 values(night_wgs84)[values(night_wgs84) < 0] <- 0
 
 night_r5_adm2 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
+
+
 
 for (country in cty_adm2) {
     shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_2.shp")
@@ -2570,8 +2529,8 @@ night_wgs84 <- raster(tiff_file)
 values(night_wgs84)[values(night_wgs84) < 0] <- 0
 
 night_r5_adm3 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
+
+
 
 for (country in cty_adm3) {
     shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_3.shp")
@@ -2636,8 +2595,8 @@ night_wgs84 <- raster(tiff_file)
 values(night_wgs84)[values(night_wgs84) < 0] <- 0
 
 night_r6_adm1 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
+
+
 
 for (country in cty_adm1) {
     shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_1.shp")
@@ -2687,8 +2646,8 @@ night_wgs84 <- raster(tiff_file)
 values(night_wgs84)[values(night_wgs84) < 0] <- 0
 
 night_r6_adm2 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
+
+
 
 for (country in cty_adm2) {
     shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_2.shp")
@@ -2738,8 +2697,8 @@ night_wgs84 <- raster(tiff_file)
 values(night_wgs84)[values(night_wgs84) < 0] <- 0
 
 night_r6_adm3 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
+
+
 
 for (country in cty_adm3) {
     shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_3.shp")
@@ -2804,8 +2763,8 @@ night_wgs84 <- raster(tiff_file)
 values(night_wgs84)[values(night_wgs84) < 0] <- 0
 
 night_r7_adm1 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
+
+
 
 for (country in cty_adm1) {
     shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_1.shp")
@@ -2855,8 +2814,8 @@ night_wgs84 <- raster(tiff_file)
 values(night_wgs84)[values(night_wgs84) < 0] <- 0
 
 night_r7_adm2 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
+
+
 
 for (country in cty_adm2) {
     shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_2.shp")
@@ -2906,8 +2865,8 @@ night_wgs84 <- raster(tiff_file)
 values(night_wgs84)[values(night_wgs84) < 0] <- 0
 
 night_r7_adm3 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
+
+
 
 for (country in cty_adm3) {
     shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_3.shp")
@@ -2971,8 +2930,8 @@ night_wgs84 <- raster(tiff_file)
 values(night_wgs84)[values(night_wgs84) < 0] <- 0
 
 night_r8_adm1 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
+
+
 
 for (country in cty_adm1) {
     shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_1.shp")
@@ -3022,8 +2981,8 @@ night_wgs84 <- raster(tiff_file)
 values(night_wgs84)[values(night_wgs84) < 0] <- 0
 
 night_r8_adm2 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
+
+
 
 for (country in cty_adm2) {
     shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_2.shp")
@@ -3073,8 +3032,8 @@ night_wgs84 <- raster(tiff_file)
 values(night_wgs84)[values(night_wgs84) < 0] <- 0
 
 night_r8_adm3 <- data.frame()
-success_countries <- c()
-failed_countries <- c()
+
+
 
 for (country in cty_adm3) {
     shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_3.shp")
@@ -3145,7 +3104,7 @@ saveRDS(night_stack, file="data/data_rds/night_stack.rds")
 ##Merge nightlight
 
 ```{r}
-data_final_int <- readRDS("data/data_rds/data_final_nlp_bis.rds")
+data_final_int <- readRDS("data/data_rds/data_final_nlp.rds")
 night_stack <- readRDS("data/data_rds/night_stack.rds")
 
 data_final_int%<>%
@@ -3220,7 +3179,7 @@ masked <- mask(cropped, country_shp)
     }
 
     if (!compareRaster(masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
   shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_1.shp")
@@ -3293,7 +3252,7 @@ data_file <- paste0("data/data_raw/pop_density/", country, "_pd_2012_1km_UNadj.t
     }
 
     if (!compareRaster(masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
   shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_2.shp")
@@ -3366,7 +3325,7 @@ data_file <- paste0("data/data_raw/pop_density/", country, "_pd_2012_1km_UNadj.t
     }
 
     if (!compareRaster(masked, pop_wgs84_resampled)) {
-      stop("Les rasters n'ont pas la même résolution et/ou la même étendue après ajustement.")
+      stop("error raster matching")
     }
 
   shapefile <- paste0("data/data_raw/gadm/gadm41_", country, "_3.shp")
@@ -3453,11 +3412,11 @@ saveRDS(data_final_int_n_l, file="data/data_rds/data_final_int_n_l.rds")
 #Region area
 
 ```{r}
-data_final_nlp_bis <- readRDS("data/data_rds/data_final_int_n_l.rds")
+data_final_nlp <- readRDS("data/data_rds/data_final_int_n_l.rds")
 
 countries <- c("BEN", "BFA", "BWA", "CMR", "CIV", "GIN", "LBR", "MLI", "NAM", "NER", "SLE", "GHA", "KEN", "MOZ", "MWI", "NGA", "TZA", "UGA", "ZMB", "ZWE")
 
-data_keep <- subset(data_final_nlp_bis, select = c("id_unique", "latitude", "longitude")) %>%
+data_keep <- subset(data_final_nlp, select = c("id_unique", "latitude", "longitude")) %>%
   filter(!is.na(latitude) & !is.na(longitude))
 
 data_keep_sf <- st_as_sf(data_keep, coords = c("longitude", "latitude"), crs = 4326)
@@ -3580,32 +3539,32 @@ data_area_region <- as.data.frame(data_keep_sf_3)%>%select(-c("geometry", "id_un
 saveRDS(data_area_region, file="data/data_rds/data_area_region.rds")
 
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   select(-c( "area_0_km2", "area_1_km2", "area_2_km2", "area_3_km2"))
 
-data_final_nlp_bis2 %<>% left_join(data_area_region, by=c("iso", "NAME_1", "NAME_2", "NAME_3"))%>%
+data_final_nlp2 %<>% left_join(data_area_region, by=c("iso", "NAME_1", "NAME_2", "NAME_3"))%>%
   distinct(id_unique, .keep_all = TRUE)
 
-saveRDS(data_final_nlp_bis2, file="data/data_rds/data_final_nlp_bis2.rds")
+saveRDS(data_final_nlp2, file="data/data_rds/data_final_nlp2.rds")
 ```
 
 #Various variable creation
 
 ```{r}
-data_final_nlp_bis2 <- readRDS("data/data_rds/data_final.rds")
+data_final_nlp2 <- readRDS("data/data_rds/data_final.rds")
 
 #remove too long variables for stata
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   select(-c(dist_cap_ncap_quint_mean_norm_all, dist_cap_sndncap_quint_max_norm_all, dist_cap_sndncap_quint_mean_norm_all, dist_cap_sndncap_dec_max_norm_all, dist_cap_sndncap_dec_mean_norm_all))
 
 #region variables
 countries_adm1 <- c("GHA","KEN","MOZ", "MWI","NGA","TZA","UGA","ZMB", "ZWE")
 countries_adm2 <- c("BEN", "BFA", "BWA", "CIV", "CMR", "GIN", "LBR", "MLI", "NAM", "NER", "SLE")
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   select(-c("lis_region", "pop_region", "night_region", "lis_region_pot", "lis_region_log", "pop_region_log", "night_region_log"))
 
-data_final_nlp_bis2 %<>%
+data_final_nlp2 %<>%
 mutate(lis_region = case_when(
     iso %in% countries_adm1 ~ lis_adm1,
     iso %in% countries_adm2 ~ lis_adm2, 
@@ -3625,7 +3584,7 @@ mutate(pop_region = case_when(
   mutate(pop_region_log=log(pop_region+1))%>%
   mutate(night_region_log=log(night_region+1))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(lis_region_pot = case_when(
     iso %in% countries_adm1 ~ lis_adm1_pot,
     iso %in% countries_adm2 ~ lis_adm2_pot, 
@@ -3688,20 +3647,20 @@ results%<>%
   rename(NAME_1_pres=NAME_1)
 
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   select(-c("pres_adm1", "pres_adm2"))
 
-data_final_nlp_bis2 %<>% left_join(results, by=c("iso", "round"))
+data_final_nlp2 %<>% left_join(results, by=c("iso", "round"))
 
-data_final_nlp_bis2 %<>%
+data_final_nlp2 %<>%
   mutate(pres_adm1=ifelse(NAME_1_pres==NAME_1, 1, 0))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   select(-geometry)
 
 
 #individual variables
-data_final_nlp_bis2 %<>%
+data_final_nlp2 %<>%
 mutate(age = na_if(age, -1) %>% na_if(998) %>% na_if(999))%>%
 mutate(age_2=age*age)%>%
 mutate(educ_sec=case_when(
@@ -3740,19 +3699,19 @@ mutate(unfair_eth = as.numeric(unfair_eth)) %>%
   )) %>%
   mutate(disc_pol_a=if_else(disc_pol %in% c(0, 1, 2), disc_pol, NA_integer_))
 
-data_final_nlp_bis2 %<>%
+data_final_nlp2 %<>%
  group_by(id_unique)%>%
   mutate(pol_trust = ifelse(all(is.na(c(trust_pres_a, trust_parl_a))), NA, weighted.mean(c(trust_pres_a, trust_parl_a), na.rm = TRUE)))%>%
   ungroup()
 
 
 #cluster variables
-data_final_nlp_bis2 %<>%
+data_final_nlp2 %<>%
 mutate(country_round=as.numeric(paste0(round,ccode)))
 
 cty_sample <- c("BEN", "BFA", "BWA", "CIV", "CMR", "GIN", "LBR", "MLI", "NAM", "NER", "SLE", "GHA","KEN","MOZ", "MWI","NGA","TZA","UGA","ZMB", "ZWE")
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(spl=if_else(iso%in%cty_sample, 1, 0))
 ```
 
@@ -3762,7 +3721,7 @@ data_final_nlp_bis2%<>%
 ##correction: add colonial origin
 data_color <- read_xlsx("data/data_raw/color.xlsx") 
 
-data_final_nlp_bis2 %<>% left_join(data_color, by="iso")
+data_final_nlp2 %<>% left_join(data_color, by="iso")
 rm(data_color)
 
 juriglobe <- read_excel("data/data_raw/FR_index.xlsx")
@@ -3784,11 +3743,11 @@ juriglobe %<>%
   ) %>%
   select(iso, presidential, parlementarian, semi_presidential, monarchical, gov_type)
 
-data_final_nlp_bis2 %<>% left_join(juriglobe, by="iso")
+data_final_nlp2 %<>% left_join(juriglobe, by="iso")
 
 rm(juriglobe)
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   select(-geometry)
 
 gdppc <- read_excel("data/data_raw/gdppc.xls")%>%
@@ -3817,12 +3776,12 @@ var_cty %<>%
 
 glimpse(var_cty)
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   select(-c("gdppc", "gdppc_log", "cor_index", "area", "area_log", "pop"))
 
-data_final_nlp_bis2 %<>% left_join(var_cty, by = "iso")
+data_final_nlp2 %<>% left_join(var_cty, by = "iso")
 
-data_final_nlp_bis2 %<>%
+data_final_nlp2 %<>%
 mutate(cor_index = case_when(
     round == 5 ~ cor_2012,
     round == 6 ~ cor_2015,
@@ -3831,7 +3790,7 @@ mutate(cor_index = case_when(
     TRUE ~ NA
   ))
 
-data_final_nlp_bis2 %<>%
+data_final_nlp2 %<>%
 mutate(gdppc = case_when(
     round == 5 ~ gdpcap_2012,
     round == 6 ~ gdpcap_2015,
@@ -3840,7 +3799,7 @@ mutate(gdppc = case_when(
     TRUE ~ NA
   ))
 
-data_final_nlp_bis2 %<>%
+data_final_nlp2 %<>%
 mutate(pop = case_when(
     round == 5 ~ pop_2012,
     round == 6 ~ pop_2015,
@@ -3849,7 +3808,7 @@ mutate(pop = case_when(
     TRUE ~ NA
   ))
 
-data_final_nlp_bis2 %<>%
+data_final_nlp2 %<>%
 mutate(area = case_when(
     round == 5 ~ area_2012,
     round == 6 ~ area_2015,
@@ -3858,17 +3817,17 @@ mutate(area = case_when(
     TRUE ~ NA
   ))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   select(-c(cor_2012, cor_2015, cor_2017, cor_2020, gdpcap_2012, gdpcap_2015, gdpcap_2017, gdpcap_2020, pop_2012, pop_2015, pop_2017, pop_2020, area_2012, area_2015, area_2017, area_2020))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(gdppc_log=log(gdppc+1))%>%
   mutate(area_log=log(area+1))
 
 
 qog <- read.csv("data/data_raw/qog_std_ts_jan24.csv")
 
-countries <- unique(data_final_nlp_bis2$iso)
+countries <- unique(data_final_nlp2$iso)
 
 qog%<>%
   filter(ccodealp %in% countries)
@@ -3885,15 +3844,15 @@ qog%<>%
                    round==2017 ~ 7,
                    round==2020 ~ 8))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   select(-c( "med_self_censor", "citiz_self_censor", "fh_med_index", "vdem_med_corrupt", "vdem_polyarchy"))
 
-data_final_nlp_bis2 %<>% left_join(qog, by=c("iso", "round"))
+data_final_nlp2 %<>% left_join(qog, by=c("iso", "round"))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(color_num = as.numeric(factor(color)))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(gov_num = as.numeric(factor(gov_type)))
 ```
 
@@ -3903,7 +3862,7 @@ data_final_nlp_bis2%<>%
 #Correction sex
 afro_stack <- readRDS("data/data_rds/afro_stack.rds")
 
-data_final_nlp_bis2%<>%select(-sex)
+data_final_nlp2%<>%select(-sex)
 
 afro_stack %<>%
   mutate(sex = as.numeric(sex)) %>%
@@ -3914,12 +3873,12 @@ afro_stack %<>%
   ))%>%
   select(id_unique, sex)
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   left_join(afro_stack, by="id_unique")
 
 #Correction rural
 
-data_final_nlp_bis2%<>%select(-c("rural", "bin_rural"))
+data_final_nlp2%<>%select(-c("rural", "bin_rural"))
 
 afro_stack <- readRDS("data/data_rds/afro_stack.rds")
 
@@ -3939,7 +3898,7 @@ afro_stack %<>%
 afro_stack%<>%
   select(id_unique, rural, bin_rural)
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   left_join(afro_stack, by="id_unique")
 ```
 
@@ -3951,7 +3910,7 @@ afro_w6 <- read.csv("data/data_raw/afrobarometer/afb_full_r6.csv_")
 afro_w7 <- read_sav("data/data_raw/afrobarometer/R7_Merged data_34ctry_4Dec18.sav")
 afro_w8 <- read_sav("data/data_raw/afrobarometer/R8.Merge_34ctry_2nov21.release.w.local.info.sav")
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   select(-c("vote_party", "vote_oppo"))
 
 afro_w8%<>%
@@ -3969,7 +3928,7 @@ afro_w8%<>%
   select(id_unique, Q99)%>%
   rename(vote_party=Q99)
 
-data_final_nlp_bis2 <- left_join(data_final_nlp_bis2, afro_w8, by="id_unique")
+data_final_nlp2 <- left_join(data_final_nlp2, afro_w8, by="id_unique")
 
 
 rm(afro_w8)
@@ -3992,15 +3951,15 @@ afro_w7%<>%
   rename(vote_party=Q99)
 
 
-data_final_nlp_bis2 <- left_join(data_final_nlp_bis2, afro_w7, by="id_unique")
+data_final_nlp2 <- left_join(data_final_nlp2, afro_w7, by="id_unique")
 
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(vote_party = case_when(
     round == 7 ~ vote_party.y,
     round == 8 ~ vote_party.x))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   select(-c(vote_party.y, vote_party.x))
 
 rm(afro_w7)
@@ -4022,15 +3981,15 @@ afro_w6%<>%
   rename(vote_party=q99)
 
 
-data_final_nlp_bis2 <- left_join(data_final_nlp_bis2, afro_w6, by="id_unique")
+data_final_nlp2 <- left_join(data_final_nlp2, afro_w6, by="id_unique")
 
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(vote_party = case_when(
     round == 6 ~ vote_party.y,
     round %in% c(7,8) ~ vote_party.x))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   select(-c(vote_party.y, vote_party.x))
 
 
@@ -4053,27 +4012,27 @@ afro_w5%<>%
   rename(vote_party=q99)
 
 
-data_final_nlp_bis2 <- left_join(data_final_nlp_bis2, afro_w5, by="id_unique")
+data_final_nlp2 <- left_join(data_final_nlp2, afro_w5, by="id_unique")
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(vote_party = case_when(
     round == 5 ~ vote_party.y,
     round %in% c(6,7,8) ~ vote_party.x))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   select(-c(vote_party.y, vote_party.x))
 
 
 rm(afro_w5)
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
 mutate(vote_party = case_when(
   vote_party %in% c(9995, 9997, 9998, 9999, -1) ~ NA_real_,
   TRUE ~ vote_party
 ))
 
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   select(-c("year_of_election", "date_of_election", "winner"))
 
 
@@ -4081,17 +4040,17 @@ data_elections_R <- na.omit(read_excel("data/data_raw/data_elections_R.xlsx",
     col_types = c("text", "numeric", "numeric", 
         "date", "numeric")))
 
-data_final_nlp_bis2 %<>% left_join(data_elections_R, by=c("iso","round"))
+data_final_nlp2 %<>% left_join(data_elections_R, by=c("iso","round"))
 
-data_final_nlp_bis2$vote_party <- as.numeric(zap_labels(data_final_nlp_bis2$vote_party))
+data_final_nlp2$vote_party <- as.numeric(zap_labels(data_final_nlp2$vote_party))
 
-data_final_nlp_bis2$vote_oppo <- ifelse(data_final_nlp_bis2$winner!=data_final_nlp_bis2$vote_party, 1,0)
+data_final_nlp2$vote_oppo <- ifelse(data_final_nlp2$winner!=data_final_nlp2$vote_party, 1,0)
 ```
 
 ```{r}
 #growth_country
 
-data_final_nlp_bis2 <- readRDS("data/data_rds/data_final.rds")
+data_final_nlp2 <- readRDS("data/data_rds/data_final.rds")
 
 afro_w5 <- read.csv("data/data_raw/afrobarometer/afb_full_r5.csv_")
 afro_w6 <- read.csv("data/data_raw/afrobarometer/afb_full_r6.csv_")
@@ -4113,7 +4072,7 @@ afro_w8%<>%
   select(id_unique, Q6A)%>%
   rename(growth_country=Q6A)
 
-data_final_nlp_bis2 <- left_join(data_final_nlp_bis2, afro_w8, by="id_unique")
+data_final_nlp2 <- left_join(data_final_nlp2, afro_w8, by="id_unique")
 
 
 rm(afro_w8)
@@ -4136,15 +4095,15 @@ afro_w7%<>%
   rename(growth_country=Q6)
 
 
-data_final_nlp_bis2 <- left_join(data_final_nlp_bis2, afro_w7, by="id_unique")
+data_final_nlp2 <- left_join(data_final_nlp2, afro_w7, by="id_unique")
 
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(growth_country = case_when(
     round == 7 ~ growth_country.y,
     round == 8 ~ growth_country.x))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   select(-c(growth_country.y, growth_country.x))
 
 rm(afro_w7)
@@ -4166,15 +4125,15 @@ afro_w6%<>%
   rename(growth_country=q6)
 
 
-data_final_nlp_bis2 <- left_join(data_final_nlp_bis2, afro_w6, by="id_unique")
+data_final_nlp2 <- left_join(data_final_nlp2, afro_w6, by="id_unique")
 
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(growth_country = case_when(
     round == 6 ~ growth_country.y,
     round %in% c(7,8) ~ growth_country.x))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   select(-c(growth_country.y, growth_country.x))
 
 
@@ -4197,23 +4156,23 @@ afro_w5%<>%
   rename(growth_country=q5a)
 
 
-data_final_nlp_bis2 <- left_join(data_final_nlp_bis2, afro_w5, by="id_unique")
+data_final_nlp2 <- left_join(data_final_nlp2, afro_w5, by="id_unique")
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(growth_country = case_when(
     round == 5 ~ growth_country.y,
     round %in% c(6,7,8) ~ growth_country.x))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   select(-c(growth_country.y, growth_country.x))
 
 
 rm(afro_w5)
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
 mutate(growth_country = if_else(growth_country %in% c(1, 2, 3, 4, 5), growth_country, NA_integer_))
 
-data_final_nlp_bis2 %<>%
+data_final_nlp2 %<>%
   mutate(across(
     .cols = c(perf_corr, perf_crime, perf_eco, perf_educ, perf_elect, perf_health, 
               perf_ineq, perf_job, perf_local, perf_parl, perf_pres, perf_price, 
@@ -4221,22 +4180,22 @@ data_final_nlp_bis2 %<>%
     .fns = ~ if_else(. %in% c(1, 2, 3, 4), ., NA_integer_)
   ))  
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
    group_by(id_unique)%>%
   mutate(perf_mean=mean(c(perf_eco, perf_job, perf_poor, perf_price, perf_ineq, perf_crime, perf_health, perf_educ, perf_water, perf_corr, perf_road, perf_elect), na.rm = TRUE))%>%
   ungroup()
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
 mutate(corr_level = if_else(corr_level %in% c(1, 2, 3, 4, 5), corr_level, NA_integer_))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
 mutate(corr_parl_a = if_else(corr_parl %in% c(0, 1, 2, 3), corr_parl, NA_integer_))%>%
 mutate(corr_pres_a = if_else(corr_pres %in% c(0, 1, 2, 3), corr_pres, NA_integer_))%>%
 mutate(corr_local_a = if_else(corr_local %in% c(0, 1, 2, 3), corr_local, NA_integer_))%>%
 mutate(corr_trad_a = if_else(corr_trad %in% c(0, 1, 2, 3), corr_trad, NA_integer_))%>%
 mutate(corr_judge_a = if_else(corr_judge %in% c(0, 1, 2, 3), corr_judge, NA_integer_))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   group_by(id_unique)%>%
   mutate(pol_corr = ifelse(all(is.na(c(corr_pres_a, corr_parl_a))), NA, weighted.mean(c(corr_pres_a, corr_parl_a), na.rm = TRUE)))%>%
   ungroup()
@@ -4245,7 +4204,7 @@ data_final_nlp_bis2%<>%
 ```{r}
 #perf_poor
 
-data_final_nlp_bis2 <- readRDS("data/data_rds/data_final.rds")
+data_final_nlp2 <- readRDS("data/data_rds/data_final.rds")
 
 afro_w5 <- read.csv("data/data_raw/afrobarometer/afb_full_r5.csv_")
 afro_w6 <- read.csv("data/data_raw/afrobarometer/afb_full_r6.csv_")
@@ -4267,7 +4226,7 @@ afro_w8%<>%
   select(id_unique, Q50B)%>%
   rename(perf_poor=Q50B)
 
-data_final_nlp_bis2 <- left_join(data_final_nlp_bis2, afro_w8, by="id_unique")
+data_final_nlp2 <- left_join(data_final_nlp2, afro_w8, by="id_unique")
 
 
 rm(afro_w8)
@@ -4290,15 +4249,15 @@ afro_w7%<>%
   rename(perf_poor=Q56B)
 
 
-data_final_nlp_bis2 <- left_join(data_final_nlp_bis2, afro_w7, by="id_unique")
+data_final_nlp2 <- left_join(data_final_nlp2, afro_w7, by="id_unique")
 
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(perf_poor = case_when(
     round == 7 ~ perf_poor.y,
     round == 8 ~ perf_poor.x))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   select(-c(perf_poor.y, perf_poor.x))
 
 rm(afro_w7)
@@ -4320,15 +4279,15 @@ afro_w6%<>%
   rename(perf_poor=q66b)
 
 
-data_final_nlp_bis2 <- left_join(data_final_nlp_bis2, afro_w6, by="id_unique")
+data_final_nlp2 <- left_join(data_final_nlp2, afro_w6, by="id_unique")
 
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(perf_poor = case_when(
     round == 6 ~ perf_poor.y,
     round %in% c(7,8) ~ perf_poor.x))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   select(-c(perf_poor.y, perf_poor.x))
 
 
@@ -4351,43 +4310,43 @@ afro_w5%<>%
   rename(perf_poor=q65b)
 
 
-data_final_nlp_bis2 <- left_join(data_final_nlp_bis2, afro_w5, by="id_unique")
+data_final_nlp2 <- left_join(data_final_nlp2, afro_w5, by="id_unique")
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(perf_poor = case_when(
     round == 5 ~ perf_poor.y,
     round %in% c(6,7,8) ~ perf_poor.x))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   select(-c(perf_poor.y, perf_poor.x))
 
 
 rm(afro_w5)
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
 mutate(perf_poor = if_else(perf_poor %in% c(1, 2, 3, 4), perf_poor, NA_integer_))
 ```
 
 ```{r}
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(bin_feelnat = case_when(
       !is.na(feelnat) & feelnat %in% c(4, 5) ~ 1,
       !is.na(feelnat) & feelnat %in% c(1, 2, 3) ~ 0,
       TRUE ~ NA_integer_))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(check_citiz_a = if_else(check_citiz %in% c(1, 2, 3, 4, 5), check_citiz, NA_integer_))%>%
   mutate(check_parl_a = if_else(check_parl %in% c(1, 2, 3, 4, 5), check_citiz, NA_integer_))
 
 
-data_final_nlp_bis2 %<>%
+data_final_nlp2 %<>%
   mutate(bin_check_citiz = case_when(
     !is.na(check_citiz_a) & check_citiz_a %in% c(1, 2, 5) ~ 0,
     !is.na(check_citiz_a) & check_citiz_a %in% c(3, 4) ~ 1,
     TRUE ~ NA_integer_
   ))
 
-data_final_nlp_bis2 %<>%
+data_final_nlp2 %<>%
   mutate(bin_check_parl = case_when(
     !is.na(check_parl_a) & check_parl_a %in% c(1, 2, 5) ~ 0,
     !is.na(check_parl_a) & check_parl_a %in% c(3, 4) ~ 1,
@@ -4395,12 +4354,12 @@ data_final_nlp_bis2 %<>%
   ))
 
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(assoc_a = if_else(assoc %in% c(0, 1, 2, 3), assoc, NA_integer_))%>%
   mutate(commu_a = if_else(commu %in% c(0, 1, 2, 3, 4), commu, NA_integer_))%>%
   mutate(prob_a = if_else(prob %in% c(0, 1, 2, 3, 4), prob, NA_integer_))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(elec_fair_a = if_else(elec_fair %in% c(1, 2, 3, 4), elec_fair, NA_integer_))%>%
   mutate(pref_demo_a = if_else(pref_demo %in% c(1, 2, 3), pref_demo, NA_integer_))%>%
   mutate(protest_a = if_else(protest %in% c(0, 1, 2, 3, 4), protest, NA_integer_))%>%
@@ -4411,118 +4370,118 @@ data_final_nlp_bis2%<>%
     TRUE ~ NA_integer_
   ))
 
-data_final_nlp_bis2 <- readRDS("data/data_rds/data_final_r.rds")
+data_final_nlp2 <- readRDS("data/data_rds/data_final_r.rds")
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(trust_gen_a=if_else(trust_gen%in%c(0,1), trust_gen, NA_integer_))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(extent_a = if_else(extent %in% c(1, 2, 3, 4), extent, NA_integer_))%>%
   mutate(satis_demo_a = if_else(satis_demo %in% c(0, 1, 2, 3, 4), satis_demo, NA_integer_))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(bin_corr_parl_a = case_when(
       !is.na(corr_parl_a) & corr_parl_a %in% c(2, 3) ~ 1,
       !is.na(corr_parl_a) & corr_parl_a %in% c(0, 1) ~ 0,
       TRUE ~ NA_integer_))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(bin_corr_pres_a = case_when(
       !is.na(corr_pres_a) & corr_pres_a %in% c(2, 3) ~ 1,
       !is.na(corr_pres_a) & corr_pres_a %in% c(0, 1) ~ 0,
       TRUE ~ NA_integer_))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(bin_trust_parl_a = case_when(
       !is.na(trust_parl_a) & trust_parl_a %in% c(2, 3) ~ 1,
       !is.na(trust_parl_a) & trust_parl_a %in% c(0, 1) ~ 0,
       TRUE ~ NA_integer_))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(bin_trust_pres_a = case_when(
       !is.na(trust_pres_a) & trust_pres_a %in% c(2, 3) ~ 1,
       !is.na(trust_pres_a) & trust_pres_a %in% c(0, 1) ~ 0,
       TRUE ~ NA_integer_))
 
-data_final_nlp_bis2 %<>%
+data_final_nlp2 %<>%
  group_by(id_unique)%>%
   mutate(bin_pol_trust = ifelse(all(is.na(c(bin_trust_pres_a, bin_trust_parl_a))), NA_integer_, weighted.mean(c(bin_trust_pres_a, bin_trust_parl_a), na.rm = TRUE)))%>%
   ungroup()
 
-data_final_nlp_bis2 %<>%
+data_final_nlp2 %<>%
  group_by(id_unique)%>%
   mutate(bin_pol_corr = ifelse(all(is.na(c(bin_corr_pres_a, bin_corr_parl_a))), NA_integer_, weighted.mean(c(bin_corr_pres_a, bin_corr_parl_a), na.rm = TRUE)))%>%
   ungroup()
 
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(bin_pol_trust_2 = case_when(
       !is.na(bin_pol_trust) & bin_pol_trust %in% c(0.5, 1) ~ 1,
       !is.na(bin_pol_trust) & bin_pol_trust == 0 ~ 0,
       TRUE ~ NA_integer_))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(bin_pol_corr_2 = case_when(
       !is.na(bin_pol_corr) & bin_pol_corr %in% c(0.5, 1) ~ 1,
       !is.na(bin_pol_corr) & bin_pol_corr == 0 ~ 0,
       TRUE ~ NA_integer_))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   group_by(latitude, longitude)%>%
   mutate(ea_id = cur_group_id()) %>%
   mutate(ea_round=as.numeric(paste0(ea_id,round)))%>%
   ungroup()
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(region = case_when(
     iso %in%c("BEN", "BFA", "BWA", "CIV", "CMR", "GIN", "LBR", "MLI", "NAM", "NER", "SLE") ~ name2_id, 
     iso %in% c("GHA","KEN","MOZ", "MWI","NGA","TZA","UGA","ZMB", "ZWE") ~ name1_id,
     TRUE ~ NA_integer_
   ))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(bin_growth_country = case_when(
       !is.na(growth_country) & growth_country %in% c(3, 4, 5) ~ 1,
       !is.na(growth_country) & growth_country %in% c(1,2) ~ 0,
       TRUE ~ NA_integer_))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(bin_internet_news = case_when(
       !is.na(internet_news) & internet_news %in% c(3, 4, 5) ~ 1,
       !is.na(internet_news) & internet_news %in% c(0, 1,2) ~ 0,
       TRUE ~ NA_integer_))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(bin_paper_news = case_when(
       !is.na(paper_news) & paper_news %in% c(3, 4, 5) ~ 1,
       !is.na(paper_news) & paper_news %in% c(0, 1,2) ~ 0,
       TRUE ~ NA_integer_))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(bin_radio_news = case_when(
       !is.na(radio_news) & radio_news %in% c(3, 4, 5) ~ 1,
       !is.na(radio_news) & radio_news %in% c(0, 1,2) ~ 0,
       TRUE ~ NA_integer_))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(bin_tele_news = case_when(
       !is.na(tele_news) & tele_news %in% c(3, 4, 5) ~ 1,
       !is.na(tele_news) & tele_news %in% c(0, 1,2) ~ 0,
       TRUE ~ NA_integer_))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(bin_sm_news = case_when(
       !is.na(sm_news) & sm_news %in% c(3, 4, 5) ~ 1,
       !is.na(sm_news) & sm_news %in% c(0, 1,2) ~ 0,
       TRUE ~ NA_integer_))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(bin_internet_use = case_when(
       !is.na(internet_use) & internet_use %in% c(3, 4, 5) ~ 1,
       !is.na(internet_use) & internet_use %in% c(0, 1,2) ~ 0,
       TRUE ~ NA_integer_))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(bin_disc_pol_a = case_when(
       !is.na(disc_pol_a) & disc_pol_a %in% c(1, 2) ~ 1,
       !is.na(disc_pol_a) & disc_pol_a == 0 ~ 0,
@@ -4531,7 +4490,7 @@ data_final_nlp_bis2%<>%
 ```
 
 ```{r}
-data_final_nlp_bis2 <- readRDS("data/data_rds/data_final_r.rds")
+data_final_nlp2 <- readRDS("data/data_rds/data_final_r.rds")
 
 afro_w5 <- read.csv("data/data_raw/afrobarometer/afb_full_r5.csv_")
 afro_w6 <- read.csv("data/data_raw/afrobarometer/afb_full_r6.csv_")
@@ -4553,7 +4512,7 @@ afro_w8%<>%
   select(id_unique, Q86B)%>%
   rename(neig_eth=Q86B)
 
-data_final_nlp_bis2 <- left_join(data_final_nlp_bis2, afro_w8, by="id_unique")
+data_final_nlp2 <- left_join(data_final_nlp2, afro_w8, by="id_unique")
 
 
 rm(afro_w8)
@@ -4576,15 +4535,15 @@ afro_w7%<>%
   rename(neig_eth=Q87B)
 
 
-data_final_nlp_bis2 <- left_join(data_final_nlp_bis2, afro_w7, by="id_unique")
+data_final_nlp2 <- left_join(data_final_nlp2, afro_w7, by="id_unique")
 
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(neig_eth = case_when(
     round == 7 ~ neig_eth.y,
     round == 8 ~ neig_eth.x))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   select(-c(neig_eth.y, neig_eth.x))
 
 rm(afro_w7)
@@ -4606,26 +4565,26 @@ afro_w6%<>%
   rename(neig_eth=q89b)
 
 
-data_final_nlp_bis2 <- left_join(data_final_nlp_bis2, afro_w6, by="id_unique")
+data_final_nlp2 <- left_join(data_final_nlp2, afro_w6, by="id_unique")
 
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(neig_eth = case_when(
     round == 6 ~ neig_eth.y,
     round %in% c(7,8) ~ neig_eth.x))
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   select(-c(neig_eth.y, neig_eth.x))
 
 
 rm(afro_w6)
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(neig_eth_a = if_else(neig_eth %in% c(1, 2, 3, 4, 5), neig_eth, NA_integer_))
 ```
 
 ```{r}
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   mutate(dist_cap_10=dist_cap/10,
          dist_ncap_10=dist_ncap/10,
          dist_sndncap_10=dist_sndncap/10,
@@ -4640,9 +4599,9 @@ data_final_nlp_bis2%<>%
 
 
 ```{r}
-data_final_nlp_bis2 <- readRDS("data/data_rds/data_final_r.rds")
+data_final_nlp2 <- readRDS("data/data_rds/data_final_r.rds")
 
-data_final_nlp_bis2%<>%
+data_final_nlp2%<>%
   group_by(NAME_2, round)%>%
   mutate(internet_news_adm2=mean(internet_news),
          sm_news_adm2=mean(sm_news),
@@ -4652,15 +4611,15 @@ data_final_nlp_bis2%<>%
 
 
 ```{r}
-table(data_final_nlp_bis2$neig_eth_a)
-hist(data_final_nlp_bis2$neig_eth_a)
+table(data_final_nlp2$neig_eth_a)
+hist(data_final_nlp2$neig_eth_a)
 ```
 
 #Export Stata
 
 ```{r}
-saveRDS(data_final_nlp_bis2, file="data/data_rds/data_final_r.rds")
+saveRDS(data_final_nlp2, file="data/data_rds/data_final_r.rds")
 
-write_dta(data_final_nlp_bis2, "data/data_dta/data_final_r.dta")
+write_dta(data_final_nlp2, "data/data_dta/data_final_r.dta")
 ```
 

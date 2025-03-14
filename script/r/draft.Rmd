@@ -58,6 +58,89 @@ cty_adm4 <- levels%>%
   pull(country)
 ```
 
+##Merge internet
+
+```{r}
+gg_stack <- readRDS("data/data_rds/gg_stack.rds")
+ggg_stack <- readRDS("data/data_rds/ggg_stack.rds")
+
+int_stack <- gg_stack %>%
+  left_join(ggg_stack, by = c("iso", "NAME_1", "NAME_2", "NAME_3", "round"))
+
+saveRDS(int_stack, file="data/data_rds/int_stack.rds")
+
+int_stack <- readRDS("data/data_rds/int_stack.rds")
+
+int_stack%<>%
+  mutate(pop_adm1= coalesce(pop_adm1.x, pop_adm1.y))%>%
+  mutate(pop_adm2 = coalesce(pop_adm2.x, pop_adm2.y))%>%
+  mutate(pop_adm3 = coalesce(pop_adm3.x, pop_adm3.y))
+
+int_stack%<>%
+  select(-ends_with(".x"), -ends_with(".y"))
+
+data_final <- readRDS("data/data_rds/data_final.rds")
+
+data_final %<>%
+  left_join(int_stack, by = c("iso", "NAME_1", "NAME_2", "NAME_3", "round"))
+
+countries_adm1 <- c("GHA","KEN","MOZ", "MWI","NGA","TZA","UGA","ZMB", "ZWE")
+
+countries_adm2 <- c("BEN", "BFA", "BWA", "CIV", "CMR", "GIN", "LBR", "MLI", "NAM", "NER", "SLE")
+
+
+data_final%<>%
+mutate(gg_region_pot = case_when(
+    iso %in% countries_adm1 ~ gg_adm1_pot,
+    iso %in%  countries_adm2 ~ gg_adm2_pot, 
+    TRUE ~ NA_integer_
+  ))%>%
+mutate(ggg_region_pot = case_when(
+    iso %in% countries_adm1 ~ ggg_adm1_pot,
+    iso %in%  countries_adm2 ~ ggg_adm2_pot, 
+    TRUE ~ NA_integer_))%>%
+  mutate(cvg_region_pot=ifelse(is.na(ggg_region_pot), gg_region_pot, ggg_region_pot))
+
+
+data_final%<>%
+mutate(pop_region = case_when(
+    iso %in% countries_adm1 ~ pop_adm1,
+    iso %in% countries_adm2 ~ pop_adm2, 
+    TRUE ~ NA_integer_
+  ))%>%
+  mutate(pop_region_log=log(pop_region+1))
+
+data_final%<>%
+  group_by(NAME_2) %>%
+  mutate(name2_id = cur_group_id()) %>%
+  ungroup() %>%
+  group_by(NAME_1) %>%
+  mutate(name1_id = cur_group_id())%>%
+  ungroup()%>%
+  mutate(adm1_time = case_when(
+    iso %in% countries_adm1 ~ name1_id * 10000 + round,
+    TRUE ~ NA_integer_
+  ))%>%
+mutate(adm1_time = as.integer(as.factor(adm1_time)))%>%
+mutate(adm2_time = case_when(
+    iso %in% countries_adm2 ~ name2_id * 10000 + round,
+    TRUE ~ NA_integer_
+  ))%>%
+mutate(adm2_time = as.integer(as.factor(adm2_time)))
+
+data_final%<>%
+  mutate(country_round=as.numeric(paste0(round,ccode)))%>%
+  mutate(region_time = case_when(
+    iso %in% countries_adm1 ~ name1_id * 10000 + round, 
+    iso %in% countries_adm2 ~ name2_id * 10000 + round,
+    TRUE ~ NA_integer_
+  ))%>%
+  mutate(region_time = as.integer(as.factor(region_time)))
+
+saveRDS(data_final, file="data/data_rds/data_final.rds")
+write_dta(data_final, "data/data_dta/data_final.dta")
+```
+
 
 ```{r}
 library(ggplot2)
@@ -1073,4 +1156,3 @@ saveRDS(data_final_r, file="data/data_rds/data_27_02_25.rds")
 
 write_dta(data_final_r, "data/data_dta/data_27_02_25.dta")
 ```
-
