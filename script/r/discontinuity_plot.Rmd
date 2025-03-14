@@ -153,7 +153,7 @@ data_right_plus <- rbind(data_right,
 ```{r}
 ggplot(data_intervals_ic, aes(x = mean_dist_border_intervals, y = mean_trust_intervals)) +
   # Add vertical line at border
-  geom_vline(xintercept = 0, linetype = "dashed", color = "gray40", size = 0.8) + 
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray40", size = 0.7) + 
   
   # Left side smooth curve (Close to Capital)
 # Left side smooth curve (Close to Capital)
@@ -186,8 +186,8 @@ geom_segment(aes(x = -40000,
                    yend = moy_trust_loin, linetype = "Far"),
                inherit.aes = FALSE,
                color = "darkgreen", size = 1.5, alpha = 0.7, data = data.frame()) +  
-
-    # Add annotations in better positions with borders
+  
+  # Add annotations in better positions with borders
   
   annotate("label", x = -max(abs(data_intervals$mean_dist_border_intervals)) * 0.5, 
            y = max(data_intervals_ic$mean_trust_intervals) + 0.05, 
@@ -212,34 +212,36 @@ geom_segment(aes(x = -40000,
                          max(data_intervals_ic$mean_trust_intervals) + 0.1)) +
   
   # Format axes
-  scale_x_continuous(labels = function(x) x / 1000,
-                    breaks = seq(-40000, 40000, 10000)) +
-  
+scale_x_continuous(labels = function(x) abs(x) / 1000,
+                     breaks = seq(-40000, 40000, 10000)) +  
   # Add clear labels
   labs(x = "Distance from the Border (in km)",
       y = "Political Trust") +
-      #title = "Border Discontinuity in Political Trust",
-      #subtitle = "Comparing areas close to vs. far from the capital") +
-
+  
   # Polish theme
-  theme_minimal()+
+theme_minimal() +
   theme(
-  text = element_text(family = "Arial"),
-    plot.title = element_text(size = 25, hjust = 0.5, face = "bold", margin = margin(b = 10)), 
+    text = element_text(family = "Arial"),
+    plot.title = element_text(size = 25, hjust = 0.5, face = "bold", margin = margin(b = 10)),
     plot.subtitle = element_text(size = 20, hjust = 0.5, margin = margin(b = 20)),
-    axis.title.x = element_text(size = 20, face = "bold", margin = margin(t = 30)),
-    axis.title.y = element_text(size = 20, face = "bold", margin = margin(r = 30)),
+    axis.title.x = element_text(size = 20, face = "bold", margin = margin(t = 25)),
+    axis.title.y = element_text(size = 20, face = "bold", margin = margin(r = 25)),
     axis.text = element_text(size = 11),
+    axis.ticks = element_line(color = "black"),  # Keep the ticks
+    axis.ticks.length = unit(5, "pt"),  # Adjust the length of the ticks if needed
+    axis.line = element_line(color = "black"),  # Ensure the axis lines are visible
     legend.position = c(0.85, 0.2),
     legend.background = element_rect(fill = alpha('white'), color = "gray80"),
     legend.title = element_text(size = 12),
     legend.text = element_text(size = 20),
-    panel.grid.major = element_line(color = "gray90"),
-    panel.grid.minor = element_blank(),
-    plot.margin = margin(t = 20, r = 20, b = 20, l = 20)
+    panel.grid.major.x = element_blank(),  # Remove vertical major grid lines
+    panel.grid.minor.x = element_blank(),  # Remove vertical minor grid lines
+    panel.grid.major.y = element_line(color = "gray90"),  # Keep horizontal major grid lines
+    panel.grid.minor.y = element_blank(),  # Remove horizontal minor grid lines
+    plot.margin = margin(t = 20, r = 20, b = 18, l = 18)
   )
 
-ggsave("C:/Users/Redha CHABA/Documents/wp_git/rbci/plots/discontinuity/discontinuity2.jpg", plot = last_plot(), width = 10, height = 6, units = "in", dpi = 300)
+ggsave("C:/Users/Redha CHABA/Documents/wp_git/rbci/plots/discontinuity/discontinuity.jpg", plot = last_plot(), width = 10, height = 6, units = "in", dpi = 300)
 ```
 
 ```{r}
