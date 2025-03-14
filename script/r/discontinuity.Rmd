@@ -52,8 +52,8 @@ ggsave("C:/Users/Redha CHABA/Documents/wp_git/rbci/plots/discontinuity/murdock_m
 buffer <- st_buffer(boundaries, dist = 25000)
 
 ggplot() +
-  geom_sf(data = murdock_sf, aes (color="Murdock"), fill = "transparent", size = 1) + # Murdock map in black
-  geom_sf(data = buffer, aes(color = "boundaries"), lwd = 1) + # 25km buffer around borders in red
+  geom_sf(data = murdock_sf, aes (color="Murdock"), fill = "transparent", size = 1) +
+  geom_sf(data = buffer, aes(color = "boundaries"), lwd = 1) +
   scale_color_manual(
     values = c("Murdock" = "black", "boundaries" = "red"),
     labels = c("25km boundaries", "Historical Ethnic Areas"),
@@ -72,7 +72,7 @@ ggplot() +
     legend.position = c(0.25, 0.35)
   )
 
-ggsave("C:/Users/Redha CHABA/Documents/wp_git/rbci/plots/discontinuity/murdock_boundaries_map.jpg", width = 10, height = 6, dpi = 300)
+ggsave("C:/Users/Redha CHABA/Documents/wp_git/rbci/plots/discontinuity/murdock_boundaries.jpg", width = 10, height = 6, dpi = 300)
 ```
 
 ```{r}
@@ -104,7 +104,6 @@ for (country in countries) {
     plot(inter_country$geometry, main = paste(country, "-", dist / 1000, "km buffer"))
   }
 }
-
 ```
 
 ```{r}
@@ -155,18 +154,17 @@ ggplot() +
     legend.position = c(0.25, 0.35)
   )
 
-ggsave("buffer_25.jpg", width = 10, height = 6, dpi = 300)
-
+ggsave("C:/Users/Redha CHABA/Documents/wp_git/rbci/plots/discontinuity/murdock_boundaries_inter.jpg", width = 10, height = 6, dpi = 300)
 ```
 
 ```{r}
-data_trust_test <- readRDS("data/data_rds/data_27_02_25.rds")
-data_trust_test%<>%
+data <- readRDS("data/data_rds/data_27_02_25.rds")
+data%<>%
   ungroup()
 
 bdd_geo <- read_csv("data/data_raw/bdd_geo_w8.csv")
 
-data_trust_test %<>%
+data %<>%
   filter(spl==1)%>%
   left_join(bdd_geo, by = "id_unique") %>%
   select(-...1) %>%
@@ -185,7 +183,7 @@ border_sample_15_union <- unions_list[["15000"]]
 border_sample_10_union <- unions_list[["10000"]]
 
 
-data_trust_test_sf <- st_as_sf(data_trust_test, coords = c("longitude", "latitude"), crs = st_crs(border_sample_50_union))
+data_sf <- st_as_sf(data, coords = c("longitude", "latitude"), crs = st_crs(border_sample_50_union))
 
 # Define a function to filter data based on border polygons
 filter_by_border <- function(data, borders) {
@@ -207,7 +205,7 @@ borders <- list(
 )
 
 # Filter data
-filtered_data_list <- filter_by_border(data_trust_test_sf, borders)
+filtered_data_list <- filter_by_border(data_sf, borders)
 
 names(filtered_data_list) <- c("50", "40", "30", "25", "20", "15", "10")
 sapply(filtered_data_list, nrow)
@@ -229,6 +227,7 @@ ggplot() +
   ggtitle("Individuals living less than 50 km from a border and Murdock's (1956) historical ethnic homeland") +
   theme_void()
 
+ggsave("C:/Users/Redha CHABA/Documents/wp_git/rbci/plots/discontinuity/murdock_boundaries_inter_spl.jpg", width = 10, height = 6, dpi = 300)
 ```
 
 ```{r}
@@ -236,11 +235,11 @@ ggplot() +
 countries <- ne_countries(scale = "medium", continent = "Africa", returnclass = "sf")
 
 # Prepare data
-individuals <- data_trust_test %>%
+individuals <- data %>%
   select(longitude, latitude, iso) %>%
   na.omit()
 
-capitals <- data_trust_test %>%
+capitals <- data %>%
   distinct(caplong, caplat, iso)%>%
   na.omit() %>%
   rename(longitude = caplong, latitude = caplat)
@@ -272,7 +271,37 @@ ggplot() +
              aes(x = longitude, y = latitude), 
              size = 2, shape = 22, fill = "black", show.legend = FALSE)
 
-ggsave("plots/map/obs_map.jpg", width = 10, height = 10, units = "in", dpi = 300)
+ggsave("C:/Users/Redha CHABA/Documents/wp_git/rbci/plots/discontinuity/cty_spl.jpg", width = 10, height = 6, dpi = 300)
+```
+
+```{r}
+selected_countries <- countries %>% 
+ filter(iso_a3 %in% c("BEN", "NER"))
+
+selected_capitals <- capitals %>%
+ filter(iso%in% c("BEN", "NER"))
+
+selected_murdock <- murdock_sf%>%
+  filter(NAME=="DENDI")
+  
+ggplot() +
+   geom_sf(data = selected_countries, fill = "white", color = "black") +
+geom_sf(data = selected_murdock, fill = "green", color = "darkgreen", size = 1, alpha=0.5) +
+ theme_void() + 
+geom_point(data = selected_capitals, 
+          aes(x = longitude, y = latitude, color = "Capitals"), 
+         size = 2, shape = 22, fill = "red", show.legend = FALSE) +
+  
+geom_label(aes(x = 2.5, y = 10, label = "Benin"), color = "black", size = 6, fill = "lightgrey", label.size = 0.5) +
+     geom_label(aes(x = 4, y = 14.5, label = "Niger"), color = "black", size = 6, fill = "lightgrey", label.size = 0.5) +
+
+geom_text(aes(x = 2.4, y = 13.75, label = "Niamey"), color = "black", size = 5) +
+geom_text(aes(x = 2.2, y = 6.6, label = "Porto-Novo"), color = "black", size = 5) +
+
+  labs(color = NULL) +
+   coord_sf(xlim = c(0, 5), ylim = c(6, 18), expand = FALSE)
+
+ggsave("C:/Users/Redha CHABA/Documents/wp_git/rbci/plots/discontinuity/benin_niger.jpg", width = 10, height = 10, dpi = 300)
 ```
 
 ```{r}
