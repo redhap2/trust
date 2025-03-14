@@ -1155,6 +1155,14 @@ mutate(temp_mean_region = case_when(
 
 data_final <- readRDS("data/data_rds/data_27_02_25.rds")
 
+data_final%<>%
+  ungroup()
+
+data_final%<>%
+  mutate(desert_region_tv=desert_region*tv,
+         mountain_region_tv=mountain_region*tv)
+
+
 saveRDS(data_final, file="data/data_rds/data_final.rds")
 
 write_dta(data_final, "data/data_dta/data_final.dta")
