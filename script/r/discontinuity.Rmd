@@ -158,7 +158,7 @@ ggsave("C:/Users/Redha CHABA/Documents/wp_git/rbci/plots/discontinuity/murdock_b
 ```
 
 ```{r}
-data <- readRDS("data/data_rds/data_27_02_25.rds")
+data <- readRDS("data/data_rds/data_final.rds")
 data%<>%
   ungroup()
 
