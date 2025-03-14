@@ -1,0 +1,208 @@
+	(1)	(2)	(3)	(4)
+VARIABLES	cvg_region_pot	cvg_region_pot_dist	pol_trust	pol_trust
+				
+lis_region_tv	-0.001***	-0.000		
+	(0.000)	(0.000)		
+lis_region_tv_dist	-0.000	-0.001***		
+	(0.001)	(0.000)		
+dist_cap_max_norm	-0.111***	0.384***	0.273***	1.534***
+	(0.034)	(0.024)	(0.061)	(0.570)
+dist_sndncap_max_norm	-0.096***	-0.056***	0.019	0.018
+	(0.017)	(0.013)	(0.043)	(0.058)
+age	-0.000	-0.000	0.001	0.001
+	(0.000)	(0.000)	(0.001)	(0.001)
+age_2	0.000*	0.000	0.000***	0.000***
+	(0.000)	(0.000)	(0.000)	(0.000)
+1.sex	0.001*	0.001***	0.000	0.001
+	(0.001)	(0.000)	(0.006)	(0.007)
+1.educ_sec	0.009***	0.004***	-0.142***	-0.146***
+	(0.002)	(0.001)	(0.011)	(0.011)
+1.bin_rural	-0.032***	-0.007***	0.088***	0.135***
+	(0.004)	(0.002)	(0.017)	(0.021)
+1.bin_conditions_eco	-0.003**	-0.003***	0.301***	0.296***
+	(0.002)	(0.001)	(0.009)	(0.010)
+1.bin_emp	0.003*	-0.001	0.005	-0.004
+	(0.002)	(0.001)	(0.009)	(0.010)
+night_region_log	0.023**	-0.016***	0.031	-0.067
+	(0.010)	(0.006)	(0.020)	(0.045)
+pop_region_log	0.101***	0.013***	0.027	-0.132**
+	(0.009)	(0.005)	(0.043)	(0.059)
+area_region_log	0.032***	-0.014***	0.059***	-0.048
+	(0.009)	(0.005)	(0.019)	(0.046)
+tele_news	0.004***	0.001**	-0.015***	-0.020***
+	(0.001)	(0.001)	(0.004)	(0.004)
+paper_news	-0.002	-0.000	-0.009**	-0.008**
+	(0.001)	(0.001)	(0.004)	(0.004)
+radio_news	-0.001*	0.001***	0.009***	0.015***
+	(0.001)	(0.000)	(0.003)	(0.004)
+disc_pol_a	-0.001	-0.000	-0.021***	-0.020***
+	(0.001)	(0.001)	(0.006)	(0.006)
+pres_adm1	0.025*	0.010	0.142***	0.121***
+	(0.014)	(0.009)	(0.027)	(0.037)
+distance_to_road	-0.000***	-0.000***	0.000	0.000
+	(0.000)	(0.000)	(0.000)	(0.000)
+desert_region_tv	0.014*	0.001		0.002
+	(0.008)	(0.005)		(0.022)
+mountain_region_tv	-0.012*	-0.007**		0.004
+	(0.006)	(0.003)		(0.016)
+55.country_round		0.209***		
+		(0.034)		
+58.country_round		0.014		
+		(0.021)		
+63.country_round		0.005		
+		(0.019)		
+65.country_round		0.035		
+		(0.023)		
+68.country_round		0.037		
+		(0.023)		
+73.country_round		-0.043**		
+		(0.019)		
+78.country_round		0.113***		
+		(0.028)		
+83.country_round		0.067***		
+		(0.021)		
+84.country_round		0.161***		
+		(0.035)		
+85.country_round		0.046*		
+		(0.025)		
+88.country_round		0.163***		
+		(0.037)		
+514.country_round		0.144***		
+		(0.033)		
+515.country_round		-0.003		
+		(0.020)		
+516.country_round		0.007		
+		(0.022)		
+517.country_round		0.057***		
+		(0.021)		
+519.country_round		-0.012		
+		(0.023)		
+521.country_round		0.113***		
+		(0.025)		
+522.country_round		-0.025		
+		(0.020)		
+525.country_round		0.082*		
+		(0.048)		
+526.country_round		0.168***		
+		(0.030)		
+527.country_round		0.179***		
+		(0.030)		
+528.country_round		0.190***		
+		(0.032)		
+531.country_round		0.068**		
+		(0.028)		
+534.country_round		0.110***		
+		(0.024)		
+537.country_round		0.115***		
+		(0.024)		
+538.country_round		0.080***		
+		(0.030)		
+539.country_round		-0.027		
+		(0.048)		
+614.country_round		0.101***		
+		(0.029)		
+615.country_round		-0.040*		
+		(0.023)		
+616.country_round		0.027		
+		(0.022)		
+617.country_round		-0.038*		
+		(0.021)		
+619.country_round		-0.041*		
+		(0.022)		
+621.country_round		-0.027		
+		(0.024)		
+622.country_round		-0.012		
+		(0.022)		
+625.country_round		0.082***		
+		(0.029)		
+626.country_round		0.176***		
+		(0.029)		
+627.country_round		-0.075***		
+		(0.026)		
+628.country_round		0.011		
+		(0.033)		
+631.country_round		-0.072***		
+		(0.026)		
+634.country_round		-0.061**		
+		(0.026)		
+637.country_round		0.036*		
+		(0.019)		
+638.country_round		0.009		
+		(0.034)		
+639.country_round		0.044		
+		(0.034)		
+714.country_round		0.117***		
+		(0.032)		
+715.country_round		-0.016		
+		(0.025)		
+716.country_round		0.037*		
+		(0.022)		
+717.country_round		-0.022		
+		(0.021)		
+719.country_round		-0.031		
+		(0.024)		
+721.country_round		-0.020		
+		(0.025)		
+722.country_round		0.001		
+		(0.022)		
+725.country_round		0.063**		
+		(0.027)		
+726.country_round		0.001		
+		(0.028)		
+727.country_round		-0.066***		
+		(0.025)		
+728.country_round		0.105***		
+		(0.038)		
+731.country_round		-0.042		
+		(0.026)		
+734.country_round		-0.049*		
+		(0.026)		
+737.country_round		0.050**		
+		(0.021)		
+738.country_round		0.024		
+		(0.033)		
+739.country_round		0.046		
+		(0.033)		
+814.country_round		0.140***		
+		(0.036)		
+815.country_round		-0.005		
+		(0.027)		
+816.country_round		0.042*		
+		(0.023)		
+817.country_round		-0.018		
+		(0.022)		
+819.country_round		-0.020		
+		(0.027)		
+822.country_round		0.002		
+		(0.023)		
+825.country_round		0.188***		
+		(0.042)		
+826.country_round		0.172***		
+		(0.032)		
+827.country_round		-0.064**		
+		(0.027)		
+828.country_round		0.110***		
+		(0.038)		
+831.country_round		0.072**		
+		(0.029)		
+834.country_round		-0.006		
+		(0.025)		
+837.country_round		0.075***		
+		(0.024)		
+838.country_round		0.024		
+		(0.032)		
+839.country_round		0.047		
+		(0.032)		
+cvg_region_pot			-0.185	1.789**
+			(0.393)	(0.729)
+cvg_region_pot_dist				-2.975**
+				(1.459)
+				
+Observations	113,243	113,243	111,570	111,570
+obs	113243	113243	111570	111570
+boot lis_region_tv	0.00100	0.582		
+boot lis_region_tv_dist	0	0.0110		
+SW lis_region_tv		13.98		
+SW lis_region_tv_dist		8.624		
+boot cvg_region_pot			0.629	0.00100
+boot cvg_region_pot_dist				0.00901

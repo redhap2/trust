@@ -730,6 +730,9 @@ gen lis_region_tv=lis_region*tv
 gen lis_region_tv_dist=dist_cap_max_norm*lis_region_tv
 
 gen desert_region_tv=desert_region*tv
+gen mountain_region_tv=mountain_region*tv
+
+
 gen precipitation_region_tv=precipitation_region*tv
 gen temp_max_region_tv=temp_max_region*tv
 gen temp_min_region_tv=temp_min_region*tv
@@ -754,3 +757,42 @@ ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_
 ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_region_tv lis_region_tv_dist)  dist_sndncap_max_norm $ind_controls desert_region_tv elevation_region_tv mountain_region_tv if spl==1, absorb(i.country_round) cluster(region_time) endog(cvg_region_pot cvg_region_pot_dist) ffirst
 
 ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_region_tv lis_region_tv_dist)  dist_sndncap_max_norm $ind_controls desert_region_tv mountain_region_tv if spl==1, absorb(i.country_round) cluster(region_time) endog(cvg_region_pot cvg_region_pot_dist) ffirst
+
+
+
+
+
+
+
+
+
+use "${mypath}\working_paper\trust\data\data_dta\data_27_02_25.dta", clear
+
+gen desert_region_tv=desert_region*tv
+gen mountain_region_tv=mountain_region*tv
+
+global ind_controls age age_2 i.sex i.educ_sec i.bin_rural i.bin_conditions_eco i.bin_emp night_region_log pop_region_log area_region_log tele_news paper_news radio_news disc_pol_a pres_adm1 distance_to_road
+*bin_unfair_eth: removes observations
+global cty_controls gdppc_log area_log vdem_polyarchy cor_index i.color_num i.gov_num
+global geo_controls desert_region_tv mountain_region_tv
+global bdd_controls distance_border_km distance_border_km2 distance_border_km3 bin_unfair_eth
+
+*t1: pol_trust dist_cap_max_norm
+
+use "${mypath}\working_paper\trust\data\data_dta\data_27_02_25.dta", clear
+gen desert_region_tv=desert_region*tv
+gen mountain_region_tv=mountain_region*tv
+
+eststo ols_cty: reghdfe pol_trust dist_cap_max_norm dist_sndncap_max_norm $ind_controls $cty_controls $geo_controls bin_unfair_eth i.round if spl==1, cluster(i.region_time)
+eststo ols_fe: reghdfe pol_trust dist_cap_max_norm dist_sndncap_max_norm $ind_controls $geo_controls bin_unfair_eth if spl==1, absorb(i.country_round) cluster(i.region_time)
+
+use "${mypath}\working_paper\trust\data\data_dta\df_40.dta", clear
+gen desert_region_tv=desert_region*tv
+gen mountain_region_tv=mountain_region*tv
+
+eststo bdd_cty: reghdfe pol_trust dist_cap_max_norm dist_sndncap_max_norm $ind_controls $cty_controls $bdd_controls $geo_controls if spl==1, absorb(i.round i.murdock_names) cluster(cluster_bdd)
+eststo bdd_fe: reghdfe pol_trust dist_cap_max_norm dist_sndncap_max_norm $ind_controls $bdd_controls $geo_controls if spl==1, absorb(i.country_round i.murdock_names) cluster(cluster_bdd)
+
+noisily{
+estout ols_cty ols_fe bdd_cty bdd_fe, replace style(tex) cells(b(star fmt(3)) se(par fmt(2))) starlevels(* 0.10 ** 0.05 *** 0.01) stats(N r2_a, fmt(0 3)) margin legend
+}
