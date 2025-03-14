@@ -1,0 +1,32 @@
+```{r}
+selected_countries <- countries %>% 
+ filter(iso_a3 %in% c("BEN", "NER"))
+
+selected_individuals <- individuals %>%
+ filter(iso%in% c("BEN", "NER"))
+
+selected_capitals <- capitals %>%
+ filter(iso%in% c("BEN", "NER"))
+
+selected_murdock <- murdock_sf%>%
+  filter(NAME=="DENDI")
+  
+ggplot() +
+   geom_sf(data = selected_countries, fill = "white", color = "black") +
+geom_sf(data = selected_murdock, fill = "green", color = "darkgreen", size = 1, alpha=0.5) +
+ theme_void() + 
+geom_point(data = selected_capitals, 
+          aes(x = longitude, y = latitude, color = "Capitals"), 
+         size = 2, shape = 22, fill = "red", show.legend = FALSE) +
+  
+geom_label(aes(x = 2.5, y = 10, label = "Benin"), color = "black", size = 6, fill = "lightgrey", label.size = 0.5) +
+     geom_label(aes(x = 4, y = 14.5, label = "Niger"), color = "black", size = 6, fill = "lightgrey", label.size = 0.5) +
+
+geom_text(aes(x = 2.4, y = 13.75, label = "Niamey"), color = "black", size = 5) +
+geom_text(aes(x = 2.2, y = 6.6, label = "Porto-Novo"), color = "black", size = 5) +
+
+  labs(color = NULL) +
+   coord_sf(xlim = c(0, 5), ylim = c(6, 18), expand = FALSE)
+#ggsave("writing/presentation/bdd_map.jpg", width = 10, height = 10, units = "in", dpi = 300)
+```
+
