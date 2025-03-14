@@ -1,51 +1,29 @@
 ```{r}
-# Data manipulation and utility
-library(dplyr)      # Data manipulation
-library(readr)      # Data import/export
-library(magrittr)   # Pipe operator (%>%)
-
-# Statistical analysis and modeling
-library(estimatr)   # Robust regression
-library(car)        # Companion to Applied Regression (e.g., recoding variables)
-
-# Visualization
-library(ggplot2)    # Plotting
-library(texreg)     # Exporting regression results to LaTeX/HTML
-
-# Spatial and geospatial analysis
-library(sf)         # Simple Features for R
-library(geosphere)  # Geospatial functions
-library(rnaturalearth)     # Natural Earth map data
-library(rnaturalearthdata) # Data for rnaturalearth
-
-# Specialized packages
-library(rdrobust)   # Regression discontinuity designs
-library(murdock)    # Specific package, assuming you have a need for it
-
-library(haven)
-
 setwd("~/working_paper/trust/")
 getwd()
+
+library(dplyr)
+library(readr)
+library(magrittr)
+library(ggplot2)
+library(sf)
+library(rnaturalearth)
+library(murdock)
+library(haven)
 ```
 
 ```{r}
-# Load the Murdock ethnic groups map (1956)
 murdock <- murdock::murdock
-
-# Convert the Murdock map to an 'sf' (Simple Features) object for spatial data manipulation
 murdock_sf <- st_as_sf(murdock)
 
-# Define a set of African countries of interest by specifying their names
 countries <- ne_countries(country = c("Benin","Botswana","Burkina Faso","Cameroon","Ivory Coast",
                                     "Guinea","Kenya","Liberia","Malawi","Mali",
                                     "Mozambique","Namibia","Niger","Nigeria","Sierra Leone",
                                     "United Republic of Tanzania","Uganda","Zambia","Zimbabwe",
                                     "Ghana"))
 
-# Convert the selected countries into an 'sf' object for spatial operations
 countries_sf <- st_as_sf(countries)  
 
-# Extract the individual boundaries of the selected African countries
 boundaries <- st_boundary(countries_sf)
 
 ggplot() +
@@ -69,28 +47,41 @@ ggplot() +
     legend.position = c(0.25, 0.35)
   )
 
-ggsave("plots/discontinuity/murdock_map.jpg", width = 10, height = 6, dpi = 300)
+ggsave("C:/Users/Redha CHABA/Documents/wp_git/rbci/plots/discontinuity/murdock_map.jpg", width = 10, height = 6, dpi = 300)
 
-# Create a 50km buffer around the African country borders
 buffer <- st_buffer(boundaries, dist = 25000)
 
-# Plot the Murdock map with the 25km buffers around the African borders
 ggplot() +
-  geom_sf(data = murdock_sf, fill = "transparent", color = "black", size = 1) + # Murdock map in black
-  geom_sf(data = buffer, color = "red", lwd = 1.5) + # 25km buffer around borders in red
-  theme_minimal() +
-  ggtitle("25km Buffer of African Borders and Murdock Ethnic Zones (1956)")
+  geom_sf(data = murdock_sf, aes (color="Murdock"), fill = "transparent", size = 1) + # Murdock map in black
+  geom_sf(data = buffer, aes(color = "boundaries"), lwd = 1) + # 25km buffer around borders in red
+  scale_color_manual(
+    values = c("Murdock" = "black", "boundaries" = "red"),
+    labels = c("25km boundaries", "Historical Ethnic Areas"),
+    name = NULL 
+  ) +
+  theme_minimal(base_size = 15) +
+  theme(
+    panel.grid.major = element_blank(),  
+    panel.grid.minor = element_blank(),  
+    panel.background = element_blank(),   
+    axis.text = element_blank(),         
+    axis.ticks = element_blank(),         
+    axis.title = element_blank(),         
+    legend.key = element_rect(fill = "transparent", color = NA),
+    legend.text = element_text(size = 8),
+    legend.position = c(0.25, 0.35)
+  )
+
+ggsave("C:/Users/Redha CHABA/Documents/wp_git/rbci/plots/discontinuity/murdock_boundaries_map.jpg", width = 10, height = 6, dpi = 300)
 ```
 
 ```{r}
-# List of countries of interest
 countries <- c("Benin","Botswana","Burkina Faso","Cameroon","Ivory Coast",
                                     "Guinea","Kenya","Liberia","Malawi","Mali",
                                     "Mozambique","Namibia","Niger","Nigeria","Sierra Leone",
                                     "United Republic of Tanzania","Uganda","Zambia","Zimbabwe",
                                     "Ghana")
 
-# Buffer distances
 buffer_distances <- c(50000, 40000, 30000, 25000, 20000, 15000, 10000)
 
 # Loop over each country and buffer distance
@@ -113,17 +104,6 @@ for (country in countries) {
     plot(inter_country$geometry, main = paste(country, "-", dist / 1000, "km buffer"))
   }
 }
-
-# List of objects to keep
-objects_to_keep <- c("data_trust_test", "union_list", "murdock_sf", "countries", "countries_sf", "buffer", "buffer_distances")
-
-# Get all objects in the current environment
-
-
-# Determine which objects to remove
-
-
-# Remove the unnecessary objects
 
 ```
 
@@ -155,8 +135,13 @@ unions_list <- lapply(intersections_list, function(intersections) {
 
 # Example of plotting the 25km buffer result
 ggplot() +
-  geom_sf(data = murdock_sf, fill = "transparent", color = "black", size = 1) +
-  geom_sf(data = unions_list[["20000"]], color = "red", lwd=1, fill="transparent") +  # 25km buffer
+  geom_sf(data = murdock_sf, fill = "transparent", aes(color = "Murdock"), size = 1) +
+  geom_sf(data = unions_list[["25000"]], aes(color = "boundaries"), lwd=1, fill="transparent") +
+  scale_color_manual(
+    values = c("Murdock" = "black", "boundaries" = "red"),
+    labels = c("25km boundaries", "Historical Ethnic Areas"),
+    name = NULL 
+  ) +
   theme_minimal(base_size = 15) +
   theme(
     panel.grid.major = element_blank(),  
@@ -170,28 +155,19 @@ ggplot() +
     legend.position = c(0.25, 0.35)
   )
 
-ggsave("buffer_20.jpg", width = 10, height = 6, dpi = 300)
-
-# List of objects to keep
-objects_to_keep <- c("data_trust_test", "unions_list", "murdock_sf")
-
-# Get all objects in the current environment
-
-
-# Determine which objects to remove
-
-
-# Remove the unnecessary objects
+ggsave("buffer_25.jpg", width = 10, height = 6, dpi = 300)
 
 ```
 
 ```{r}
-# Load data
-data_trust_test <- readRDS("data/data_rds/data_final_r.rds")
+data_trust_test <- readRDS("data/data_rds/data_27_02_25.rds")
+data_trust_test%<>%
+  ungroup()
+
 bdd_geo <- read_csv("data/data_raw/bdd_geo_w8.csv")
 
-# Merge and clean data
 data_trust_test %<>%
+  filter(spl==1)%>%
   left_join(bdd_geo, by = "id_unique") %>%
   select(-...1) %>%
   mutate(
@@ -200,7 +176,6 @@ data_trust_test %<>%
     distance_border_km3 = distance_border_km^3
   )
 
-# Convert to spatial data and filter by borders
 border_sample_50_union <- unions_list[["50000"]]
 border_sample_40_union <- unions_list[["40000"]]
 border_sample_30_union <- unions_list[["30000"]]
@@ -233,10 +208,9 @@ borders <- list(
 
 # Filter data
 filtered_data_list <- filter_by_border(data_trust_test_sf, borders)
-names(filtered_data_list) <- c("50", "40", "30", "25", "20", "15", "10")
 
-# Remove border polygons
-rm(list = names(borders))
+names(filtered_data_list) <- c("50", "40", "30", "25", "20", "15", "10")
+sapply(filtered_data_list, nrow)
 
 # Prepare Murdock map
 murdock <- murdock_sf %>%
@@ -255,17 +229,6 @@ ggplot() +
   ggtitle("Individuals living less than 50 km from a border and Murdock's (1956) historical ethnic homeland") +
   theme_void()
 
-# List of objects to keep
-objects_to_keep <- c("df_list", "data_trust_test")
-
-# Get all objects in the current environment
-
-
-# Determine which objects to remove
-
-
-# Remove the unnecessary objects
-
 ```
 
 ```{r}
@@ -278,7 +241,7 @@ individuals <- data_trust_test %>%
   na.omit()
 
 capitals <- data_trust_test %>%
-  select(caplong, caplat, iso) %>%
+  distinct(caplong, caplat, iso)%>%
   na.omit() %>%
   rename(longitude = caplong, latitude = caplat)
 
@@ -310,70 +273,6 @@ ggplot() +
              size = 2, shape = 22, fill = "black", show.legend = FALSE)
 
 ggsave("plots/map/obs_map.jpg", width = 10, height = 10, units = "in", dpi = 300)
-
-
-
-
-#selected_countries <- countries %>% 
- # filter(iso_a3 %in% c("BEN", "NER"))
-
-#selected_individuals <- individuals %>%
- # filter(iso%in% c("BEN", "NER"))
-
-#selected_capitals <- capitals %>%
- # filter(iso%in% c("BEN", "NER"))
-
-#test <- murdock_sf%>%
-#  distinct(NAME)
-
-#selected_murdock <- murdock_sf%>%
-#  filter(NAME=="DENDI")
-  
-
-  
-#test <- unions_list[["20000"]]
-
-#test %<>%
- # filter(iso%in%c("BEN", "NER"))
-
-# Create the plot
-#ggplot() +
-  # Base map with country borders
-#    geom_sf(data = selected_countries, fill = "white", color = "black") +
-#  geom_sf(data = selected_murdock, fill = "green", color = "darkgreen", size = 1, alpha=0.5) +
-  # Use theme_void to create a clean background
- # theme_void() + 
-  # Adding capital cities with refined aesthetics
-#  geom_point(data = selected_capitals, 
-   #          aes(x = longitude, y = latitude, color = "Capitals"), 
-  #           size = 2, shape = 22, fill = "red", show.legend = FALSE) +
-  
-#geom_label(aes(x = 2.5, y = 10, label = "Benin"), color = "black", size = 6, fill = "lightgrey", label.size = 0.5) +
- #     geom_label(aes(x = 4, y = 14.5, label = "Niger"), color = "black", size = 6, fill = "lightgrey", label.size = 0.5) +
-
-#geom_text(aes(x = 2.4, y = 13.75, label = "Niamey"), color = "black", size = 5) +
-#geom_text(aes(x = 2.2, y = 6.6, label = "Porto-Novo"), color = "black", size = 5) +
-
-#  labs(color = NULL) +
- #   coord_sf(xlim = c(0, 5), ylim = c(6, 18), expand = FALSE)
-
-# Save the plot if needed
-#ggsave("writing/presentation/bdd_map.jpg", width = 10, height = 10, units = "in", dpi = 300)
-
-
-
-
-# List of objects to keep
-objects_to_keep <- c("df_list")
-
-# Get all objects in the current environment
-
-
-# Determine which objects to remove
-
-
-# Remove the unnecessary objects
-
 ```
 
 ```{r}
@@ -383,7 +282,6 @@ process_df <- function(df, threshold) {
   return(df_filtered)
 }
 
-# Apply the function to each data frame in the list with respective thresholds
 df_list <- lapply(names(df_list), function(name) {
   df <- df_list[[name]]
   threshold <- case_when(
@@ -400,7 +298,6 @@ df_list <- lapply(names(df_list), function(name) {
   return(df_filtered)
 })
 
-# Update the names of the list to match the original names
 names(df_list) <- c("df_50", "df_40", "df_30", "df_25", "df_20", "df_15", "df_10")
 ```
 
@@ -410,13 +307,9 @@ convert_labelled_to_factors <- function(df) {
     mutate(across(where(haven::is.labelled), haven::as_factor))
 }
 
-# Apply the function to each data frame in the list
 df_list <- lapply(df_list, convert_labelled_to_factors)
 
-# Optionally, update list names if needed
 names(df_list) <- c("df_50", "df_40", "df_30", "df_25", "df_20", "df_15", "df_10")
-
-rm("convert_labelled_to_factors", "process_df")
 ```
 
 ```{r}
@@ -424,9 +317,7 @@ df_50 <- df_list$df_50
 
 list_columns <- sapply(df_50, is.list)
 
-# Handle list columns by converting them to strings (or you could flatten or remove them as needed)
 df_50[list_columns] <- lapply(df_50[list_columns], function(x) sapply(x, toString))
-
 
 df_50%<>%as.data.frame()
 
@@ -443,19 +334,6 @@ df_50 %<>%
 saveRDS(df_50, file="data/data_rds/df_50.rds")
 
 write_dta(df_50, "data/data_dta/df_50.dta")
-
-df_50 %<>%
-  group_by(murdock_round) %>%
-  filter(n_distinct(iso) >= 2)%>%
-ungroup()
-
-df_50 %<>%
-  mutate(cluster_bdd = as.numeric(factor(paste(region_time, murdock_names, sep = "_"))))
-
-saveRDS(df_50, file="data/data_rds/df_50_2.rds")
-
-write_dta(df_50, "data/data_dta/df_50_2.dta")
-
 ```
 
 ```{r}
@@ -463,7 +341,6 @@ df_40 <- df_list$df_40
 
 list_columns <- sapply(df_40, is.list)
 
-# Handle list columns by converting them to strings (or you could flatten or remove them as needed)
 df_40[list_columns] <- lapply(df_40[list_columns], function(x) sapply(x, toString))
 
 
@@ -482,18 +359,6 @@ df_40 %<>%
 saveRDS(df_40, file="data/data_rds/df_40.rds")
 
 write_dta(df_40, "data/data_dta/df_40.dta")
-
-df_40 %<>%
-  group_by(murdock_round) %>%
-  filter(n_distinct(iso) >= 2)%>%
-ungroup()
-
-df_40 %<>%
-  mutate(cluster_bdd = as.numeric(factor(paste(region_time, murdock_names, sep = "_"))))
-
-saveRDS(df_40, file="data/data_rds/df_40_2.rds")
-
-write_dta(df_40, "data/data_dta/df_40_2.dta")
 ```
 
 ```{r}
@@ -501,9 +366,7 @@ df_30 <- df_list$df_30
 
 list_columns <- sapply(df_30, is.list)
 
-# Handle list columns by converting them to strings (or you could flatten or remove them as needed)
 df_30[list_columns] <- lapply(df_30[list_columns], function(x) sapply(x, toString))
-
 
 df_30%<>%as.data.frame()
 
@@ -519,19 +382,6 @@ df_30 %<>%
 
 saveRDS(df_30, file="data/data_rds/df_30.rds")
 write_dta(df_30, "data/data_dta/df_30.dta")
-
-df_30 %<>%
-  group_by(murdock_round) %>%
-  filter(n_distinct(iso) >= 2)%>%
-ungroup()
-
-df_30 %<>%
-  mutate(cluster_bdd = as.numeric(factor(paste(region_time, murdock_names, sep = "_"))))
-
-saveRDS(df_30, file="data/data_rds/df_30_2.rds")
-
-write_dta(df_30, "data/data_dta/df_30_2.dta")
-
 ```
 
 ```{r}
@@ -539,9 +389,7 @@ df_25 <- df_list$df_25
 
 list_columns <- sapply(df_25, is.list)
 
-# Handle list columns by converting them to strings (or you could flatten or remove them as needed)
 df_25[list_columns] <- lapply(df_25[list_columns], function(x) sapply(x, toString))
-
 
 df_25%<>%as.data.frame()
 
@@ -558,18 +406,6 @@ df_25 %<>%
 saveRDS(df_25, file="data/data_rds/df_25.rds")
 
 write_dta(df_25, "data/data_dta/df_25.dta")
-
-df_25 %<>%
-  group_by(murdock_round) %>%
-  filter(n_distinct(iso) >= 2)%>%
-ungroup()
-
-df_25 %<>%
-  mutate(cluster_bdd = as.numeric(factor(paste(region_time, murdock_names, sep = "_"))))
-
-saveRDS(df_25, file="data/data_rds/df_25_2.rds")
-
-write_dta(df_25, "data/data_dta/df_25_2.dta")
 ```
 
 ```{r}
@@ -577,9 +413,7 @@ df_20 <- df_list$df_20
 
 list_columns <- sapply(df_20, is.list)
 
-# Handle list columns by converting them to strings (or you could flatten or remove them as needed)
 df_20[list_columns] <- lapply(df_20[list_columns], function(x) sapply(x, toString))
-
 
 df_20%<>%as.data.frame()
 
@@ -596,19 +430,6 @@ df_20 %<>%
 saveRDS(df_20, file="data/data_rds/df_20.rds")
 
 write_dta(df_20, "data/data_dta/df_20.dta")
-
-
-df_20 %<>%
-  group_by(murdock_round) %>%
-  filter(n_distinct(iso) >= 2)%>%
-ungroup()
-
-df_20 %<>%
-  mutate(cluster_bdd = as.numeric(factor(paste(region_time, murdock_names, sep = "_"))))
-
-saveRDS(df_20, file="data/data_rds/df_20_2.rds")
-
-write_dta(df_20, "data/data_dta/df_20_2.dta")
 ```
 
 ```{r}
@@ -616,9 +437,7 @@ df_15 <- df_list$df_15
 
 list_columns <- sapply(df_15, is.list)
 
-# Handle list columns by converting them to strings (or you could flatten or remove them as needed)
 df_15[list_columns] <- lapply(df_15[list_columns], function(x) sapply(x, toString))
-
 
 df_15%<>%as.data.frame()
 
@@ -635,18 +454,6 @@ df_15 %<>%
 saveRDS(df_15, file="data/data_rds/df_15.rds")
 
 write_dta(df_15, "data/data_dta/df_15.dta")
-
-df_15 %<>%
-  group_by(murdock_round) %>%
-  filter(n_distinct(iso) >= 2)%>%
-ungroup()
-
-df_15 %<>%
-  mutate(cluster_bdd = as.numeric(factor(paste(region_time, murdock_names, sep = "_"))))
-
-saveRDS(df_15, file="data/data_rds/df_15_2.rds")
-
-write_dta(df_15, "data/data_dta/df_15_2.dta")
 ```
 
 ```{r}
@@ -654,9 +461,7 @@ df_10 <- df_list$df_10
 
 list_columns <- sapply(df_10, is.list)
 
-# Handle list columns by converting them to strings (or you could flatten or remove them as needed)
 df_10[list_columns] <- lapply(df_10[list_columns], function(x) sapply(x, toString))
-
 
 df_10%<>%as.data.frame()
 
@@ -673,18 +478,4 @@ df_10 %<>%
 saveRDS(df_10, file="data/data_rds/df_10.rds")
 
 write_dta(df_10, "data/data_dta/df_10.dta")
-
-df_10 %<>%
-  group_by(murdock_round) %>%
-  filter(n_distinct(iso) >= 2)%>%
-ungroup()
-
-df_10 %<>%
-  mutate(cluster_bdd = as.numeric(factor(paste(region_time, murdock_names, sep = "_"))))
-
-saveRDS(df_10, file="data/data_rds/df_10_2.rds")
-
-write_dta(df_10, "data/data_dta/df_10_2.dta")
 ```
-
-

@@ -160,8 +160,8 @@ ggplot(data_intervals_ic, aes(x = mean_dist_border_intervals, y = mean_trust_int
 geom_smooth(data = data_left_plus,
             aes(x = mean_dist_border_intervals, y = mean_trust_intervals),
             method = "lm", formula = y ~ poly(x, 3), 
-            color = "navy", size = 1.2, se = TRUE,
-            fill="navy",
+            color = "firebrick", size = 1.2, se = TRUE,
+            fill="firebrick",
             alpha=0.1,
             level = 0.90, show.legend = FALSE) +
 
@@ -169,8 +169,8 @@ geom_smooth(data = data_left_plus,
 geom_smooth(data = data_right_plus,
             aes(x = mean_dist_border_intervals, y = mean_trust_intervals),
             method = "lm", formula = y ~ poly(x, 3), 
-            color = "firebrick", size = 1.2, se = TRUE,
-            fill = "firebrick",
+            color = "darkgreen", size = 1.2, se = TRUE,
+            fill = "darkgreen",
             alpha = 0.1,
             level = 0.90, show.legend = FALSE)+
 
@@ -179,33 +179,31 @@ geom_segment(aes(x = -40000,
                    y = moy_trust_pres, 
                    yend = moy_trust_pres, linetype = "Close"),
              inherit.aes = FALSE,
-             color = "navy", size = 1.5, alpha = 0.7, data = data.frame()) + 
+             color = "firebrick", size = 1.5, alpha = 0.7, data = data.frame()) + 
   geom_segment(aes(x = 0, 
                    xend =40000, 
                    y = moy_trust_loin, 
                    yend = moy_trust_loin, linetype = "Far"),
                inherit.aes = FALSE,
-               color = "firebrick", size = 1.5, alpha = 0.7, data = data.frame()) +  
+               color = "darkgreen", size = 1.5, alpha = 0.7, data = data.frame()) +  
 
     # Add annotations in better positions with borders
   
   annotate("label", x = -max(abs(data_intervals$mean_dist_border_intervals)) * 0.5, 
            y = max(data_intervals_ic$mean_trust_intervals) + 0.05, 
            label = "Close to the Capital", 
-           size = 7, fill = "aliceblue", color = "navy", fontface = "bold", 
+           size = 7, fill = "mistyrose", color = "firebrick", fontface = "bold", 
            label.size = 0.5, family = "Arial") +
   annotate("label", x = max(abs(data_intervals$mean_dist_border_intervals)) * 0.5, 
            y = max(data_intervals_ic$mean_trust_intervals) + 0.05, 
            label = "Far from the Capital", 
-           size = 7, fill = "mistyrose", color = "firebrick", fontface = "bold", 
+           size = 7, fill = "honeydew", color = "darkgreen", fontface = "bold", 
            label.size = 0.5, family = "Arial") +
   
   # Add legend for mean lines
   scale_linetype_manual(name = NULL, 
-                        values = c("Far" = "dashed", 
-                                  "Close" = "dashed"),
+                        values = c("Close" = "dashed","Far" = "dashed"),
                         labels = c(expression(bar(y)[far]), expression(bar(y)[close]))) +
-  
 
   # Set appropriate axis limits
   coord_cartesian(xlim = c(-max(abs(data_intervals$mean_dist_border_intervals)), 
@@ -241,7 +239,7 @@ geom_segment(aes(x = -40000,
     plot.margin = margin(t = 20, r = 20, b = 20, l = 20)
   )
 
-ggsave("C:/Users/Redha CHABA/Documents/wp_git/rbci/plots/discontinuity/discontinuity.jpg", plot = last_plot(), width = 10, height = 6, units = "in", dpi = 300)
+ggsave("C:/Users/Redha CHABA/Documents/wp_git/rbci/plots/discontinuity/discontinuity2.jpg", plot = last_plot(), width = 10, height = 6, units = "in", dpi = 300)
 ```
 
 ```{r}
