@@ -14,19 +14,261 @@ library(extrafont)
 library(ggtext)
 ```
 
+#50km
+
+```{r}
+df_50 <- read_dta("data/data_dta/df_50.dta")
+
+df_50 <- na.omit(subset(df_50, select = c("pol_trust","dist_cap_max_norm","dist_sndncap_max_norm","age","age_2","sex","educ_sec", "bin_rural","bin_conditions_eco","bin_conditions_country", "bin_emp", "night_region_log","pop_region_log", "area_region_log", "disc_pol_a", "tele_news", "paper_news", "radio_news", "bin_unfair_eth", "pres_adm1", "round", "country_round","murdock_names","cluster_bdd", "distance_border", "distance_border_km", "distance_border_km2", "distance_border_km3", "gdppc_log",  "vdem_polyarchy", "color_num", "cor_index", "area_log", "gov_num", "mountain_region_tv", "desert_region_tv")))
+
+reg3_50 <- lm_robust(pol_trust~dist_cap_max_norm+dist_sndncap_max_norm+age+age_2+factor(sex)+ factor(educ_sec) +factor(bin_rural)+
+                             factor(bin_conditions_eco)+ factor(bin_conditions_country)+ factor(bin_emp)+ disc_pol_a+ tele_news + paper_news + radio_news + night_region_log  + pop_region_log+ area_region_log+gdppc_log+vdem_polyarchy + factor(color_num)+cor_index+area_log+ factor(gov_num) + desert_region_tv + mountain_region_tv + factor(bin_unfair_eth), clusters = cluster_bdd, data = df_50)
+
+summary(reg3_50)
+
+df_50$ft_values <- fitted(reg3_50)
+```
+
+```{r}
+#Pour les gens près de la capitale (sous la médiane), on rend la distance à la frontière négative (cf. on multiplie par -1)
+df_50$distance_border <- ifelse(df_50$dist_cap_max_norm<median(df_50$dist_cap_max_norm),
+                                       -df_50$distance_border,df_50$distance_border)
+
+#On crée une base avec les gens près et une avec les gens loin
+df_50_pres <- subset(df_50, df_50$distance_border<=0)#ici c'est les 50% les plus près, donc la valeur sous 0 (voir ligne précedente)
+df_50_loin <- subset(df_50, df_50$distance_border>=0)#ici c'est les 50% les plus loin, donc la valeur au dessus de 0 (voir ligne précedente)
+
+#On définit 10 intervalles
+nb_intervals <- 50
+
+#On découpe les deux bases en 10 intervalles
+intervals_dist_border_pres <- cut(df_50_pres$distance_border, breaks = nb_intervals)
+intervals_dist_border_loin <- cut(df_50_loin$distance_border, breaks = nb_intervals)
+
+
+
+#On fait la moyenne par intervalle pour la distance à la frontière et le fitted trust pour la base près
+mean_dist_border_intervals_pres <- data.frame(tapply(df_50_pres$distance_border, intervals_dist_border_pres, mean))
+mean_trust_intervals_pres <- data.frame(tapply(df_50_pres$ft_values, intervals_dist_border_pres, mean))
+
+#On renomme les colonnes
+colnames(mean_dist_border_intervals_pres) <- "mean_dist_border_intervals"
+colnames(mean_trust_intervals_pres) <- "mean_trust_intervals"
+
+#On fait la moyenne par intervalle pour la distance à la frontière et le fitted trust pour la base loin
+mean_dist_border_intervals_loin <- data.frame(tapply(df_50_loin$distance_border, intervals_dist_border_loin, mean))
+mean_trust_intervals_loin <- data.frame(tapply(df_50_loin$ft_values, intervals_dist_border_loin, mean))
+
+#On renomme les colonnes
+colnames(mean_dist_border_intervals_loin) <- "mean_dist_border_intervals"
+colnames(mean_trust_intervals_loin) <- "mean_trust_intervals"
+
+
+#On fussionne les bases près et loin
+mean_dist_border_intervals <- rbind(mean_dist_border_intervals_pres,mean_dist_border_intervals_loin)
+mean_trust_intervals <- rbind(mean_trust_intervals_pres,mean_trust_intervals_loin)
+
+data_intervals <- cbind(mean_dist_border_intervals,mean_trust_intervals)
+
+
+#Les intervalles de confiance pour le trust
+lower_distance_fun <- function(x) {
+  mean_val <- mean(x)
+  conf_int <- t.test(x)$conf.int
+  ic95_ <- abs(conf_int[1] - mean_val)
+  ic95_
+}
+
+#On fait les intervalles de confiance pour chaque intervalle (50 en tout, 10 près + 10 loin)
+mean_trust_intervals_pres_ic <- data.frame(tapply(df_50_pres$ft_values, intervals_dist_border_pres, lower_distance_fun))
+mean_trust_intervals_loin_ic <- data.frame(tapply(df_50_loin$ft_values, intervals_dist_border_loin, lower_distance_fun))
+colnames(mean_trust_intervals_pres_ic) <- "ic_trust"
+colnames(mean_trust_intervals_loin_ic) <- "ic_trust"
+
+#On met toutes les intervalles dans la même base
+mean_trust_intervals_ic <- rbind(mean_trust_intervals_pres_ic,mean_trust_intervals_loin_ic)
+
+data_intervals_ic <- cbind(data_intervals,mean_trust_intervals_ic)
+
+#Les moyenne près/loin pour les lignes sur le graph
+moy_trust_pres <- mean(df_50_pres$ft_values)
+moy_trust_loin <- mean(df_50_loin$ft_values)
+
+```
+
+```{r}
+# Create modified datasets with points at the boundary and extremes
+data_left <- subset(data_intervals_ic, mean_dist_border_intervals <= 0)
+data_right <- subset(data_intervals_ic, mean_dist_border_intervals >= 0)
+
+# Find the min and max values in your x range
+x_min <- -50000  # -50 km in your units
+x_max <- 50000   # 50 km in your units
+
+# Find the predicted values at x=0, x_min, and x_max for each curve
+left_model <- lm(mean_trust_intervals ~ poly(mean_dist_border_intervals, 3), data=data_left)
+right_model <- lm(mean_trust_intervals ~ poly(mean_dist_border_intervals, 3), data=data_right)
+
+y_at_zero_left <- predict(left_model, newdata=data.frame(mean_dist_border_intervals=0))
+y_at_min <- predict(left_model, newdata=data.frame(mean_dist_border_intervals=x_min))
+
+y_at_zero_right <- predict(right_model, newdata=data.frame(mean_dist_border_intervals=0))
+y_at_max <- predict(right_model, newdata=data.frame(mean_dist_border_intervals=x_max))
+
+# Average confidence interval for the added points
+avg_ic_left <- mean(data_left$ic_trust)
+avg_ic_right <- mean(data_right$ic_trust)
+
+# Add points at x=0 and x=x_min to left dataset
+data_left_plus <- rbind(data_left, 
+                        data.frame(
+                          mean_dist_border_intervals = 0,
+                          mean_trust_intervals = y_at_zero_left,
+                          ic_trust = avg_ic_left
+                        ),
+                        data.frame(
+                          mean_dist_border_intervals = x_min,
+                          mean_trust_intervals = y_at_min,
+                          ic_trust = avg_ic_left
+                        ))
+
+# Add points at x=0 and x=x_max to right dataset
+data_right_plus <- rbind(data_right, 
+                         data.frame(
+                           mean_dist_border_intervals = 0,
+                           mean_trust_intervals = y_at_zero_right,
+                           ic_trust = avg_ic_right
+                         ),
+                         data.frame(
+                           mean_dist_border_intervals = x_max,
+                           mean_trust_intervals = y_at_max,
+                           ic_trust = avg_ic_right
+                         ))
+```
+
+```{r}
+ggplot(data_intervals_ic, aes(x = mean_dist_border_intervals, y = mean_trust_intervals)) +
+  # Add vertical line at border
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray40", size = 0.7) + 
+  
+  # Left side smooth curve (Close to Capital)
+# Left side smooth curve (Close to Capital)
+geom_smooth(data = data_left_plus,
+            aes(x = mean_dist_border_intervals, y = mean_trust_intervals),
+            method = "lm", formula = y ~ poly(x, 3), 
+            color = "firebrick", size = 1.2, se = TRUE,
+            fill="firebrick",
+            alpha=0.1,
+            level = 0.90, show.legend = FALSE) +
+
+# Right side smooth curve (Far from Capital)
+geom_smooth(data = data_right_plus,
+            aes(x = mean_dist_border_intervals, y = mean_trust_intervals),
+            method = "lm", formula = y ~ poly(x, 3), 
+            color = "darkgreen", size = 1.2, se = TRUE,
+            fill = "darkgreen",
+            alpha = 0.1,
+            level = 0.90, show.legend = FALSE)+
+
+geom_segment(aes(x = -50000, 
+                   xend = 0,
+                   y = moy_trust_pres, 
+                   yend = moy_trust_pres, linetype = "Close"),
+             inherit.aes = FALSE,
+             color = "firebrick", size = 1.5, alpha = 0.7, data = data.frame()) + 
+  geom_segment(aes(x = 0, 
+                   xend =50000, 
+                   y = moy_trust_loin, 
+                   yend = moy_trust_loin, linetype = "Far"),
+               inherit.aes = FALSE,
+               color = "darkgreen", size = 1.5, alpha = 0.7, data = data.frame()) +  
+  
+  # Add annotations in better positions with borders
+  
+  annotate("label", x = -max(abs(data_intervals$mean_dist_border_intervals)) * 0.5, 
+           y = max(data_intervals_ic$mean_trust_intervals) + 0.05, 
+           label = "Close to the Capital", 
+           size = 7, fill = "mistyrose", color = "firebrick", fontface = "bold", 
+           label.size = 0.5, family = "Arial") +
+  annotate("label", x = max(abs(data_intervals$mean_dist_border_intervals)) * 0.5, 
+           y = max(data_intervals_ic$mean_trust_intervals) + 0.05, 
+           label = "Far from the Capital", 
+           size = 7, fill = "honeydew", color = "darkgreen", fontface = "bold", 
+           label.size = 0.5, family = "Arial") +
+  
+  # Add legend for mean lines
+  scale_linetype_manual(name = NULL, 
+                        values = c("Close" = "dashed","Far" = "dashed"),
+                        labels = c(expression(bar(y)[far]), expression(bar(y)[close]))) +
+
+  # Set appropriate axis limits
+  coord_cartesian(xlim = c(-max(abs(data_intervals$mean_dist_border_intervals)), 
+                          max(abs(data_intervals$mean_dist_border_intervals))),
+                 ylim = c(min(data_intervals_ic$mean_trust_intervals) - 0.05,
+                         max(data_intervals_ic$mean_trust_intervals) + 0.1)) +
+  
+  # Format axes
+scale_x_continuous(labels = function(x) abs(x) / 1000,
+                     breaks = seq(-50000, 50000, 10000)) +  
+  # Add clear labels
+  labs(x = "Distance from the Border (in km)",
+      y = "Political Trust") +
+  
+  # Polish theme
+theme_minimal() +
+  theme(
+    text = element_text(family = "Arial"),
+    plot.title = element_text(size = 25, hjust = 0.5, face = "bold", margin = margin(b = 10)),
+    plot.subtitle = element_text(size = 20, hjust = 0.5, margin = margin(b = 20)),
+    axis.title.x = element_text(size = 20, face = "bold", margin = margin(t = 25)),
+    axis.title.y = element_text(size = 20, face = "bold", margin = margin(r = 25)),
+    axis.text = element_text(size = 11),
+    axis.ticks = element_line(color = "black"),  # Keep the ticks
+    axis.ticks.length = unit(5, "pt"),  # Adjust the length of the ticks if needed
+    axis.line = element_line(color = "black"),  # Ensure the axis lines are visible
+    legend.position = c(0.85, 0.2),
+    legend.background = element_rect(fill = alpha('white'), color = "gray80"),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 20),
+    panel.grid.major.x = element_blank(),  # Remove vertical major grid lines
+    panel.grid.minor.x = element_blank(),  # Remove vertical minor grid lines
+    panel.grid.major.y = element_line(color = "gray90"),  # Keep horizontal major grid lines
+    panel.grid.minor.y = element_blank(),  # Remove horizontal minor grid lines
+    plot.margin = margin(t = 20, r = 20, b = 18, l = 18)
+  )
+
+ggsave("C:/Users/Redha CHABA/Documents/wp_git/rbci/plots/discontinuity/discontinuity_50.jpg", plot = last_plot(), width = 10, height = 6, units = "in", dpi = 300)
+```
+
+```{r}
+# Check sample sizes
+n_far <- nrow(df_50_loin)
+n_close <- nrow(df_50_pres)
+cat("Sample sizes:\nFar from capital:", n_far, "\nClose to capital:", n_close, "\n")
+
+# Check variance in trust values
+var_far <- var(df_50_loin$ft_values)
+var_close <- var(df_50_pres$ft_values)
+cat("\nVariance in trust values:\nFar from capital:", round(var_far, 4), 
+    "\nClose to capital:", round(var_close, 4))
+
+# Check mean number of observations per interval
+mean_obs_per_interval_far <- mean(table(intervals_dist_border_loin))
+mean_obs_per_interval_close <- mean(table(intervals_dist_border_pres))
+cat("\n\nMean observations per interval:\nFar from capital:", 
+    round(mean_obs_per_interval_far, 2),
+    "\nClose to capital:", round(mean_obs_per_interval_close, 2))
+```
+
+#40km
+
 ```{r}
 df_40 <- read_dta("data/data_dta/df_40.dta")
-
-df_40%<>%
-  group_by(id_unique)%>%
-  mutate(mountain_region_tv=mountain_region*tv,
-         desert_region_tv=desert_region*tv) %>%
-  ungroup()
 
 df_40 <- na.omit(subset(df_40, select = c("pol_trust","dist_cap_max_norm","dist_sndncap_max_norm","age","age_2","sex","educ_sec", "bin_rural","bin_conditions_eco","bin_conditions_country", "bin_emp", "night_region_log","pop_region_log", "area_region_log", "disc_pol_a", "tele_news", "paper_news", "radio_news", "bin_unfair_eth", "pres_adm1", "round", "country_round","murdock_names","cluster_bdd", "distance_border", "distance_border_km", "distance_border_km2", "distance_border_km3", "gdppc_log",  "vdem_polyarchy", "color_num", "cor_index", "area_log", "gov_num", "mountain_region_tv", "desert_region_tv")))
 
 reg3_40 <- lm_robust(pol_trust~dist_cap_max_norm+dist_sndncap_max_norm+age+age_2+factor(sex)+ factor(educ_sec) +factor(bin_rural)+
-                             factor(bin_conditions_eco)+ factor(bin_conditions_country)+ factor(bin_emp)+ disc_pol_a+ tele_news + paper_news + radio_news + night_region_log  + pop_region_log+ area_region_log+gdppc_log+vdem_polyarchy + factor(color_num)+cor_index+area_log+ factor(gov_num) + desert_region_tv + mountain_region_tv, clusters = cluster_bdd, data = df_40)
+                             factor(bin_conditions_eco)+ factor(bin_conditions_country)+ factor(bin_emp)+ disc_pol_a+ tele_news + paper_news + radio_news + night_region_log  + pop_region_log+ area_region_log+gdppc_log+vdem_polyarchy + factor(color_num)+cor_index+area_log+ factor(gov_num) + desert_region_tv + mountain_region_tv + factor(bin_unfair_eth), clusters = cluster_bdd, data = df_40)
 
 summary(reg3_40)
 
@@ -241,7 +483,7 @@ theme_minimal() +
     plot.margin = margin(t = 20, r = 20, b = 18, l = 18)
   )
 
-ggsave("C:/Users/Redha CHABA/Documents/wp_git/rbci/plots/discontinuity/discontinuity.jpg", plot = last_plot(), width = 10, height = 6, units = "in", dpi = 300)
+ggsave("C:/Users/Redha CHABA/Documents/wp_git/rbci/plots/discontinuity/discontinuity_40.jpg", plot = last_plot(), width = 10, height = 6, units = "in", dpi = 300)
 ```
 
 ```{r}
@@ -253,6 +495,743 @@ cat("Sample sizes:\nFar from capital:", n_far, "\nClose to capital:", n_close, "
 # Check variance in trust values
 var_far <- var(df_40_loin$ft_values)
 var_close <- var(df_40_pres$ft_values)
+cat("\nVariance in trust values:\nFar from capital:", round(var_far, 4), 
+    "\nClose to capital:", round(var_close, 4))
+
+# Check mean number of observations per interval
+mean_obs_per_interval_far <- mean(table(intervals_dist_border_loin))
+mean_obs_per_interval_close <- mean(table(intervals_dist_border_pres))
+cat("\n\nMean observations per interval:\nFar from capital:", 
+    round(mean_obs_per_interval_far, 2),
+    "\nClose to capital:", round(mean_obs_per_interval_close, 2))
+```
+
+#30km
+
+```{r}
+df_30 <- read_dta("data/data_dta/df_30.dta")
+
+df_30 <- na.omit(subset(df_30, select = c("pol_trust","dist_cap_max_norm","dist_sndncap_max_norm","age","age_2","sex","educ_sec", "bin_rural","bin_conditions_eco","bin_conditions_country", "bin_emp", "night_region_log","pop_region_log", "area_region_log", "disc_pol_a", "tele_news", "paper_news", "radio_news", "bin_unfair_eth", "pres_adm1", "round", "country_round","murdock_names","cluster_bdd", "distance_border", "distance_border_km", "distance_border_km2", "distance_border_km3", "gdppc_log",  "vdem_polyarchy", "color_num", "cor_index", "area_log", "gov_num", "mountain_region_tv", "desert_region_tv")))
+
+reg3_30 <- lm_robust(pol_trust~dist_cap_max_norm+dist_sndncap_max_norm+age+age_2+factor(sex)+ factor(educ_sec) +factor(bin_rural)+
+                             factor(bin_conditions_eco)+ factor(bin_conditions_country)+ factor(bin_emp)+ disc_pol_a+ tele_news + paper_news + radio_news + night_region_log  + pop_region_log+ area_region_log+gdppc_log+vdem_polyarchy + factor(color_num)+cor_index+area_log+ factor(gov_num) + desert_region_tv + mountain_region_tv + factor(bin_unfair_eth), clusters = cluster_bdd, data = df_30)
+
+summary(reg3_30)
+
+df_30$ft_values <- fitted(reg3_30)
+```
+
+```{r}
+#Pour les gens près de la capitale (sous la médiane), on rend la distance à la frontière négative (cf. on multiplie par -1)
+df_30$distance_border <- ifelse(df_30$dist_cap_max_norm<median(df_30$dist_cap_max_norm),
+                                       -df_30$distance_border,df_30$distance_border)
+
+#On crée une base avec les gens près et une avec les gens loin
+df_30_pres <- subset(df_30, df_30$distance_border<=0)#ici c'est les 50% les plus près, donc la valeur sous 0 (voir ligne précedente)
+df_30_loin <- subset(df_30, df_30$distance_border>=0)#ici c'est les 50% les plus loin, donc la valeur au dessus de 0 (voir ligne précedente)
+
+#On définit 10 intervalles
+nb_intervals <- 30
+
+#On découpe les deux bases en 10 intervalles
+intervals_dist_border_pres <- cut(df_30_pres$distance_border, breaks = nb_intervals)
+intervals_dist_border_loin <- cut(df_30_loin$distance_border, breaks = nb_intervals)
+
+
+
+#On fait la moyenne par intervalle pour la distance à la frontière et le fitted trust pour la base près
+mean_dist_border_intervals_pres <- data.frame(tapply(df_30_pres$distance_border, intervals_dist_border_pres, mean))
+mean_trust_intervals_pres <- data.frame(tapply(df_30_pres$ft_values, intervals_dist_border_pres, mean))
+
+#On renomme les colonnes
+colnames(mean_dist_border_intervals_pres) <- "mean_dist_border_intervals"
+colnames(mean_trust_intervals_pres) <- "mean_trust_intervals"
+
+#On fait la moyenne par intervalle pour la distance à la frontière et le fitted trust pour la base loin
+mean_dist_border_intervals_loin <- data.frame(tapply(df_30_loin$distance_border, intervals_dist_border_loin, mean))
+mean_trust_intervals_loin <- data.frame(tapply(df_30_loin$ft_values, intervals_dist_border_loin, mean))
+
+#On renomme les colonnes
+colnames(mean_dist_border_intervals_loin) <- "mean_dist_border_intervals"
+colnames(mean_trust_intervals_loin) <- "mean_trust_intervals"
+
+
+#On fussionne les bases près et loin
+mean_dist_border_intervals <- rbind(mean_dist_border_intervals_pres,mean_dist_border_intervals_loin)
+mean_trust_intervals <- rbind(mean_trust_intervals_pres,mean_trust_intervals_loin)
+
+data_intervals <- cbind(mean_dist_border_intervals,mean_trust_intervals)
+
+
+#Les intervalles de confiance pour le trust
+lower_distance_fun <- function(x) {
+  mean_val <- mean(x)
+  conf_int <- t.test(x)$conf.int
+  ic95_ <- abs(conf_int[1] - mean_val)
+  ic95_
+}
+
+#On fait les intervalles de confiance pour chaque intervalle (30 en tout, 10 près + 10 loin)
+mean_trust_intervals_pres_ic <- data.frame(tapply(df_30_pres$ft_values, intervals_dist_border_pres, lower_distance_fun))
+mean_trust_intervals_loin_ic <- data.frame(tapply(df_30_loin$ft_values, intervals_dist_border_loin, lower_distance_fun))
+colnames(mean_trust_intervals_pres_ic) <- "ic_trust"
+colnames(mean_trust_intervals_loin_ic) <- "ic_trust"
+
+#On met toutes les intervalles dans la même base
+mean_trust_intervals_ic <- rbind(mean_trust_intervals_pres_ic,mean_trust_intervals_loin_ic)
+
+data_intervals_ic <- cbind(data_intervals,mean_trust_intervals_ic)
+
+#Les moyenne près/loin pour les lignes sur le graph
+moy_trust_pres <- mean(df_30_pres$ft_values)
+moy_trust_loin <- mean(df_30_loin$ft_values)
+
+```
+
+```{r}
+# Create modified datasets with points at the boundary and extremes
+data_left <- subset(data_intervals_ic, mean_dist_border_intervals <= 0)
+data_right <- subset(data_intervals_ic, mean_dist_border_intervals >= 0)
+
+# Find the min and max values in your x range
+x_min <- -30000  # -30 km in your units
+x_max <- 30000   # 30 km in your units
+
+# Find the predicted values at x=0, x_min, and x_max for each curve
+left_model <- lm(mean_trust_intervals ~ poly(mean_dist_border_intervals, 3), data=data_left)
+right_model <- lm(mean_trust_intervals ~ poly(mean_dist_border_intervals, 3), data=data_right)
+
+y_at_zero_left <- predict(left_model, newdata=data.frame(mean_dist_border_intervals=0))
+y_at_min <- predict(left_model, newdata=data.frame(mean_dist_border_intervals=x_min))
+
+y_at_zero_right <- predict(right_model, newdata=data.frame(mean_dist_border_intervals=0))
+y_at_max <- predict(right_model, newdata=data.frame(mean_dist_border_intervals=x_max))
+
+# Average confidence interval for the added points
+avg_ic_left <- mean(data_left$ic_trust)
+avg_ic_right <- mean(data_right$ic_trust)
+
+# Add points at x=0 and x=x_min to left dataset
+data_left_plus <- rbind(data_left, 
+                        data.frame(
+                          mean_dist_border_intervals = 0,
+                          mean_trust_intervals = y_at_zero_left,
+                          ic_trust = avg_ic_left
+                        ),
+                        data.frame(
+                          mean_dist_border_intervals = x_min,
+                          mean_trust_intervals = y_at_min,
+                          ic_trust = avg_ic_left
+                        ))
+
+# Add points at x=0 and x=x_max to right dataset
+data_right_plus <- rbind(data_right, 
+                         data.frame(
+                           mean_dist_border_intervals = 0,
+                           mean_trust_intervals = y_at_zero_right,
+                           ic_trust = avg_ic_right
+                         ),
+                         data.frame(
+                           mean_dist_border_intervals = x_max,
+                           mean_trust_intervals = y_at_max,
+                           ic_trust = avg_ic_right
+                         ))
+```
+
+```{r}
+ggplot(data_intervals_ic, aes(x = mean_dist_border_intervals, y = mean_trust_intervals)) +
+  # Add vertical line at border
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray40", size = 0.7) + 
+  
+  # Left side smooth curve (Close to Capital)
+# Left side smooth curve (Close to Capital)
+geom_smooth(data = data_left_plus,
+            aes(x = mean_dist_border_intervals, y = mean_trust_intervals),
+            method = "lm", formula = y ~ poly(x, 3), 
+            color = "firebrick", size = 1.2, se = TRUE,
+            fill="firebrick",
+            alpha=0.1,
+            level = 0.90, show.legend = FALSE) +
+
+# Right side smooth curve (Far from Capital)
+geom_smooth(data = data_right_plus,
+            aes(x = mean_dist_border_intervals, y = mean_trust_intervals),
+            method = "lm", formula = y ~ poly(x, 3), 
+            color = "darkgreen", size = 1.2, se = TRUE,
+            fill = "darkgreen",
+            alpha = 0.1,
+            level = 0.90, show.legend = FALSE)+
+
+geom_segment(aes(x = -30000, 
+                   xend = 0,
+                   y = moy_trust_pres, 
+                   yend = moy_trust_pres, linetype = "Close"),
+             inherit.aes = FALSE,
+             color = "firebrick", size = 1.5, alpha = 0.7, data = data.frame()) + 
+  geom_segment(aes(x = 0, 
+                   xend =30000, 
+                   y = moy_trust_loin, 
+                   yend = moy_trust_loin, linetype = "Far"),
+               inherit.aes = FALSE,
+               color = "darkgreen", size = 1.5, alpha = 0.7, data = data.frame()) +  
+  
+  # Add annotations in better positions with borders
+  
+  annotate("label", x = -max(abs(data_intervals$mean_dist_border_intervals)) * 0.5, 
+           y = max(data_intervals_ic$mean_trust_intervals) + 0.05, 
+           label = "Close to the Capital", 
+           size = 7, fill = "mistyrose", color = "firebrick", fontface = "bold", 
+           label.size = 0.5, family = "Arial") +
+  annotate("label", x = max(abs(data_intervals$mean_dist_border_intervals)) * 0.5, 
+           y = max(data_intervals_ic$mean_trust_intervals) + 0.05, 
+           label = "Far from the Capital", 
+           size = 7, fill = "honeydew", color = "darkgreen", fontface = "bold", 
+           label.size = 0.5, family = "Arial") +
+  
+  # Add legend for mean lines
+  scale_linetype_manual(name = NULL, 
+                        values = c("Close" = "dashed","Far" = "dashed"),
+                        labels = c(expression(bar(y)[far]), expression(bar(y)[close]))) +
+
+  # Set appropriate axis limits
+  coord_cartesian(xlim = c(-max(abs(data_intervals$mean_dist_border_intervals)), 
+                          max(abs(data_intervals$mean_dist_border_intervals))),
+                 ylim = c(min(data_intervals_ic$mean_trust_intervals) - 0.05,
+                         max(data_intervals_ic$mean_trust_intervals) + 0.1)) +
+  
+  # Format axes
+scale_x_continuous(labels = function(x) abs(x) / 1000,
+                     breaks = seq(-30000, 30000, 10000)) +  
+  # Add clear labels
+  labs(x = "Distance from the Border (in km)",
+      y = "Political Trust") +
+  
+  # Polish theme
+theme_minimal() +
+  theme(
+    text = element_text(family = "Arial"),
+    plot.title = element_text(size = 25, hjust = 0.5, face = "bold", margin = margin(b = 10)),
+    plot.subtitle = element_text(size = 20, hjust = 0.5, margin = margin(b = 20)),
+    axis.title.x = element_text(size = 20, face = "bold", margin = margin(t = 25)),
+    axis.title.y = element_text(size = 20, face = "bold", margin = margin(r = 25)),
+    axis.text = element_text(size = 11),
+    axis.ticks = element_line(color = "black"),  # Keep the ticks
+    axis.ticks.length = unit(5, "pt"),  # Adjust the length of the ticks if needed
+    axis.line = element_line(color = "black"),  # Ensure the axis lines are visible
+    legend.position = c(0.85, 0.2),
+    legend.background = element_rect(fill = alpha('white'), color = "gray80"),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 20),
+    panel.grid.major.x = element_blank(),  # Remove vertical major grid lines
+    panel.grid.minor.x = element_blank(),  # Remove vertical minor grid lines
+    panel.grid.major.y = element_line(color = "gray90"),  # Keep horizontal major grid lines
+    panel.grid.minor.y = element_blank(),  # Remove horizontal minor grid lines
+    plot.margin = margin(t = 20, r = 20, b = 18, l = 18)
+  )
+
+ggsave("C:/Users/Redha CHABA/Documents/wp_git/rbci/plots/discontinuity/discontinuity_30.jpg", plot = last_plot(), width = 10, height = 6, units = "in", dpi = 300)
+```
+
+```{r}
+# Check sample sizes
+n_far <- nrow(df_30_loin)
+n_close <- nrow(df_30_pres)
+cat("Sample sizes:\nFar from capital:", n_far, "\nClose to capital:", n_close, "\n")
+
+# Check variance in trust values
+var_far <- var(df_30_loin$ft_values)
+var_close <- var(df_30_pres$ft_values)
+cat("\nVariance in trust values:\nFar from capital:", round(var_far, 4), 
+    "\nClose to capital:", round(var_close, 4))
+
+# Check mean number of observations per interval
+mean_obs_per_interval_far <- mean(table(intervals_dist_border_loin))
+mean_obs_per_interval_close <- mean(table(intervals_dist_border_pres))
+cat("\n\nMean observations per interval:\nFar from capital:", 
+    round(mean_obs_per_interval_far, 2),
+    "\nClose to capital:", round(mean_obs_per_interval_close, 2))
+```
+
+#25km
+
+```{r}
+df_25 <- read_dta("data/data_dta/df_25.dta")
+
+df_25 <- na.omit(subset(df_25, select = c("pol_trust","dist_cap_max_norm","dist_sndncap_max_norm","age","age_2","sex","educ_sec", "bin_rural","bin_conditions_eco","bin_conditions_country", "bin_emp", "night_region_log","pop_region_log", "area_region_log", "disc_pol_a", "tele_news", "paper_news", "radio_news", "bin_unfair_eth", "pres_adm1", "round", "country_round","murdock_names","cluster_bdd", "distance_border", "distance_border_km", "distance_border_km2", "distance_border_km3", "gdppc_log",  "vdem_polyarchy", "color_num", "cor_index", "area_log", "gov_num", "mountain_region_tv", "desert_region_tv")))
+
+reg3_25 <- lm_robust(pol_trust~dist_cap_max_norm+dist_sndncap_max_norm+age+age_2+factor(sex)+ factor(educ_sec) +factor(bin_rural)+
+                             factor(bin_conditions_eco)+ factor(bin_conditions_country)+ factor(bin_emp)+ disc_pol_a+ tele_news + paper_news + radio_news + night_region_log  + pop_region_log+ area_region_log+gdppc_log+vdem_polyarchy + factor(color_num)+cor_index+area_log+ factor(gov_num) + desert_region_tv + mountain_region_tv + factor(bin_unfair_eth), clusters = cluster_bdd, data = df_25)
+
+summary(reg3_25)
+
+df_25$ft_values <- fitted(reg3_25)
+```
+
+```{r}
+#Pour les gens près de la capitale (sous la médiane), on rend la distance à la frontière négative (cf. on multiplie par -1)
+df_25$distance_border <- ifelse(df_25$dist_cap_max_norm<median(df_25$dist_cap_max_norm),
+                                       -df_25$distance_border,df_25$distance_border)
+
+#On crée une base avec les gens près et une avec les gens loin
+df_25_pres <- subset(df_25, df_25$distance_border<=0)#ici c'est les 50% les plus près, donc la valeur sous 0 (voir ligne précedente)
+df_25_loin <- subset(df_25, df_25$distance_border>=0)#ici c'est les 50% les plus loin, donc la valeur au dessus de 0 (voir ligne précedente)
+
+#On définit 10 intervalles
+nb_intervals <- 25
+
+#On découpe les deux bases en 10 intervalles
+intervals_dist_border_pres <- cut(df_25_pres$distance_border, breaks = nb_intervals)
+intervals_dist_border_loin <- cut(df_25_loin$distance_border, breaks = nb_intervals)
+
+
+
+#On fait la moyenne par intervalle pour la distance à la frontière et le fitted trust pour la base près
+mean_dist_border_intervals_pres <- data.frame(tapply(df_25_pres$distance_border, intervals_dist_border_pres, mean))
+mean_trust_intervals_pres <- data.frame(tapply(df_25_pres$ft_values, intervals_dist_border_pres, mean))
+
+#On renomme les colonnes
+colnames(mean_dist_border_intervals_pres) <- "mean_dist_border_intervals"
+colnames(mean_trust_intervals_pres) <- "mean_trust_intervals"
+
+#On fait la moyenne par intervalle pour la distance à la frontière et le fitted trust pour la base loin
+mean_dist_border_intervals_loin <- data.frame(tapply(df_25_loin$distance_border, intervals_dist_border_loin, mean))
+mean_trust_intervals_loin <- data.frame(tapply(df_25_loin$ft_values, intervals_dist_border_loin, mean))
+
+#On renomme les colonnes
+colnames(mean_dist_border_intervals_loin) <- "mean_dist_border_intervals"
+colnames(mean_trust_intervals_loin) <- "mean_trust_intervals"
+
+
+#On fussionne les bases près et loin
+mean_dist_border_intervals <- rbind(mean_dist_border_intervals_pres,mean_dist_border_intervals_loin)
+mean_trust_intervals <- rbind(mean_trust_intervals_pres,mean_trust_intervals_loin)
+
+data_intervals <- cbind(mean_dist_border_intervals,mean_trust_intervals)
+
+
+#Les intervalles de confiance pour le trust
+lower_distance_fun <- function(x) {
+  mean_val <- mean(x)
+  conf_int <- t.test(x)$conf.int
+  ic95_ <- abs(conf_int[1] - mean_val)
+  ic95_
+}
+
+#On fait les intervalles de confiance pour chaque intervalle (25 en tout, 10 près + 10 loin)
+mean_trust_intervals_pres_ic <- data.frame(tapply(df_25_pres$ft_values, intervals_dist_border_pres, lower_distance_fun))
+mean_trust_intervals_loin_ic <- data.frame(tapply(df_25_loin$ft_values, intervals_dist_border_loin, lower_distance_fun))
+colnames(mean_trust_intervals_pres_ic) <- "ic_trust"
+colnames(mean_trust_intervals_loin_ic) <- "ic_trust"
+
+#On met toutes les intervalles dans la même base
+mean_trust_intervals_ic <- rbind(mean_trust_intervals_pres_ic,mean_trust_intervals_loin_ic)
+
+data_intervals_ic <- cbind(data_intervals,mean_trust_intervals_ic)
+
+#Les moyenne près/loin pour les lignes sur le graph
+moy_trust_pres <- mean(df_25_pres$ft_values)
+moy_trust_loin <- mean(df_25_loin$ft_values)
+
+```
+
+```{r}
+# Create modified datasets with points at the boundary and extremes
+data_left <- subset(data_intervals_ic, mean_dist_border_intervals <= 0)
+data_right <- subset(data_intervals_ic, mean_dist_border_intervals >= 0)
+
+# Find the min and max values in your x range
+x_min <- -25000  # -25 km in your units
+x_max <- 25000   # 25 km in your units
+
+# Find the predicted values at x=0, x_min, and x_max for each curve
+left_model <- lm(mean_trust_intervals ~ poly(mean_dist_border_intervals, 3), data=data_left)
+right_model <- lm(mean_trust_intervals ~ poly(mean_dist_border_intervals, 3), data=data_right)
+
+y_at_zero_left <- predict(left_model, newdata=data.frame(mean_dist_border_intervals=0))
+y_at_min <- predict(left_model, newdata=data.frame(mean_dist_border_intervals=x_min))
+
+y_at_zero_right <- predict(right_model, newdata=data.frame(mean_dist_border_intervals=0))
+y_at_max <- predict(right_model, newdata=data.frame(mean_dist_border_intervals=x_max))
+
+# Average confidence interval for the added points
+avg_ic_left <- mean(data_left$ic_trust)
+avg_ic_right <- mean(data_right$ic_trust)
+
+# Add points at x=0 and x=x_min to left dataset
+data_left_plus <- rbind(data_left, 
+                        data.frame(
+                          mean_dist_border_intervals = 0,
+                          mean_trust_intervals = y_at_zero_left,
+                          ic_trust = avg_ic_left
+                        ),
+                        data.frame(
+                          mean_dist_border_intervals = x_min,
+                          mean_trust_intervals = y_at_min,
+                          ic_trust = avg_ic_left
+                        ))
+
+# Add points at x=0 and x=x_max to right dataset
+data_right_plus <- rbind(data_right, 
+                         data.frame(
+                           mean_dist_border_intervals = 0,
+                           mean_trust_intervals = y_at_zero_right,
+                           ic_trust = avg_ic_right
+                         ),
+                         data.frame(
+                           mean_dist_border_intervals = x_max,
+                           mean_trust_intervals = y_at_max,
+                           ic_trust = avg_ic_right
+                         ))
+```
+
+```{r}
+ggplot(data_intervals_ic, aes(x = mean_dist_border_intervals, y = mean_trust_intervals)) +
+  # Add vertical line at border
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray40", size = 0.7) + 
+  
+  # Left side smooth curve (Close to Capital)
+# Left side smooth curve (Close to Capital)
+geom_smooth(data = data_left_plus,
+            aes(x = mean_dist_border_intervals, y = mean_trust_intervals),
+            method = "lm", formula = y ~ poly(x, 3), 
+            color = "firebrick", size = 1.2, se = TRUE,
+            fill="firebrick",
+            alpha=0.1,
+            level = 0.90, show.legend = FALSE) +
+
+# Right side smooth curve (Far from Capital)
+geom_smooth(data = data_right_plus,
+            aes(x = mean_dist_border_intervals, y = mean_trust_intervals),
+            method = "lm", formula = y ~ poly(x, 3), 
+            color = "darkgreen", size = 1.2, se = TRUE,
+            fill = "darkgreen",
+            alpha = 0.1,
+            level = 0.90, show.legend = FALSE)+
+
+geom_segment(aes(x = -25000, 
+                   xend = 0,
+                   y = moy_trust_pres, 
+                   yend = moy_trust_pres, linetype = "Close"),
+             inherit.aes = FALSE,
+             color = "firebrick", size = 1.5, alpha = 0.7, data = data.frame()) + 
+  geom_segment(aes(x = 0, 
+                   xend =25000, 
+                   y = moy_trust_loin, 
+                   yend = moy_trust_loin, linetype = "Far"),
+               inherit.aes = FALSE,
+               color = "darkgreen", size = 1.5, alpha = 0.7, data = data.frame()) +  
+  
+  # Add annotations in better positions with borders
+  
+  annotate("label", x = -max(abs(data_intervals$mean_dist_border_intervals)) * 0.5, 
+           y = max(data_intervals_ic$mean_trust_intervals) + 0.05, 
+           label = "Close to the Capital", 
+           size = 7, fill = "mistyrose", color = "firebrick", fontface = "bold", 
+           label.size = 0.5, family = "Arial") +
+  annotate("label", x = max(abs(data_intervals$mean_dist_border_intervals)) * 0.5, 
+           y = max(data_intervals_ic$mean_trust_intervals) + 0.05, 
+           label = "Far from the Capital", 
+           size = 7, fill = "honeydew", color = "darkgreen", fontface = "bold", 
+           label.size = 0.5, family = "Arial") +
+  
+  # Add legend for mean lines
+  scale_linetype_manual(name = NULL, 
+                        values = c("Close" = "dashed","Far" = "dashed"),
+                        labels = c(expression(bar(y)[far]), expression(bar(y)[close]))) +
+
+  # Set appropriate axis limits
+  coord_cartesian(xlim = c(-max(abs(data_intervals$mean_dist_border_intervals)), 
+                          max(abs(data_intervals$mean_dist_border_intervals))),
+                 ylim = c(min(data_intervals_ic$mean_trust_intervals) - 0.05,
+                         max(data_intervals_ic$mean_trust_intervals) + 0.1)) +
+  
+  # Format axes
+scale_x_continuous(labels = function(x) abs(x) / 1000,
+                     breaks = seq(-25000, 25000, 10000)) +  
+  # Add clear labels
+  labs(x = "Distance from the Border (in km)",
+      y = "Political Trust") +
+  
+  # Polish theme
+theme_minimal() +
+  theme(
+    text = element_text(family = "Arial"),
+    plot.title = element_text(size = 25, hjust = 0.5, face = "bold", margin = margin(b = 10)),
+    plot.subtitle = element_text(size = 20, hjust = 0.5, margin = margin(b = 20)),
+    axis.title.x = element_text(size = 20, face = "bold", margin = margin(t = 25)),
+    axis.title.y = element_text(size = 20, face = "bold", margin = margin(r = 25)),
+    axis.text = element_text(size = 11),
+    axis.ticks = element_line(color = "black"),  # Keep the ticks
+    axis.ticks.length = unit(5, "pt"),  # Adjust the length of the ticks if needed
+    axis.line = element_line(color = "black"),  # Ensure the axis lines are visible
+    legend.position = c(0.85, 0.2),
+    legend.background = element_rect(fill = alpha('white'), color = "gray80"),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 20),
+    panel.grid.major.x = element_blank(),  # Remove vertical major grid lines
+    panel.grid.minor.x = element_blank(),  # Remove vertical minor grid lines
+    panel.grid.major.y = element_line(color = "gray90"),  # Keep horizontal major grid lines
+    panel.grid.minor.y = element_blank(),  # Remove horizontal minor grid lines
+    plot.margin = margin(t = 20, r = 20, b = 18, l = 18)
+  )
+
+ggsave("C:/Users/Redha CHABA/Documents/wp_git/rbci/plots/discontinuity/discontinuity_25.jpg", plot = last_plot(), width = 10, height = 6, units = "in", dpi = 300)
+```
+
+```{r}
+# Check sample sizes
+n_far <- nrow(df_25_loin)
+n_close <- nrow(df_25_pres)
+cat("Sample sizes:\nFar from capital:", n_far, "\nClose to capital:", n_close, "\n")
+
+# Check variance in trust values
+var_far <- var(df_25_loin$ft_values)
+var_close <- var(df_25_pres$ft_values)
+cat("\nVariance in trust values:\nFar from capital:", round(var_far, 4), 
+    "\nClose to capital:", round(var_close, 4))
+
+# Check mean number of observations per interval
+mean_obs_per_interval_far <- mean(table(intervals_dist_border_loin))
+mean_obs_per_interval_close <- mean(table(intervals_dist_border_pres))
+cat("\n\nMean observations per interval:\nFar from capital:", 
+    round(mean_obs_per_interval_far, 2),
+    "\nClose to capital:", round(mean_obs_per_interval_close, 2))
+```
+#20km
+
+```{r}
+df_20 <- read_dta("data/data_dta/df_20.dta")
+
+df_20 <- na.omit(subset(df_20, select = c("pol_trust","dist_cap_max_norm","dist_sndncap_max_norm","age","age_2","sex","educ_sec", "bin_rural","bin_conditions_eco","bin_conditions_country", "bin_emp", "night_region_log","pop_region_log", "area_region_log", "disc_pol_a", "tele_news", "paper_news", "radio_news", "bin_unfair_eth", "pres_adm1", "round", "country_round","murdock_names","cluster_bdd", "distance_border", "distance_border_km", "distance_border_km2", "distance_border_km3", "gdppc_log",  "vdem_polyarchy", "color_num", "cor_index", "area_log", "gov_num", "mountain_region_tv", "desert_region_tv")))
+
+reg3_20 <- lm_robust(pol_trust~dist_cap_max_norm+dist_sndncap_max_norm+age+age_2+factor(sex)+ factor(educ_sec) +factor(bin_rural)+
+                             factor(bin_conditions_eco)+ factor(bin_conditions_country)+ factor(bin_emp)+ disc_pol_a+ tele_news + paper_news + radio_news + night_region_log  + pop_region_log+ area_region_log+gdppc_log+vdem_polyarchy + factor(color_num)+cor_index+area_log+ factor(gov_num) + desert_region_tv + mountain_region_tv + factor(bin_unfair_eth), clusters = cluster_bdd, data = df_20)
+
+summary(reg3_20)
+
+df_20$ft_values <- fitted(reg3_20)
+```
+
+```{r}
+#Pour les gens près de la capitale (sous la médiane), on rend la distance à la frontière négative (cf. on multiplie par -1)
+df_20$distance_border <- ifelse(df_20$dist_cap_max_norm<median(df_20$dist_cap_max_norm),
+                                       -df_20$distance_border,df_20$distance_border)
+
+#On crée une base avec les gens près et une avec les gens loin
+df_20_pres <- subset(df_20, df_20$distance_border<=0)#ici c'est les 50% les plus près, donc la valeur sous 0 (voir ligne précedente)
+df_20_loin <- subset(df_20, df_20$distance_border>=0)#ici c'est les 50% les plus loin, donc la valeur au dessus de 0 (voir ligne précedente)
+
+#On définit 10 intervalles
+nb_intervals <- 20
+
+#On découpe les deux bases en 10 intervalles
+intervals_dist_border_pres <- cut(df_20_pres$distance_border, breaks = nb_intervals)
+intervals_dist_border_loin <- cut(df_20_loin$distance_border, breaks = nb_intervals)
+
+
+
+#On fait la moyenne par intervalle pour la distance à la frontière et le fitted trust pour la base près
+mean_dist_border_intervals_pres <- data.frame(tapply(df_20_pres$distance_border, intervals_dist_border_pres, mean))
+mean_trust_intervals_pres <- data.frame(tapply(df_20_pres$ft_values, intervals_dist_border_pres, mean))
+
+#On renomme les colonnes
+colnames(mean_dist_border_intervals_pres) <- "mean_dist_border_intervals"
+colnames(mean_trust_intervals_pres) <- "mean_trust_intervals"
+
+#On fait la moyenne par intervalle pour la distance à la frontière et le fitted trust pour la base loin
+mean_dist_border_intervals_loin <- data.frame(tapply(df_20_loin$distance_border, intervals_dist_border_loin, mean))
+mean_trust_intervals_loin <- data.frame(tapply(df_20_loin$ft_values, intervals_dist_border_loin, mean))
+
+#On renomme les colonnes
+colnames(mean_dist_border_intervals_loin) <- "mean_dist_border_intervals"
+colnames(mean_trust_intervals_loin) <- "mean_trust_intervals"
+
+
+#On fussionne les bases près et loin
+mean_dist_border_intervals <- rbind(mean_dist_border_intervals_pres,mean_dist_border_intervals_loin)
+mean_trust_intervals <- rbind(mean_trust_intervals_pres,mean_trust_intervals_loin)
+
+data_intervals <- cbind(mean_dist_border_intervals,mean_trust_intervals)
+
+
+#Les intervalles de confiance pour le trust
+lower_distance_fun <- function(x) {
+  mean_val <- mean(x)
+  conf_int <- t.test(x)$conf.int
+  ic95_ <- abs(conf_int[1] - mean_val)
+  ic95_
+}
+
+#On fait les intervalles de confiance pour chaque intervalle (20 en tout, 10 près + 10 loin)
+mean_trust_intervals_pres_ic <- data.frame(tapply(df_20_pres$ft_values, intervals_dist_border_pres, lower_distance_fun))
+mean_trust_intervals_loin_ic <- data.frame(tapply(df_20_loin$ft_values, intervals_dist_border_loin, lower_distance_fun))
+colnames(mean_trust_intervals_pres_ic) <- "ic_trust"
+colnames(mean_trust_intervals_loin_ic) <- "ic_trust"
+
+#On met toutes les intervalles dans la même base
+mean_trust_intervals_ic <- rbind(mean_trust_intervals_pres_ic,mean_trust_intervals_loin_ic)
+
+data_intervals_ic <- cbind(data_intervals,mean_trust_intervals_ic)
+
+#Les moyenne près/loin pour les lignes sur le graph
+moy_trust_pres <- mean(df_20_pres$ft_values)
+moy_trust_loin <- mean(df_20_loin$ft_values)
+
+```
+
+```{r}
+# Create modified datasets with points at the boundary and extremes
+data_left <- subset(data_intervals_ic, mean_dist_border_intervals <= 0)
+data_right <- subset(data_intervals_ic, mean_dist_border_intervals >= 0)
+
+# Find the min and max values in your x range
+x_min <- -20000  # -20 km in your units
+x_max <- 20000   # 20 km in your units
+
+# Find the predicted values at x=0, x_min, and x_max for each curve
+left_model <- lm(mean_trust_intervals ~ poly(mean_dist_border_intervals, 3), data=data_left)
+right_model <- lm(mean_trust_intervals ~ poly(mean_dist_border_intervals, 3), data=data_right)
+
+y_at_zero_left <- predict(left_model, newdata=data.frame(mean_dist_border_intervals=0))
+y_at_min <- predict(left_model, newdata=data.frame(mean_dist_border_intervals=x_min))
+
+y_at_zero_right <- predict(right_model, newdata=data.frame(mean_dist_border_intervals=0))
+y_at_max <- predict(right_model, newdata=data.frame(mean_dist_border_intervals=x_max))
+
+# Average confidence interval for the added points
+avg_ic_left <- mean(data_left$ic_trust)
+avg_ic_right <- mean(data_right$ic_trust)
+
+# Add points at x=0 and x=x_min to left dataset
+data_left_plus <- rbind(data_left, 
+                        data.frame(
+                          mean_dist_border_intervals = 0,
+                          mean_trust_intervals = y_at_zero_left,
+                          ic_trust = avg_ic_left
+                        ),
+                        data.frame(
+                          mean_dist_border_intervals = x_min,
+                          mean_trust_intervals = y_at_min,
+                          ic_trust = avg_ic_left
+                        ))
+
+# Add points at x=0 and x=x_max to right dataset
+data_right_plus <- rbind(data_right, 
+                         data.frame(
+                           mean_dist_border_intervals = 0,
+                           mean_trust_intervals = y_at_zero_right,
+                           ic_trust = avg_ic_right
+                         ),
+                         data.frame(
+                           mean_dist_border_intervals = x_max,
+                           mean_trust_intervals = y_at_max,
+                           ic_trust = avg_ic_right
+                         ))
+```
+
+```{r}
+ggplot(data_intervals_ic, aes(x = mean_dist_border_intervals, y = mean_trust_intervals)) +
+  # Add vertical line at border
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray40", size = 0.7) + 
+  
+  # Left side smooth curve (Close to Capital)
+# Left side smooth curve (Close to Capital)
+geom_smooth(data = data_left_plus,
+            aes(x = mean_dist_border_intervals, y = mean_trust_intervals),
+            method = "lm", formula = y ~ poly(x, 3), 
+            color = "firebrick", size = 1.2, se = TRUE,
+            fill="firebrick",
+            alpha=0.1,
+            level = 0.90, show.legend = FALSE) +
+
+# Right side smooth curve (Far from Capital)
+geom_smooth(data = data_right_plus,
+            aes(x = mean_dist_border_intervals, y = mean_trust_intervals),
+            method = "lm", formula = y ~ poly(x, 3), 
+            color = "darkgreen", size = 1.2, se = TRUE,
+            fill = "darkgreen",
+            alpha = 0.1,
+            level = 0.90, show.legend = FALSE)+
+
+geom_segment(aes(x = -20000, 
+                   xend = 0,
+                   y = moy_trust_pres, 
+                   yend = moy_trust_pres, linetype = "Close"),
+             inherit.aes = FALSE,
+             color = "firebrick", size = 1.5, alpha = 0.7, data = data.frame()) + 
+  geom_segment(aes(x = 0, 
+                   xend =20000, 
+                   y = moy_trust_loin, 
+                   yend = moy_trust_loin, linetype = "Far"),
+               inherit.aes = FALSE,
+               color = "darkgreen", size = 1.5, alpha = 0.7, data = data.frame()) +  
+  
+  # Add annotations in better positions with borders
+  
+  annotate("label", x = -max(abs(data_intervals$mean_dist_border_intervals)) * 0.5, 
+           y = max(data_intervals_ic$mean_trust_intervals) + 0.05, 
+           label = "Close to the Capital", 
+           size = 7, fill = "mistyrose", color = "firebrick", fontface = "bold", 
+           label.size = 0.5, family = "Arial") +
+  annotate("label", x = max(abs(data_intervals$mean_dist_border_intervals)) * 0.5, 
+           y = max(data_intervals_ic$mean_trust_intervals) + 0.05, 
+           label = "Far from the Capital", 
+           size = 7, fill = "honeydew", color = "darkgreen", fontface = "bold", 
+           label.size = 0.5, family = "Arial") +
+  
+  # Add legend for mean lines
+  scale_linetype_manual(name = NULL, 
+                        values = c("Close" = "dashed","Far" = "dashed"),
+                        labels = c(expression(bar(y)[far]), expression(bar(y)[close]))) +
+
+  # Set appropriate axis limits
+  coord_cartesian(xlim = c(-max(abs(data_intervals$mean_dist_border_intervals)), 
+                          max(abs(data_intervals$mean_dist_border_intervals))),
+                 ylim = c(min(data_intervals_ic$mean_trust_intervals) - 0.05,
+                         max(data_intervals_ic$mean_trust_intervals) + 0.1)) +
+  
+  # Format axes
+scale_x_continuous(labels = function(x) abs(x) / 1000,
+                     breaks = seq(-20000, 20000, 10000)) +  
+  # Add clear labels
+  labs(x = "Distance from the Border (in km)",
+      y = "Political Trust") +
+  
+  # Polish theme
+theme_minimal() +
+  theme(
+    text = element_text(family = "Arial"),
+    plot.title = element_text(size = 25, hjust = 0.5, face = "bold", margin = margin(b = 10)),
+    plot.subtitle = element_text(size = 20, hjust = 0.5, margin = margin(b = 20)),
+    axis.title.x = element_text(size = 20, face = "bold", margin = margin(t = 25)),
+    axis.title.y = element_text(size = 20, face = "bold", margin = margin(r = 25)),
+    axis.text = element_text(size = 11),
+    axis.ticks = element_line(color = "black"),  # Keep the ticks
+    axis.ticks.length = unit(5, "pt"),  # Adjust the length of the ticks if needed
+    axis.line = element_line(color = "black"),  # Ensure the axis lines are visible
+    legend.position = c(0.85, 0.2),
+    legend.background = element_rect(fill = alpha('white'), color = "gray80"),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 20),
+    panel.grid.major.x = element_blank(),  # Remove vertical major grid lines
+    panel.grid.minor.x = element_blank(),  # Remove vertical minor grid lines
+    panel.grid.major.y = element_line(color = "gray90"),  # Keep horizontal major grid lines
+    panel.grid.minor.y = element_blank(),  # Remove horizontal minor grid lines
+    plot.margin = margin(t = 20, r = 20, b = 18, l = 18)
+  )
+
+ggsave("C:/Users/Redha CHABA/Documents/wp_git/rbci/plots/discontinuity/discontinuity_20.jpg", plot = last_plot(), width = 10, height = 6, units = "in", dpi = 300)
+```
+
+```{r}
+# Check sample sizes
+n_far <- nrow(df_20_loin)
+n_close <- nrow(df_20_pres)
+cat("Sample sizes:\nFar from capital:", n_far, "\nClose to capital:", n_close, "\n")
+
+# Check variance in trust values
+var_far <- var(df_20_loin$ft_values)
+var_close <- var(df_20_pres$ft_values)
 cat("\nVariance in trust values:\nFar from capital:", round(var_far, 4), 
     "\nClose to capital:", round(var_close, 4))
 
