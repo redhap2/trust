@@ -4623,3 +4623,47 @@ saveRDS(data_final_nlp2, file="data/data_rds/data_final_r.rds")
 write_dta(data_final_nlp2, "data/data_dta/data_final_r.dta")
 ```
 
+
+
+
+```{r}
+#MAJ VDEM
+
+data_final <- readRDS("data/data_rds/data_final.rds")
+
+qog <- read.csv("data/data_raw/qog_std_ts_jan24.csv")
+
+countries <- unique(data_final$iso)
+
+qog%<>%
+  filter(ccodealp %in% countries)
+
+qog%<>%
+  select(year, ccodealp, aii_q55, aii_q56, fhp_mcpp5, vdem_mecorrpt, vdem_polyarchy)%>%
+  rename(iso=ccodealp, fh_med_index=fhp_mcpp5, med_self_censor=aii_q55, citiz_self_censor=aii_q56, vdem_med_corrupt=vdem_mecorrpt)
+
+qog%<>%
+  mutate(round=case_when(between(year, 2011, 2013)~5,
+                         between(year, 2014, 2015)~6,
+                         between(year, 2016, 2018)~7,
+                         between(year, 2019, 2021)~8,
+         TRUE~NA_integer_))
+
+qog%<>%
+  group_by(iso, round)%>%
+  mutate(poly_mean = ifelse(is.na(round), NA_integer_, mean(vdem_polyarchy, na.rm = TRUE))) %>%
+  mutate(med_corr_mean = ifelse(is.na(round), NA_integer_, mean(vdem_med_corrupt, na.rm = TRUE))) %>%
+  ungroup()
+
+qog %<>%
+  filter(!is.na(round)) %>%
+  distinct(iso, round, .keep_all = TRUE) %>%
+  select(iso, round, poly_mean, med_corr_mean)
+
+data_final %<>% left_join(qog, by=c("iso", "round"))
+
+saveRDS(data_final, file="data/data_rds/data_final.rds")
+
+write_dta(data_final, "data/data_dta/data_final.dta")
+```
+
