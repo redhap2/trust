@@ -1160,7 +1160,8 @@ data_final%<>%
 
 data_final%<>%
   mutate(desert_region_tv=desert_region*tv,
-         mountain_region_tv=mountain_region*tv)
+         mountain_region_tv=mountain_region*tv,
+         elevation_region_tv=elevation_region*tv)
 
 
 saveRDS(data_final, file="data/data_rds/data_final.rds")

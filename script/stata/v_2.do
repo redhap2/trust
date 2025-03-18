@@ -124,9 +124,9 @@ eststo iv_fe_free: ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_reg
 
 eststo iv_fe_control: ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_region_tv lis_region_tv_dist)  dist_sndncap_max_norm $ind_controls $geo_controls if spl==1 & vdem_med_corrupt<=3, absorb(i.country_round) cluster(region_time) endog(cvg_region_pot cvg_region_pot_dist) 
 
-eststo iv_fe_democ: ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_region_tv lis_region_tv_dist)  dist_sndncap_max_norm $ind_controls $geo_controls if spl==1 & p_polity>6, absorb(i.country_round) cluster(region_time) endog(cvg_region_pot cvg_region_pot_dist) 
+eststo iv_fe_democ: ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_region_tv lis_region_tv_dist)  dist_sndncap_max_norm $ind_controls $geo_controls if spl==1 & e_polity2_mean2>6, absorb(i.country_round) cluster(region_time) endog(cvg_region_pot cvg_region_pot_dist) 
 
-eststo iv_fe_autoc: ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_region_tv lis_region_tv_dist)  dist_sndncap_max_norm $ind_controls $geo_controls if spl==1 & p_polity<=6, absorb(i.country_round) cluster(region_time) endog(cvg_region_pot cvg_region_pot_dist) 
+eststo iv_fe_autoc: ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_region_tv lis_region_tv_dist)  dist_sndncap_max_norm $ind_controls $geo_controls if spl==1 & e_polity2_mean2<=6, absorb(i.country_round) cluster(region_time) endog(cvg_region_pot cvg_region_pot_dist) 
 
 estout iv_fe_free iv_fe_control iv_fe_democ iv_fe_autoc using "${mypath}\wp_git\rbci\tables\v_2\t4.tex", replace style(tex) cells(b(star fmt(3)) se(par fmt(2))) starlevels(* 0.10 ** 0.05 *** 0.01) stats(N r2_a, fmt(0 3)) margin legend
 
