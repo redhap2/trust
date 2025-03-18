@@ -7,16 +7,14 @@ set maxvar 20000
 set matsize 8000
 set more off
 
-global mypath "C:\Users\Redha CHABA\Documents\working_paper\trust"
+global mypath "C:\Users\Redha CHABA\Documents"
 
-use "${mypath}\data\data_dta\data_final_r.dta", clear
+use "${mypath}\working_paper\trust\data\data_dta\data_final.dta", clear
 
-
-global ind_controls age age_2 i.sex i.educ_sec i.bin_rural i.bin_conditions_eco i.bin_conditions_country i.bin_emp night_region_log pop_region_log area_region_log tele_news paper_news radio_news disc_pol_a pres_adm1
+global ind_controls age age_2 i.sex i.educ_sec i.bin_rural i.bin_conditions_eco i.bin_emp night_region_log pop_region_log area_region_log tele_news paper_news radio_news disc_pol_a pres_adm1 distance_to_road
 *bin_unfair_eth: removes observations
 global cty_controls gdppc_log area_log vdem_polyarchy cor_index i.color_num i.gov_num
-
-
+global geo_controls desert_region_tv mountain_region_tv
 
 
 noisily{
