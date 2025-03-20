@@ -9,7 +9,7 @@ set more off
 
 global mypath "C:\Users\Redha CHABA\Documents"
 
-use "${mypath}\working_paper\trust\data\data_dta\data_final.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_final.dta", clear
 
 global ind_controls age age_2 i.sex i.educ_sec i.bin_rural i.bin_conditions_eco i.bin_emp night_region_log pop_region_log area_region_log tele_news paper_news radio_news disc_pol_a pres_adm1 distance_to_road
 *bin_unfair_eth: removes observations
@@ -698,7 +698,7 @@ reghdfe prob_a  dist_cap_max_norm dist_sndncap_max_norm $ind_controls if spl==1,
 
 
 
-global mypath "C:\Users\Redha CHABA\Documents\working_paper\trust"
+global mypath "C:\Users\Redha CHABA\Documents\working_paper\rbci"
 
 use "${mypath}\data\data_dta\data_27_02_25.dta", clear
 
@@ -764,7 +764,7 @@ ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_
 
 
 
-use "${mypath}\working_paper\trust\data\data_dta\data_27_02_25.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_27_02_25.dta", clear
 
 gen desert_region_tv=desert_region*tv
 gen mountain_region_tv=mountain_region*tv
@@ -777,14 +777,14 @@ global bdd_controls distance_border_km distance_border_km2 distance_border_km3 b
 
 *t1: pol_trust dist_cap_max_norm
 
-use "${mypath}\working_paper\trust\data\data_dta\data_27_02_25.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_27_02_25.dta", clear
 gen desert_region_tv=desert_region*tv
 gen mountain_region_tv=mountain_region*tv
 
 eststo ols_cty: reghdfe pol_trust dist_cap_max_norm dist_sndncap_max_norm $ind_controls $cty_controls $geo_controls bin_unfair_eth i.round if spl==1, cluster(i.region_time)
 eststo ols_fe: reghdfe pol_trust dist_cap_max_norm dist_sndncap_max_norm $ind_controls $geo_controls bin_unfair_eth if spl==1, absorb(i.country_round) cluster(i.region_time)
 
-use "${mypath}\working_paper\trust\data\data_dta\df_40.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\df_40.dta", clear
 gen desert_region_tv=desert_region*tv
 gen mountain_region_tv=mountain_region*tv
 
@@ -810,27 +810,29 @@ estout ols_cty ols_fe bdd_cty bdd_fe, replace style(tex) cells(b(star fmt(3)) se
 
 *t4 - media and institutitons freedom
 
-use "${mypath}\working_paper\trust\data\data_dta\data_final.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_final.dta", clear
 
 gen cvg_region_pot_dist=dist_cap_max_norm*cvg_region_pot
 gen lis_region_tv=lis_region*tv
 gen lis_region_tv_dist=dist_cap_max_norm*lis_region_tv
 
-eststo iv_fe_democ: ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_region_tv lis_region_tv_dist)  dist_sndncap_max_norm $ind_controls $geo_controls if spl==1 & e_polity2_mean2>6, absorb(i.country_round) cluster(region_time) endog(cvg_region_pot cvg_region_pot_dist) 
+eststo iv_fe_democ: ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_region_tv lis_region_tv_dist)  dist_sndncap_max_norm $ind_controls $geo_controls if spl==1 &v2x_polyarchy_mean2>=0.6, absorb(i.country_round) cluster(region_time) endog(cvg_region_pot cvg_region_pot_dist) 
 
-eststo iv_fe_autoc: ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_region_tv lis_region_tv_dist)  dist_sndncap_max_norm $ind_controls $geo_controls if spl==1 & e_polity2_mean2<=6, absorb(i.country_round) cluster(region_time) endog(cvg_region_pot cvg_region_pot_dist) 
+eststo iv_fe_autoc: ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_region_tv lis_region_tv_dist)  dist_sndncap_max_norm $ind_controls $geo_controls if spl==1 & v2x_polyarchy_mean2<0.6, absorb(i.country_round) cluster(region_time) endog(cvg_region_pot cvg_region_pot_dist)
 
-eststo iv_fe_free: ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_region_tv lis_region_tv_dist)  dist_sndncap_max_norm $ind_controls $geo_controls if spl==1 & rsf_index_mean>69.2 , absorb(i.country_round) cluster(region_time) endog(cvg_region_pot cvg_region_pot_dist) 
+eststo iv_fe_free: ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_region_tv lis_region_tv_dist)  dist_sndncap_max_norm $ind_controls $geo_controls if spl==1 & rsf_index_mean>=75 , absorb(i.country_round) cluster(region_time) endog(cvg_region_pot cvg_region_pot_dist) 
 
 eststo iv_fe_control: ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_region_tv lis_region_tv_dist)  dist_sndncap_max_norm $ind_controls $geo_controls if spl==1 & rsf_index_mean<75 , absorb(i.country_round) cluster(region_time) endog(cvg_region_pot cvg_region_pot_dist) 
 
-estout iv_fe_free iv_fe_control iv_fe_democ iv_fe_autoc using "${mypath}\wp_git\rbci\tables\v_2\t4.tex", replace style(tex) cells(b(star fmt(3)) se(par fmt(2))) starlevels(* 0.10 ** 0.05 *** 0.01) stats(N r2_a, fmt(0 3)) margin legend
+estout iv_fe_free iv_fe_control iv_fe_democ iv_fe_autoc, replace style(tex) cells(b(star fmt(3)) se(par fmt(2))) starlevels(* 0.10 ** 0.05 *** 0.01) stats(N r2_a, fmt(0 3)) margin legend
 
 
 
 
+eststo iv_fe_democ2: ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_region_tv lis_region_tv_dist)  dist_sndncap_max_norm $ind_controls $geo_controls if spl==1 & e_polity2_mean2>6, absorb(i.country_round) cluster(region_time) endog(cvg_region_pot cvg_region_pot_dist) 
 
-sum v2xedvd_inpt_mean2 v2x_polyarchy_mean2 v2xedvd_me_cent_mean2 v2medstateprint_mean2 v2medstatebroad_mean2 v2medpolstate_mean2 v2medpolnonstate_mean2 e_v2x_freexp_altinf_3C_mean2 e_v2x_freexp_altinf_4C_mean2 e_v2x_freexp_altinf_5C_mean2 v2x_freexp_mean2 v2xme_altinf_mean2 if spl==1, d
+eststo iv_fe_autoc2: ivreghdfe pol_trust dist_cap_max_norm (cvg_region_pot cvg_region_pot_dist = lis_region_tv lis_region_tv_dist)  dist_sndncap_max_norm $ind_controls $geo_controls if spl==1 & e_polity2_mean2<=6, absorb(i.country_round) cluster(region_time) endog(cvg_region_pot cvg_region_pot_dist) 
+
 
 
 noisily{

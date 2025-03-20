@@ -1,0 +1,684 @@
+```{r}
+setwd("~/working_paper/rbci/")
+getwd()
+```
+
+```{r packages, echo=FALSE, }
+library(haven)
+library(dplyr)
+select <- dplyr::select
+library(magrittr)
+library(stringr)
+library(geosphere)
+library(purrr)
+library(kableExtra)
+library(tidyr)
+```
+
+# Read Afrobarometer data from different waves (rounds 5-8)
+
+```{r echo=FALSE}
+afro_w5 <- read.csv("data/data_raw/afrobarometer/afb_full_r5.csv_")
+afro_w6 <- read.csv("data/data_raw/afrobarometer/afb_full_r6.csv_")
+afro_w7 <- read_sav("data/data_raw/afrobarometer/R7_Merged data_34ctry_4Dec18.sav")
+afro_w8 <- read_sav("data/data_raw/afrobarometer/R8.Merge_34ctry_2nov21.release.w.local.info.sav")
+```
+
+# Process Wave 5 data
+
+```{r}
+# Fix country codes: Replace MAU with MUS (Mauritius) and MRC with MAR (Morocco)
+
+afro_w5 %<>%
+  mutate(respno = case_when(
+    str_starts(respno, "MAU") ~ str_replace(respno, "^MAU", "MUS"),
+    TRUE ~ respno
+  ))
+
+afro_w5 %<>%
+  mutate(respno = case_when(
+    str_starts(respno, "MRC") ~ str_replace(respno, "^MRC", "MAR"),
+    TRUE ~ respno
+  ))
+
+# Add round number and create unique identifier
+
+afro_w5%<>%
+  mutate(round=rep(5, times = length("respno")))%>%
+  mutate(id_unique=paste0(respno, round))
+
+# Rename variables to standardized names across waves
+
+afro_w5 %<>%
+  rename(
+    age = q1,
+    assoc = q25b,
+    check_citiz = q33,
+    check_parl = q36,
+    commu = q26a,
+    conditions_country = q3a,
+    conditions_eco = q3b,
+    contact_counc = q30a,
+    #contact_trad
+    corr_judge = q60g,
+    #corr_level
+    corr_local = q60d,
+    corr_parl = q60b,
+    corr_pres = q60a,
+    #corr_trad
+    disc_pol = q15,
+    educ = q97,
+    elec_fair = q28,
+    emp = q96,
+    extent = q42,
+    feelnat = q85b,
+    food = q8a,
+    internet_news = q13d,
+    internet_use = q91b,
+    latitude = latitude,
+    listen_counc = q62b,
+    #listen_trad
+    longitude = longitude,
+    military_reject = q31b,
+    money = q8e,
+    one_man_reject = q31c,
+    one_party_reject = q31a,
+    paper_news = q13c,
+    perf_corr = q65k,
+    perf_crime = q65f,
+    perf_educ = q65h,
+    perf_elect = q65o,
+    perf_eco = q65a,
+    perf_health = q65g,
+    perf_ineq = q65e,
+    perf_job = q65c,
+    perf_local = q71c,
+    perf_parl = q71b,
+    perf_poor = q65b,
+    perf_pres = q71a,
+    perf_price = q65d,
+    perf_road = q65n,
+    perf_water = q65i,
+    pref_demo = q32,
+    prob = q26b,
+    protest = q26d,
+    radio_news = q13a,
+    rural = urbrur,
+    satis_demo = q43,
+    security = q9a,
+    sex = q101,
+    #sm_news
+    tele_news = q13b,
+    tele_pos = q90b,
+    trust_elec = q59c,
+    trust_gen = q87,
+    trust_govpart = q59f,
+    trust_local = q59e,
+    trust_oppart = q59g,
+    trust_parl = q59b,
+    trust_pres = q59a,
+    #trust_trad
+    unfair_eth = q85a,
+    vote = q27
+  )
+
+glimpse(afro_w5)
+
+saveRDS(afro_w5, file="data/data_rds/afro_w5.rds")
+```
+
+# Process Wave 6 data
+
+```{r}
+# Fix country codes: Replace MAU with MUS (Mauritius) and MRC with MAR (Morocco)
+
+afro_w6 %<>%
+  mutate(respno = case_when(
+    str_starts(respno, "MAU") ~ str_replace(respno, "^MAU", "MUS"),
+    TRUE ~ respno
+  ))
+
+afro_w6 %<>%
+  mutate(respno = case_when(
+    str_starts(respno, "MOR") ~ str_replace(respno, "^MOR", "MAR"),
+    TRUE ~ respno
+  ))
+
+# Add round number and create unique identifier
+
+afro_w6%<>%
+  mutate(round=rep(6, times = length("respno")))%>%
+  mutate(id_unique=paste0(respno, round))
+
+# Rename variables to standardized names across waves
+
+afro_w6 %<>%
+  rename(
+    age = q1,
+    assoc = q19b,
+    check_citiz=q31,
+    check_parl=q34,
+    commu = q20a,
+    conditions_country = q4a,
+    conditions_eco = q4b,
+    contact_counc = q24a,
+    contact_trad = q24e,
+    corr_judge = q53g,
+    corr_level = q54,
+    corr_local = q53d, 
+    corr_parl = q53b,
+    corr_pres = q53a, 
+    corr_trad = q53h,
+    disc_pol = q14,
+    educ = q97,
+    elec_fair = q22,
+    emp = q95,
+    extent = q40,
+    feelnat = q88b,
+    food = q8a,
+    internet_news = q12d,
+    internet_use = q92b,
+    latitude = latitude,
+    listen_counc = q59b,
+    #listen_trad
+    longitude = longitude,
+    military_reject = q28b,
+    money = q8e,
+    one_man_reject = q28c,
+    one_party_reject = q28a,
+    paper_news = q12c,
+    perf_corr=q66k,
+    perf_crime=q66f,
+    perf_educ=q66h,
+    perf_elect=q66m,
+    perf_eco = q66a,
+    perf_health=q66g,
+    perf_ineq=q66e,
+    perf_job=q66c,
+    perf_local = q68c,
+    perf_parl=q68b,
+    perf_poor=q66b,
+    perf_pres=q68a,
+    perf_price=q66d,
+    perf_road=q66l,
+    perf_water=q66i,
+    pref_demo = q30,
+    prob = q20b,
+    protest = q27e,
+    radio_news = q12a,
+    rural = urbrur,
+    satis_demo = q41,
+    security = q10a,
+    sex = q101,
+    sm_news = q12e,
+    tele_news = q12b,
+    tele_pos = q91b,
+    trust_elec = q52c,
+    #trust_gen = 
+    trust_govpart = q52f,
+    trust_local = q52e,
+    trust_oppart = q52g,
+    trust_parl = q52b,
+    trust_pres = q52a, 
+    trust_trad = q52k,
+    unfair_eth = q88a,
+    vote = q21)
+
+glimpse(afro_w6)
+
+saveRDS(afro_w6, file="data/data_rds/afro_w6.rds")
+```
+
+# Process Wave 7 data
+
+```{r}
+# Fix country codes: Replace MAU with MUS (Mauritius) and MRC with MAR (Morocco)
+
+afro_w7 %<>%
+  mutate(RESPNO = case_when(
+    str_starts(RESPNO, "MAU") ~ str_replace(RESPNO, "^MAU", "MUS"),
+    TRUE ~ RESPNO
+  ))
+
+afro_w7 %<>%
+  mutate(RESPNO = case_when(
+    str_starts(RESPNO, "MOR") ~ str_replace(RESPNO, "^MOR", "MAR"),
+    TRUE ~ RESPNO
+  ))
+
+# Add round number and create unique identifier
+
+afro_w7%<>%
+  mutate(respno=RESPNO)%>%
+  mutate(round=rep(7, times = length("respno")))%>%
+  mutate(id_unique=paste0(RESPNO, round))
+
+# Rename variables to standardized names across waves
+
+afro_w7 %<>%
+  rename(
+    age = Q1,
+    assoc = Q20B,
+    check_citiz=Q29,
+    check_parl=Q32,
+    commu = Q21A,
+    conditions_country = Q4A,
+    conditions_eco = Q4B,
+    contact_counc = Q25A,
+    contact_trad = Q25E,
+    corr_judge = Q44F,
+    corr_level = Q45,
+    corr_local = Q44D, 
+    corr_parl = Q44B,
+    corr_pres = Q44A, 
+    corr_trad = Q44G,
+    disc_pol = Q13,
+    educ = Q97,
+    elec_fair = Q23,
+    emp = Q94,
+    extent = Q35,
+    feelnat = Q85B,
+    food = Q8A,
+    internet_news = Q12D,
+    internet_use = Q91B,
+    latitude = EA_GPS_LA,
+    listen_counc = Q54B,
+    #listen_trad
+    longitude = EA_GPS_LO,
+    military_reject = Q27B,
+    money = Q8E,
+    one_man_reject = Q27C,
+    one_party_reject = Q27A,
+    paper_news = Q12C,
+    perf_corr = Q56K,
+    perf_crime = Q56F,
+    perf_eco = Q56A,
+    perf_educ = Q56H,
+    perf_elect = Q56M,
+    perf_health = Q56G,
+    perf_ineq = Q56E,
+    perf_job = Q56C,
+    perf_local = Q58C,
+    perf_parl = Q58B,
+    perf_pres = Q58A,
+    perf_price = Q56D,
+    perf_road = Q56L,
+    perf_trad = Q58D,
+    perf_water = Q56I,
+    pref_demo = Q28,
+    prob = Q21B,
+    protest = Q26E,
+    radio_news = Q12A,
+    rural = URBRUR,
+    satis_demo = Q36,
+    security = Q10A,
+    sex = Q101,
+    sm_news = Q12E,
+    tele_news = Q12B,
+    tele_pos = Q89B,
+    trust_elec =  Q43C,
+    #trust_gen = 
+    trust_govpart = Q43E,
+    trust_local = Q43D,
+    trust_oppart = Q43F,
+    trust_parl = Q43B,
+    trust_pres = Q43A, 
+    trust_trad = Q43J,
+    unfair_eth = Q85A,
+    vote = Q22)
+
+glimpse(afro_w7)
+
+saveRDS(afro_w7, file="data/data_rds/afro_w7.rds")
+```
+
+# Process Wave 8 data
+
+```{r}
+# Fix country codes: Replace MAU with MUS (Mauritius) and MRC with MAR (Morocco)
+
+afro_w8 %<>%
+  mutate(RESPNO = case_when(
+    str_starts(RESPNO, "MAU") ~ str_replace(RESPNO, "^MAU", "MUS"),
+    TRUE ~ RESPNO
+  ))
+
+afro_w8 %<>%
+  mutate(RESPNO = case_when(
+    str_starts(RESPNO, "MOR") ~ str_replace(RESPNO, "^MOR", "MAR"),
+    TRUE ~ RESPNO
+  ))
+
+# Add round number and create unique identifier
+
+afro_w8%<>%
+  mutate(respno=RESPNO)%>%
+  mutate(round=rep(8, times = length("RESPNO")))%>%
+  mutate(id_unique=paste0(RESPNO, round))
+
+# Rename variables to standardized names across waves
+
+afro_w8 %<>%
+  rename(
+    age = Q1,
+    #assoc = ,
+    check_citiz=Q22,
+    check_parl=Q29,
+    commu = Q11A,
+    conditions_country = Q6A,
+    conditions_eco = Q4B,
+    contact_counc=Q12A,
+    contact_trad=Q12D,
+    corr_judge = Q42F,
+    corr_level = Q43A,
+    corr_local = Q42D,
+    corr_parl = Q42B,
+    corr_pres = Q42A,
+    corr_trad = Q42H,
+    disc_pol = Q9,
+    educ = Q97,
+    elec_fair = Q14,
+    emp = Q95A,
+    extent = Q36,
+    feelnat = Q82B,
+    food = Q7A,
+    internet_news = Q55D,
+    internet_use = Q92I,
+    latitude = EA_GPS_LA,
+    listen_counc=Q38B,
+    listen_trad=Q38C,
+    longitude = EA_GPS_LO,
+    military_reject = Q20B,
+    money = Q7E,
+    one_man_reject = Q20C,
+    one_party_reject = Q20A,
+    paper_news = Q55C,
+    perf_corr = Q50J,
+    perf_crime = Q50F,
+    perf_eco = Q50A,
+    perf_educ = Q50H,
+    perf_elect = Q50L,
+    perf_health = Q50G,
+    perf_ineq = Q50E,
+    perf_job = Q50C,
+    perf_local = Q51C,
+    perf_parl = Q51B,
+    perf_pres = Q51A,
+    perf_price = Q50D,
+    perf_road = Q50K,
+    perf_trad = Q51D,
+    perf_water = Q50I,
+    pref_demo = Q21,
+    prob = Q11B,
+    protest = Q11C,
+    radio_news = Q55A,
+    rural = URBRUR,
+    satis_demo = Q37,
+    security = Q8A,
+    sex = Q101,
+    sm_news = Q55E,
+    tele_news = Q55B,
+    tele_pos = Q92B,
+    trust_elec = Q41C,
+    trust_gen = Q83,
+    trust_govpart = Q41E,
+    trust_local = Q41D,
+    trust_oppart = Q41F,
+    trust_parl = Q41B,
+    trust_pres = Q41A,
+    trust_trad = Q41K,
+    unfair_eth = Q84C,
+    vote = Q13)
+
+glimpse(afro_w8)
+
+saveRDS(afro_w8, file="data/data_rds/afro_w8.rds")
+```
+
+# Define variables to keep in final dataset
+
+```{r}
+variables_to_keep <- c(
+  "age", "assoc", "check_citiz", "check_parl", "commu", "conditions_country", 
+  "conditions_eco", "contact_counc", "contact_trad", "corr_judge", 
+  "corr_level", "corr_local", "corr_parl", "corr_pres", "corr_trad", 
+  "disc_pol", "educ", "elec_fair", "emp", "extent", "feelnat", "food", 
+  "internet_news", "internet_use", "latitude", "listen_counc", "listen_trad", 
+  "longitude", "military_reject", "money", "one_man_reject", "one_party_reject", 
+  "paper_news", "perf_corr", "perf_crime", "perf_eco", "perf_educ", "perf_elect", 
+  "perf_health", "perf_ineq", "perf_job", "perf_local", "perf_parl", "perf_pres", 
+  "perf_price", "perf_road", "perf_trad", "perf_water", "pref_demo", "prob", 
+  "protest", "radio_news", "rural", "satis_demo", "security", "sex", "sm_news", 
+  "tele_news", "tele_pos", "trust_elec", "trust_gen", "trust_govpart", "trust_local", 
+  "trust_oppart", "trust_parl", "trust_pres", "trust_trad", "unfair_eth", "vote", "id_unique", "round", "respno"
+)
+```
+
+# Filter all datasets to keep only selected variables
+
+```{r}
+datasets <- list(afro_w5, afro_w6, afro_w7, afro_w8)
+
+filtered_dataset_names <- c("afro_w5_filt", "afro_w6_filt", "afro_w7_filt", "afro_w8_filt")
+
+for (i in 1:length(datasets)) {
+  filtered_dataset <- datasets[[i]] %>%
+    select(any_of(variables_to_keep))
+  
+  assign(filtered_dataset_names[i], filtered_dataset)
+}
+
+rm(afro_w5, afro_w6, afro_w7, afro_w8, datasets, filtered_dataset, filtered_dataset_names, i, variables_to_keep)
+```
+
+# Stack all waves together and remove duplicates
+
+```{r}
+afro_stack <- bind_rows(afro_w5_filt, afro_w6_filt, afro_w7_filt, afro_w8_filt)
+
+afro_stack%<>%
+  filter(!duplicated(id_unique))%>%
+  filter(!is.na(latitude), !is.na(longitude))
+
+rm(afro_w5_filt, afro_w6_filt, afro_w7_filt, afro_w8_filt)
+```
+
+# Add ISO country codes and standardize them
+
+```{r}
+afro_stack%<>%
+  mutate(iso = substr(id_unique, 1, 3))
+
+# Convert non-standard country codes to ISO format
+
+afro_stack %<>%
+  mutate(iso=case_when(
+    iso=="BFO"~"BFA",
+    iso=="BOT"~"BWA",
+    iso=="CAM"~"CMR",
+    iso=="CDI"~"CIV",
+    iso=="CVE"~"CPV",
+    iso=="LES"~"LSO",
+    iso=="LIB"~"LBR",
+    iso=="MAD"~"MDG",
+    iso=="SAF"~"ZAF",
+    iso=="SRL"~"SLE",
+    iso=="ZAM"~"ZMB",
+    iso=="ZIM"~"ZWE",
+    iso=="GAM"~"GMB",
+    iso=="ANG"~"AGO",
+    iso=="ALG"~"DZA",
+    iso=="GUI"~"GIN",
+    iso=="MLW"~"MWI",
+    iso=="NGR"~"NER",
+    iso=="NIG"~"NGA",
+    iso=="SUD"~"SDN",
+    iso=="TAN"~"TZA",
+    iso=="TOG"~"TGO",
+    TRUE ~ iso))
+
+# Create country mapping data frame
+
+country_mapping <- data.frame(
+  ccode = 1:39,
+  cname = c("algeria", "angola", "benin", "botswana", "burkina_faso", "burundi", 
+            "cabo_verde", "cameroon", "egypt", "eswatini", "ethiopia", "gabon", 
+            "gambia", "ghana", "guinea", "ivory_coast", "kenya", "lesotho", 
+            "liberia", "madagascar", "malawi", "mali", "mauritius", "morocco", 
+            "mozambique", "namibia", "niger", "nigeria", "sao_tome", "senegal", 
+            "sierra_leone", "south_africa", "sudan", "tanzania", "togo", 
+            "tunisia", "uganda", "zambia", "zimbabwe")
+)
+
+iso <- c(
+  "algeria" = "DZA", "angola" = "AGO", "benin" = "BEN", "botswana" = "BWA",
+  "burkina_faso" = "BFA", "burundi" = "BDI", "cabo_verde" = "CPV", "cameroon" = "CMR",
+  "egypt" = "EGY", "eswatini" = "SWZ", "ethiopia" = "ETH", "gabon" = "GAB",
+  "gambia" = "GMB", "ghana" = "GHA", "guinea" = "GIN", "ivory_coast" = "CIV",
+  "kenya" = "KEN", "lesotho" = "LSO", "liberia" = "LBR", "madagascar" = "MDG",
+  "malawi" = "MWI", "mali" = "MLI", "mauritius" = "MUS", "morocco" = "MAR",
+  "mozambique" = "MOZ", "namibia" = "NAM", "niger" = "NER", "nigeria" = "NGA",
+  "sao_tome" = "STP", "senegal" = "SEN", "sierra_leone" = "SLE",
+  "south_africa" = "ZAF", "sudan" = "SDN", "tanzania" = "TZA", "togo" = "TGO",
+  "tunisia" = "TUN", "uganda" = "UGA", "zambia" = "ZMB", "zimbabwe" = "ZWE"
+)
+
+country_mapping %<>%
+  mutate(iso = iso[cname])
+
+afro_stack %<>%
+  left_join(country_mapping, by = "iso")
+
+rm(country_mapping, iso)
+```
+
+# Remove geographic outliers using IQR method
+
+```{r}
+rm_out <- function(data, variable = "latitude") {
+  init_n <- nrow(data)
+  
+  Q1 <- quantile(data[[variable]], 0.25, na.rm = TRUE)
+  Q3 <- quantile(data[[variable]], 0.75, na.rm = TRUE)
+  IQR <- Q3 - Q1
+  lower_bound <- Q1 - 1.5 * IQR
+  upper_bound <- Q3 + 1.5 * IQR
+    
+  data_iqr <- data %>%
+    filter(!!sym(variable) >= lower_bound & !!sym(variable) <= upper_bound)
+  
+  n_rm <- init_n - nrow(data_iqr)
+  pct_rm <- round(100 * n_rm / init_n, 2)
+  
+  cat("Initial observations:", init_n, "\n",
+      "Observations removed:", n_rm, "\n",
+      "Percentage removed:", pct_rm, "%\n",
+      "Final observations:", nrow(data_iqr), "\n")
+  
+  return(data_iqr)
+}
+
+afro_stack %<>% rm_out("latitude")
+
+saveRDS(afro_stack, file="data/data_rds/afro_stack.rds")
+
+rm(rm_out)
+```
+
+# Create summary statistics table
+
+```{r}
+vars_sum <- c(
+  "age", "assoc", "check_citiz", "check_parl", "commu", "conditions_country", 
+  "conditions_eco", "contact_counc", "contact_trad", "corr_judge", 
+  "corr_level", "corr_local", "corr_parl", "corr_pres", "corr_trad", 
+  "disc_pol", "educ", "elec_fair", "emp", "extent", "feelnat", "food", 
+  "internet_news", "internet_use", "latitude", "listen_counc", "listen_trad", 
+  "longitude", "military_reject", "money", "one_man_reject", "one_party_reject", 
+  "paper_news", "perf_corr", "perf_crime", "perf_eco", "perf_educ", "perf_elect", 
+  "perf_health", "perf_ineq", "perf_job", "perf_local", "perf_parl", "perf_pres", 
+  "perf_price", "perf_road", "perf_trad", "perf_water", "pref_demo", "prob", 
+  "protest", "radio_news", "rural", "satis_demo", "security", "sex", "sm_news", 
+  "tele_news", "tele_pos", "trust_elec", "trust_gen", "trust_govpart", "trust_local", 
+  "trust_oppart", "trust_parl", "trust_pres", "trust_trad", "unfair_eth", "vote"
+)
+
+
+sum_tab <- function(data, variables_list, rounds_col = "round") {
+  
+  calc_stats <- function(var_name) {
+    if (!var_name %in% names(data)) {
+      return(NULL)
+    }
+    
+    if (is.numeric(data[[var_name]])) {
+      data %>%
+        group_by(!!sym(rounds_col)) %>%
+        summarise(
+          Mean = mean(!!sym(var_name), na.rm = TRUE),
+          Median = median(!!sym(var_name), na.rm = TRUE),
+          SD = sd(!!sym(var_name), na.rm = TRUE),
+          Min = min(!!sym(var_name), na.rm = TRUE),
+          Max = max(!!sym(var_name), na.rm = TRUE),
+          N = sum(!is.na(!!sym(var_name))),
+          .groups = 'drop'
+        ) %>%
+        mutate(Variable = var_name)
+    } else {
+      data %>%
+        group_by(!!sym(rounds_col)) %>%
+        summarise(
+          Mean = n_distinct(!!sym(var_name), na.rm = TRUE),
+          Median = NA,
+          SD = NA,
+          Min = NA,
+          Max = NA,
+          N = sum(!is.na(!!sym(var_name))),
+          .groups = 'drop'
+        ) %>%
+        mutate(Variable = var_name)
+    }
+  }
+  
+  all_stats <- map_df(variables_list, calc_stats)
+  
+  final_table <- all_stats %>%
+    pivot_wider(
+      id_cols = Variable,
+      names_from = !!sym(rounds_col),
+      values_from = c(Mean, Median, SD, Min, Max, N),
+      names_sep = "_"
+    )
+  
+  latex_table <- final_table %>%
+    kbl(format = "latex",
+        booktabs = TRUE,
+        caption = "Summary Statistics by Round",
+        digits = 2,
+        align = c("l", rep("c", ncol(final_table) - 1))) %>%
+    kable_styling(
+      latex_options = c("striped", "hold_position", "scale_down"),
+      font_size = 9
+    ) %>%
+    column_spec(1, bold = TRUE) %>%
+    footnote(
+      general = paste("Number of variables:", length(variables_list)),
+      footnote_as_chunk = TRUE
+    )
+  
+  return(latex_table)
+}
+
+summary_table <- sum_tab(
+   data = afro_stack,
+   variables_list = vars_sum,
+   rounds_col = "round"
+ )
+ 
+print(summary_table)
+
+writeLines(summary_table, "variables_summary.tex")
+
+rm(vars_sum, sum_tab, summary_table)
+```
+

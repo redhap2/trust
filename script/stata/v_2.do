@@ -9,7 +9,7 @@ set more off
 
 global mypath "C:\Users\Redha CHABA\Documents"
 
-use "${mypath}\working_paper\trust\data\data_dta\data_final.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_final.dta", clear
 
 global ind_controls age age_2 i.sex i.educ_sec i.bin_rural i.bin_conditions_eco i.bin_emp night_region_log pop_region_log area_region_log tele_news paper_news radio_news disc_pol_a pres_adm1 distance_to_road
 *bin_unfair_eth: removes observations
@@ -18,12 +18,12 @@ global geo_controls desert_region_tv mountain_region_tv
 
 *t1: pol_trust dist_cap_max_norm
 
-use "${mypath}\working_paper\trust\data\data_dta\data_final.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_final.dta", clear
 
 eststo ols_cty: reghdfe pol_trust dist_cap_max_norm dist_sndncap_max_norm $ind_controls $cty_controls $geo_controls i.round if spl==1, cluster(i.region_time)
 eststo ols_fe: reghdfe pol_trust dist_cap_max_norm dist_sndncap_max_norm $ind_controls  $geo_controls if spl==1, absorb(i.country_round) cluster(i.region_time)
 
-use "${mypath}\working_paper\trust\data\data_dta\df_40.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\df_40.dta", clear
 
 eststo bdd_cty: reghdfe pol_trust dist_cap_max_norm dist_sndncap_max_norm $ind_controls $cty_controls $geo_controls bin_unfair_eth if spl==1, absorb(i.round i.murdock_names) cluster(cluster_bdd)
 eststo bdd_fe: reghdfe pol_trust dist_cap_max_norm dist_sndncap_max_norm $ind_controls $geo_controls bin_unfair_eth if spl==1, absorb(i.country_round i.murdock_names) cluster(cluster_bdd)
@@ -32,7 +32,7 @@ estout ols_cty ols_fe bdd_cty bdd_fe using "${mypath}\wp_git\rbci\tables\v_2\t1.
 
 *t2 - internet
 
-use "${mypath}\working_paper\trust\data\data_dta\data_final.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_final.dta", clear
 
 gen cvg_region_pot_dist=dist_cap_max_norm*cvg_region_pot
 gen lis_region_tv=lis_region*tv
@@ -97,7 +97,7 @@ estout ols_x_fe iv_fe using "${mypath}\wp_git\rbci\tables\v_2\t2.tex", replace s
 
 *t3 - vote_oppo country_growth
 
-use "${mypath}\working_paper\trust\data\data_dta\data_final.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_final.dta", clear
 
 *willingness to vote for the ruling party
 gen vote_oppo_2=-vote_oppo 
@@ -114,7 +114,7 @@ estout iv_fe_vote iv_fe_growth using "${mypath}\wp_git\rbci\tables\v_2\t3.tex", 
 
 *t4 - media and institutitons freedom
 
-use "${mypath}\working_paper\trust\data\data_dta\data_final.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_final.dta", clear
 
 gen cvg_region_pot_dist=dist_cap_max_norm*cvg_region_pot
 gen lis_region_tv=lis_region*tv
@@ -132,7 +132,7 @@ estout iv_fe_free iv_fe_control iv_fe_democ iv_fe_autoc using "${mypath}\wp_git\
 
 *t5 - educ and urban 
 
-use "${mypath}\working_paper\trust\data\data_dta\data_final.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_final.dta", clear
 
 gen cvg_region_pot_dist=dist_cap_max_norm*cvg_region_pot
 gen lis_region_tv=lis_region*tv
@@ -154,7 +154,7 @@ estout educ_low educ_high urban rural using "${mypath}\wp_git\rbci\tables\v_2\t5
 
 **APPENDIX
 
-use "${mypath}\working_paper\trust\data\data_dta\data_final.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_final.dta", clear
 
 eststo ols_int_news_cty: reghdfe internet_news cvg_region_pot dist_cap_max_norm dist_sndncap_max_norm $ind_controls $cty_controls i.round if spl==1, cluster(i.region_time)
 eststo ols_int_news_fe: reghdfe internet_news cvg_region_pot dist_cap_max_norm dist_sndncap_max_norm $ind_controls if spl==1, absorb(i.country_round) cluster(i.region_time)
@@ -167,12 +167,12 @@ estout ols_int_news_cty ols_int_news_fe ols_int_use_cty ols_int_use_fe using "${
 
 *trust_pres_a dist_cap_max_norm
 
-use "${mypath}\working_paper\trust\data\data_dta\data_final.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_final.dta", clear
 
 eststo ols_cty: reghdfe trust_pres_a dist_cap_max_norm dist_sndncap_max_norm $ind_controls $cty_controls i.round if spl==1, cluster(i.region_time)
 eststo ols_fe: reghdfe trust_pres_a dist_cap_max_norm dist_sndncap_max_norm $ind_controls if spl==1, absorb(i.country_round) cluster(i.region_time)
 
-use "${mypath}\working_paper\trust\data\data_dta\df_40_2.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\df_40_2.dta", clear
 eststo bdd_cty: reghdfe trust_pres_a dist_cap_max_norm dist_sndncap_max_norm $ind_controls $cty_controls if spl==1, absorb(i.round i.murdock_names) cluster(cluster_bdd)
 eststo bdd_fe: reghdfe trust_pres_a dist_cap_max_norm dist_sndncap_max_norm $ind_controls if spl==1, absorb(i.country_round i.murdock_names) cluster(cluster_bdd)
 
@@ -181,12 +181,12 @@ estout ols_cty ols_fe bdd_cty bdd_fe using "${mypath}\wp_git\rbci\tables\v_2\A2.
 
 *trust_parl_a dist_cap_max_norm
 
-use "${mypath}\working_paper\trust\data\data_dta\data_final.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_final.dta", clear
 
 eststo ols_cty: reghdfe trust_parl_a dist_cap_max_norm dist_sndncap_max_norm $ind_controls $cty_controls i.round if spl==1, cluster(i.region_time)
 eststo ols_fe: reghdfe trust_parl_a dist_cap_max_norm dist_sndncap_max_norm $ind_controls if spl==1, absorb(i.country_round) cluster(i.region_time)
 
-use "${mypath}\working_paper\trust\data\data_dta\df_40_2.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\df_40_2.dta", clear
 eststo bdd_cty: reghdfe trust_parl_a dist_cap_max_norm dist_sndncap_max_norm $ind_controls $cty_controls if spl==1, absorb(i.round i.murdock_names) cluster(cluster_bdd)
 eststo bdd_fe: reghdfe trust_parl_a dist_cap_max_norm dist_sndncap_max_norm $ind_controls if spl==1, absorb(i.country_round i.murdock_names) cluster(cluster_bdd)
 
@@ -194,12 +194,12 @@ estout ols_cty ols_fe bdd_cty bdd_fe using "${mypath}\wp_git\rbci\tables\v_2\A3.
 
 *pol_trust dist_cap_log
 
-use "${mypath}\working_paper\trust\data\data_dta\data_final.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_final.dta", clear
 
 eststo ols_cty: reghdfe pol_trust dist_cap_log dist_sndncap_log $ind_controls $cty_controls i.round if spl==1, cluster(i.region_time)
 eststo ols_fe: reghdfe pol_trust dist_cap_log dist_sndncap_log $ind_controls if spl==1, absorb(i.country_round) cluster(i.region_time)
 
-use "${mypath}\working_paper\trust\data\data_dta\df_40_2.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\df_40_2.dta", clear
 eststo bdd_cty: reghdfe pol_trust dist_cap_log dist_sndncap_log $ind_controls $cty_controls if spl==1, absorb(i.round i.murdock_names) cluster(cluster_bdd)
 eststo bdd_fe: reghdfe pol_trust dist_cap_log dist_sndncap_log $ind_controls if spl==1, absorb(i.country_round i.murdock_names) cluster(cluster_bdd)
 
@@ -207,13 +207,13 @@ estout ols_cty ols_fe bdd_cty bdd_fe using "${mypath}\wp_git\rbci\tables\v_2\A4.
 
 *pol_trust dist_cap_10
 
-use "${mypath}\working_paper\trust\data\data_dta\data_final.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_final.dta", clear
 
 
 eststo ols_cty: reghdfe pol_trust dist_cap_10 dist_sndncap_10 $ind_controls $cty_controls i.round if spl==1, cluster(i.region_time)
 eststo ols_fe: reghdfe pol_trust dist_cap_10 dist_sndncap_10 $ind_controls if spl==1, absorb(i.country_round) cluster(i.region_time)
 
-use "${mypath}\working_paper\trust\data\data_dta\df_40_2.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\df_40_2.dta", clear
 eststo bdd_cty: reghdfe pol_trust dist_cap_10 dist_sndncap_10 $ind_controls $cty_controls if spl==1, absorb(i.round i.murdock_names) cluster(cluster_bdd)
 eststo bdd_fe: reghdfe pol_trust dist_cap_10 dist_sndncap_10 $ind_controls if spl==1, absorb(i.country_round i.murdock_names) cluster(cluster_bdd)
 
@@ -221,12 +221,12 @@ estout ols_cty ols_fe bdd_cty bdd_fe using "${mypath}\wp_git\rbci\tables\v_2\A5.
 
 *pol_trust dist_cap_mean_norm
 
-use "${mypath}\working_paper\trust\data\data_dta\data_final.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_final.dta", clear
 
 eststo ols_cty: reghdfe pol_trust dist_cap_mean_norm dist_sndncap_mean_norm $ind_controls $cty_controls i.round if spl==1, cluster(i.region_time)
 eststo ols_fe: reghdfe pol_trust dist_cap_mean_norm dist_sndncap_mean_norm $ind_controls if spl==1, absorb(i.country_round) cluster(i.region_time)
 
-use "${mypath}\working_paper\trust\data\data_dta\df_40_2.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\df_40_2.dta", clear
 eststo bdd_cty: reghdfe pol_trust dist_cap_mean_norm dist_sndncap_mean_norm $ind_controls $cty_controls if spl==1, absorb(i.round i.murdock_names) cluster(cluster_bdd)
 eststo bdd_fe: reghdfe pol_trust dist_cap_mean_norm dist_sndncap_mean_norm $ind_controls if spl==1, absorb(i.country_round i.murdock_names) cluster(cluster_bdd)
 
@@ -234,12 +234,12 @@ estout ols_cty ols_fe bdd_cty bdd_fe using "${mypath}\wp_git\rbci\tables\v_2\A6.
 
 *pol_trust i.dist_cap_quint
 
-use "${mypath}\working_paper\trust\data\data_dta\data_final.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_final.dta", clear
 
 eststo ols_cty: reghdfe pol_trust i.dist_cap_quint i.dist_sndncap_quint $ind_controls $cty_controls i.round if spl==1, cluster(i.region_time)
 eststo ols_fe: reghdfe pol_trust i.dist_cap_quint i.dist_sndncap_quint $ind_controls if spl==1, absorb(i.country_round) cluster(i.region_time)
 
-use "${mypath}\working_paper\trust\data\data_dta\df_40_2.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\df_40_2.dta", clear
 eststo bdd_cty: reghdfe pol_trust i.dist_cap_quint i.dist_sndncap_quint $ind_controls $cty_controls if spl==1, absorb(i.round i.murdock_names) cluster(cluster_bdd)
 eststo bdd_fe: reghdfe pol_trust i.dist_cap_quint i.dist_sndncap_quint $ind_controls if spl==1, absorb(i.country_round i.murdock_names) cluster(cluster_bdd)
 
@@ -259,12 +259,12 @@ estout bdd_cty_30 bdd_fe_30 bdd_cty_50 bdd_fe_50 using "${mypath}\wp_git\rbci\ta
 
 *pol_trust dist_cap_max_norm dist_cap_max_norm_2
 
-use "${mypath}\working_paper\trust\data\data_dta\data_final.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_final.dta", clear
 
 eststo ols_cty: reghdfe pol_trust dist_cap_max_norm dist_cap_max_norm_2 dist_sndncap_max_norm $ind_controls $cty_controls i.round if spl==1, cluster(i.region_time)
 eststo ols_fe: reghdfe pol_trust dist_cap_max_norm dist_cap_max_norm_2 dist_sndncap_max_norm $ind_controls if spl==1, absorb(i.country_round) cluster(i.region_time)
 
-use "${mypath}\working_paper\trust\data\data_dta\df_40_2.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\df_40_2.dta", clear
 eststo bdd_cty: reghdfe pol_trust dist_cap_max_norm dist_cap_max_norm_2 dist_sndncap_max_norm $ind_controls $cty_controls if spl==1, absorb(i.round i.murdock_names) cluster(cluster_bdd)
 eststo bdd_fe: reghdfe pol_trust dist_cap_max_norm dist_cap_max_norm_2 dist_sndncap_max_norm $ind_controls if spl==1, absorb(i.country_round i.murdock_names) cluster(cluster_bdd)
 
@@ -272,12 +272,12 @@ estout ols_cty ols_fe bdd_cty bdd_fe using "${mypath}\wp_git\rbci\tables\v_2\A9.
 
 *pol_trust dist_cap_max_norm dist_cap_max_norm_2 dist_cap_max_norm_3
 
-use "${mypath}\working_paper\trust\data\data_dta\data_final.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_final.dta", clear
 
 eststo ols_cty: reghdfe pol_trust dist_cap_max_norm dist_cap_max_norm_2 dist_cap_max_norm_3 dist_sndncap_max_norm $ind_controls $cty_controls i.round if spl==1, cluster(i.region_time)
 eststo ols_fe: reghdfe pol_trust dist_cap_max_norm dist_cap_max_norm_2 dist_cap_max_norm_3 dist_sndncap_max_norm $ind_controls if spl==1, absorb(i.country_round) cluster(i.region_time)
 
-use "${mypath}\working_paper\trust\data\data_dta\df_40_2.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\df_40_2.dta", clear
 eststo bdd_cty: reghdfe pol_trust dist_cap_max_norm dist_cap_max_norm_2 dist_cap_max_norm_3 dist_sndncap_max_norm $ind_controls $cty_controls if spl==1, absorb(i.round i.murdock_names) cluster(cluster_bdd)
 eststo bdd_fe: reghdfe pol_trust dist_cap_max_norm dist_cap_max_norm_2 dist_cap_max_norm_3 dist_sndncap_max_norm $ind_controls if spl==1, absorb(i.country_round i.murdock_names) cluster(cluster_bdd)
 
@@ -286,12 +286,12 @@ estout ols_cty ols_fe bdd_cty bdd_fe using "${mypath}\wp_git\rbci\tables\v_2\A10
 
 *tele_news dist_cap_max_norm
 
-use "${mypath}\working_paper\trust\data\data_dta\data_final.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_final.dta", clear
 
 eststo ols_cty: reghdfe tele_news dist_cap_max_norm dist_sndncap_max_norm age age_2 i.sex i.educ_sec i.bin_rural i.bin_conditions_eco i.bin_emp night_region_log pop_region_log area_region_log paper_news radio_news disc_pol_a pres_adm1 distance_to_road $cty_controls i.round if spl==1, cluster(i.region_time)
 eststo ols_fe: reghdfe tele_news dist_cap_max_norm dist_sndncap_max_norm  age age_2 i.sex i.educ_sec i.bin_rural i.bin_conditions_eco i.bin_emp night_region_log pop_region_log area_region_log paper_news radio_news disc_pol_a pres_adm1 distance_to_road if spl==1, absorb(i.country_round) cluster(i.region_time)
 
-use "${mypath}\working_paper\trust\data\data_dta\df_40_2.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\df_40_2.dta", clear
 eststo bdd_cty: reghdfe tele_news dist_cap_max_norm dist_sndncap_max_norm  age age_2 i.sex i.educ_sec i.bin_rural i.bin_conditions_eco i.bin_emp night_region_log pop_region_log area_region_log paper_news radio_news disc_pol_a pres_adm1 distance_to_road  $cty_controls if spl==1, absorb(i.round i.murdock_names) cluster(cluster_bdd)
 eststo bdd_fe: reghdfe tele_news dist_cap_max_norm dist_sndncap_max_norm  age age_2 i.sex i.educ_sec i.bin_rural i.bin_conditions_eco i.bin_emp night_region_log pop_region_log area_region_log paper_news radio_news disc_pol_a pres_adm1 distance_to_road  if spl==1, absorb(i.country_round i.murdock_names) cluster(cluster_bdd)
 
@@ -300,12 +300,12 @@ estout ols_cty ols_fe bdd_cty bdd_fe using "${mypath}\wp_git\rbci\tables\v_2\A11
 
 *radio_news dist_cap_max_norm
 
-use "${mypath}\working_paper\trust\data\data_dta\data_final.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_final.dta", clear
 
 eststo ols_cty: reghdfe radio_news dist_cap_max_norm dist_sndncap_max_norm  age age_2 i.sex i.educ_sec i.bin_rural i.bin_conditions_eco i.bin_emp night_region_log pop_region_log area_region_log paper_news tele_news disc_pol_a pres_adm1 distance_to_road  $cty_controls i.round if spl==1, cluster(i.region_time)
 eststo ols_fe: reghdfe radio_news dist_cap_max_norm dist_sndncap_max_norm   age age_2 i.sex i.educ_sec i.bin_rural i.bin_conditions_eco i.bin_emp night_region_log pop_region_log area_region_log paper_news tele_news disc_pol_a pres_adm1 distance_to_road  if spl==1, absorb(i.country_round) cluster(i.region_time)
 
-use "${mypath}\working_paper\trust\data\data_dta\df_40_2.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\df_40_2.dta", clear
 eststo bdd_cty: reghdfe radio_news dist_cap_max_norm dist_sndncap_max_norm  age age_2 i.sex i.educ_sec i.bin_rural i.bin_conditions_eco i.bin_emp night_region_log pop_region_log area_region_log paper_news tele_news disc_pol_a pres_adm1 distance_to_road  $cty_controls if spl==1, absorb(i.round i.murdock_names) cluster(cluster_bdd)
 eststo bdd_fe: reghdfe radio_news dist_cap_max_norm dist_sndncap_max_norm  age age_2 i.sex i.educ_sec i.bin_rural i.bin_conditions_eco i.bin_emp night_region_log pop_region_log area_region_log paper_news tele_news disc_pol_a pres_adm1 distance_to_road  if spl==1, absorb(i.country_round i.murdock_names) cluster(cluster_bdd)
 
@@ -314,12 +314,12 @@ estout ols_cty ols_fe bdd_cty bdd_fe using "${mypath}\wp_git\rbci\tables\v_2\A12
 
 *paper_news dist_cap_max_norm
 
-use "${mypath}\working_paper\trust\data\data_dta\data_final.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_final.dta", clear
 
 eststo ols_cty: reghdfe paper_news dist_cap_max_norm dist_sndncap_max_norm  age age_2 i.sex i.educ_sec i.bin_rural i.bin_conditions_eco i.bin_emp night_region_log pop_region_log area_region_log radio_news tele_news disc_pol_a pres_adm1 distance_to_road  $cty_controls i.round if spl==1, cluster(i.region_time)
 eststo ols_fe: reghdfe paper_news dist_cap_max_norm dist_sndncap_max_norm   age age_2 i.sex i.educ_sec i.bin_rural i.bin_conditions_eco i.bin_emp night_region_log pop_region_log area_region_log radio_news tele_news disc_pol_a pres_adm1 distance_to_road if spl==1, absorb(i.country_round) cluster(i.region_time)
 
-use "${mypath}\working_paper\trust\data\data_dta\df_40_2.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\df_40_2.dta", clear
 eststo bdd_cty: reghdfe paper_news dist_cap_max_norm dist_sndncap_max_norm   age age_2 i.sex i.educ_sec i.bin_rural i.bin_conditions_eco i.bin_emp night_region_log pop_region_log area_region_log radio_news tele_news disc_pol_a pres_adm1 distance_to_road $cty_controls if spl==1, absorb(i.round i.murdock_names) cluster(cluster_bdd)
 eststo bdd_fe: reghdfe paper_news dist_cap_max_norm dist_sndncap_max_norm   age age_2 i.sex i.educ_sec i.bin_rural i.bin_conditions_eco i.bin_emp night_region_log pop_region_log area_region_log radio_news tele_news disc_pol_a pres_adm1 distance_to_road if spl==1, absorb(i.country_round i.murdock_names) cluster(cluster_bdd)
 
@@ -328,12 +328,12 @@ estout ols_cty ols_fe bdd_cty bdd_fe using "${mypath}\wp_git\rbci\tables\v_2\A13
 
 *internet_news dist_cap_max_norm
 
-use "${mypath}\working_paper\trust\data\data_dta\data_final.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_final.dta", clear
 
 eststo ols_cty: reghdfe internet_news dist_cap_max_norm dist_sndncap_max_norm $ind_controls $cty_controls i.round if spl==1, cluster(i.region_time)
 eststo ols_fe: reghdfe internet_news dist_cap_max_norm dist_sndncap_max_norm $ind_controls if spl==1, absorb(i.country_round) cluster(i.region_time)
 
-use "${mypath}\working_paper\trust\data\data_dta\df_40_2.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\df_40_2.dta", clear
 eststo bdd_cty: reghdfe internet_news dist_cap_max_norm dist_sndncap_max_norm $ind_controls $cty_controls if spl==1, absorb(i.round i.murdock_names) cluster(cluster_bdd)
 eststo bdd_fe: reghdfe internet_news dist_cap_max_norm dist_sndncap_max_norm $ind_controls if spl==1, absorb(i.country_round i.murdock_names) cluster(cluster_bdd)
 
@@ -342,12 +342,12 @@ estout ols_cty ols_fe bdd_cty bdd_fe using "${mypath}\wp_git\rbci\tables\v_2\A14
 
 *sm_news dist_cap_max_norm
 
-use "${mypath}\working_paper\trust\data\data_dta\data_final.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\data_final.dta", clear
 
 eststo ols_cty: reghdfe sm_news dist_cap_max_norm dist_sndncap_max_norm $ind_controls $cty_controls i.round if spl==1, cluster(i.region_time)
 eststo ols_fe: reghdfe sm_news dist_cap_max_norm dist_sndncap_max_norm $ind_controls if spl==1, absorb(i.country_round) cluster(i.region_time)
 
-use "${mypath}\working_paper\trust\data\data_dta\df_40_2.dta", clear
+use "${mypath}\working_paper\rbci\data\data_dta\df_40_2.dta", clear
 eststo bdd_cty: reghdfe sm_news dist_cap_max_norm dist_sndncap_max_norm $ind_controls $cty_controls if spl==1, absorb(i.round i.murdock_names) cluster(cluster_bdd)
 eststo bdd_fe: reghdfe sm_news dist_cap_max_norm dist_sndncap_max_norm $ind_controls if spl==1, absorb(i.country_round i.murdock_names) cluster(cluster_bdd)
 
