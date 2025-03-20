@@ -202,283 +202,63 @@
 
 \onehalfspacing
 
-\section*{Research question}
-
-How does the diffusion of mobile internet affect political accountability in remote areas?
-\section*{Hypothesis}
-\begin{enumerate}
-  \item Living in remote areas is associated with higher levels of institutional trust.
-  \item Increased internet access mitigates spatial disparities in the levels of institutional trust.
-  \item Increased internet access strengthens ethnic over national identity in remote areas
-\end{enumerate}
-
 \begin{table}[H]
   \sffamily
-  \caption{{H1}}
+  \caption{{Country Heterogeneity}}
+  \label{Table media institutions}
   \centering
   %\footnotesize
-  \resizebox{14cm}{!}{
-  \begin{tabular}{@{\extracolsep{5pt}} l c c c c c c}
+  \resizebox{16cm}{!}{
+  \begin{tabular}{@{\extracolsep{5pt}} l c c c c c c c c}
   \\
   \toprule
   \toprule
-  &  \multicolumn{6}{c}{{Trust in institutions}}  \\
-  \cmidrule(r){2-7}
-  & \multicolumn{2}{c}{{OLS}} & \multicolumn{2}{c}{{BDD: 50km}} & \multicolumn{2}{c}{{BDD: 40km}}\\
-      \cmidrule(r){2-3}
+  & \multicolumn{8}{c}{2SLS: Political Trust}\\
+  \cmidrule(r){2-9}
+  & \multicolumn{8}{c}{{Base Sample}}\\
+  \cmidrule(r){2-9}
+  &\multicolumn{2}{c}{{Media}} &  \multicolumn{2}{c}{{Corruption}} &  \multicolumn{2}{c}{{Gov. Delivery}} &  \multicolumn{2}{c}{{Dem. Quality}}\\
+  \cmidrule(r){2-3}
       \cmidrule(r){4-5}
       \cmidrule(r){6-7}
-      & \multicolumn{1}{c}{{(1)}} &  \multicolumn{1}{c}{{(2)}}  & \multicolumn{1}{c}{{(3)}} &  \multicolumn{1}{c}{{(4)}} & \multicolumn{1}{c}{{(5)}} & \multicolumn{1}{c}{(6)}\\
+      \cmidrule(r){8-9}
+      & \multicolumn{1}{c}{{Captured}} & \multicolumn{1}{c}{{Free}}& \multicolumn{1}{c}{{High}} & \multicolumn{1}{c}{{Low}} & \multicolumn{1}{c}{{Low}} & \multicolumn{1}{c}{{High}} & \multicolumn{1}{c}{{Autocr.}}& \multicolumn{1}{c}{{Democr.}}\\
+      \cmidrule(r){2-2}
+      \cmidrule(r){3-3}
+      \cmidrule(r){4-4}
+      \cmidrule(r){5-5}
+      \cmidrule(r){6-6}
+      \cmidrule(r){7-7}
+      \cmidrule(r){8-8}
+      \cmidrule(r){9-9}
+      & \multicolumn{1}{c}{{(1)}} &  \multicolumn{1}{c}{{(2)}}  & \multicolumn{1}{c}{{(3)}} &  \multicolumn{1}{c}{{(4)}} &  \multicolumn{1}{c}{{(5)}} &  \multicolumn{1}{c}{{(6)}} &  \multicolumn{1}{c}{{(7)}} &  \multicolumn{1}{c}{{(8)}}\\
    \midrule
 
-   Distance to the capital &       0.224***&       0.322*** &  0.403*** & 0.361**& 0.444*** & 0.362**\\
-   \medskip
-   &      (0.03)   &      (0.03)  & (0.13)     & (0.15)& (0.14)     & (0.17) \\
+   Distance from the capital&       1.987***&      -0.194   &       1.463***&      -1.569   &       1.063***&      -0.770   &       3.619** &      -0.110   \\
+   \smallskip
+   &      (0.73)   &      (0.81)   &      (0.46)   &      (3.41)   &      (0.37)   &      (1.38)   &      (1.83)   &      (0.73)   \\
+   Internet coverage&       2.548***&       0.762   &       1.878***&      -2.450   &       1.481** &       0.304   &       5.364** &       1.794   \\
+   \smallskip
+   &      (0.95)   &      (0.98)   &      (0.64)   &      (4.20)   &      (0.75)   &      (0.74)   &      (2.59)   &      (1.42)   \\
+Distance from the capital $\times$ Internet coverage&      -4.835** &       1.100   &      -3.118** &       3.613   &      -1.897*  &       2.048   &      -8.787*  &       1.957   \\
+   \medskip &      (2.21)   &      (1.33)   &      (1.34)   &      (6.92)   &      (1.12)   &      (2.68)   &      (5.05)   &      (1.52)   \\
 
    \midrule
-  Standard controls  & Yes & Yes & Yes & Yes& Yes & Yes  \\
-  Country X Round FE       & No & Yes& No & Yes& No & Yes\\
-  Murdock's area FE & No & No & Yes& Yes& Yes& Yes\\
-  Observations      &     83,877   &       83,877  & 18,129       & 18,129 & 16,744       & 16,744\\
-  Adjusted-R$^2$        &       0.021   &       0.052   & 0.135       & 0.181 & 0.137       & 0.184 \\
-
-                        \bottomrule
-  \multicolumn{7}{p{12cm}}{\footnotesize \emph{Notes}:}
+   \smallskip
+  Individual \& regional controls  & Yes & Yes & Yes & Yes & Yes & Yes & Yes & Yes\\
+  Geographic controls  & Yes & Yes & Yes & Yes & Yes & Yes & Yes & Yes\\
+  \smallskip
+  Country X Round FE       & Yes& Yes & Yes& Yes & Yes & Yes & Yes & Yes\\
+  \smallskip
+  Observations&      90,894   &      20,676   &      81,561   &      30,009   &      77,712   &      33,858   &      85,227   &      26,343   \\
+  \bottomrule
+  \multicolumn{9}{p{22cm}}{\footnotesize \emph{Notes}: Robust standard errors clustered at the region x round level are in parentheses. (1) - (2) report separate regressions based on media freedom. Countries with captured media are those with a
+  value on the \href{https://index.rsf.org}{Reporters Without Borders World Press Freedom Index} below the \textit{Satisfactory situation} threshold. (3) - (4) report separate regressions based on corruption level. Countries with high level are those with value on the \href{www.govindicators.org}{World Bank's Control of Corruption index} below -0.5. (5) - (6) report separate regressions based on government capacity to effectively implement and execute policies. Countries with low level are those with value on the average of the \href{www.govindicators.org}{World Bank's Government Effectiveness and Regulatory Quality indexes} below -0.5. (7) - (8) report separate regressions based on democratic quality. Countries with autocratic regimes are those with a value on the \href{https://www.v-dem.net/
+  }{V-Dem Electoral Democracy Index} below 0.6. The set of individual controls includes measures of: normalized distance from the largest non-capital city, distance to the road, age, age squared, sex,
+  education, employment status, rural/urban situation, personal economic conditions perception, ethnic discrimination, interest in politics, TV news consumption, newspaper consumption, radio consumption. The set of regional controls includes measures of: nighttime light, population density, region area, president birthplace dummy.
+  The set of geographic controls includes the interaction between a linear time trend and the fraction of the region covered by mountains and deserts.
+  *** / ** / * represent significance at the 0.01 / 0.05 / 0.10 levels, respectively.}
   \end{tabular}
   }
   \end{table}
-  
-  \begin{table}[H]
-    \sffamily
-    \caption{{H2}}
-    \centering
-    %\footnotesize
-    \resizebox{14cm}{!}{
-    \begin{tabular}{@{\extracolsep{5pt}} l c c c c c c}
-    \\
-    \toprule
-    \toprule
-    & \multicolumn{1}{c}{{OLS}} & \multicolumn{3}{c}{{First Stage}} & \multicolumn{1}{c}{{2SLS}}\\
-        \cmidrule(r){2-2}
-        \cmidrule(r){3-5}
-        \cmidrule(r){6-6}
-        & \multicolumn{1}{c}{{Trust in institutions}} & \multicolumn{1}{c}{{Internet use}} & \multicolumn{1}{c}{{}} &  \multicolumn{1}{c}{{Distance $\times$ Internet use}} & \multicolumn{1}{c}{{Trust in institutions}}\\
-        \cmidrule(r){2-2}
-        \cmidrule(r){3-3}
-        \cmidrule(r){5-5}
-        \cmidrule(r){6-6}
-
-        & \multicolumn{1}{c}{{(1)}} & \multicolumn{1}{c}{{(2)}} & \multicolumn{1}{c}{{}} &  \multicolumn{1}{c}{{(3)}} & \multicolumn{1}{c}{{(4)}}\\
-        
-        \midrule
-  
-Distance to the capital&    0.353*** &&&&0.533***\\
-     \smallskip
-     &      (0.03)  &&&&  (0.117) \\
-Internet use   &      -0.012** &&&&-0.316\\
-\smallskip   &      (0.01)  &&&&  (0.24) \\
-
-Distance to the capital $\times$ Internet use&         -0.054*** &&&&-0.437***\\
-\smallskip  &      (0.01) &&&& (0.14)  \\
-
-
-Internet coverage && 0.179*** && -0.184*** &  &  \\
-\smallskip&& (0.06) && (0.03) \\
-Distance to the capital city $\times$ Internet coverage&& 0.063 && 0.733*** &  & \\
-\medskip&& (0.10) && (0.07)\\
-
-     \midrule
-    SW \emph{F} - Internet coverage &-&-& 16.12&- &-\\
-    SW \emph{F} - Distance $\times$ Internet coverage &-&-& 90.80&-&-\\
-    Standard controls  & Yes & Yes &&  Yes & Yes  \\
-    Country X Round FE       & Yes & Yes& & Yes & Yes \\
-    Observations       &       83,877 & 83,877 & & 83,877 & 83,877 \\
-    Adjusted-R$^2$    &       0.164 &  0.358 & &   0.262 & - \\
-    Endogeneity test \emph{p}-value & -& - & - & -& 0.00\\ 
-  
-                          \bottomrule
-    \multicolumn{5}{p{8cm}}{\footnotesize \emph{Notes}:}
-    \end{tabular}
-    }
-    \end{table}
-
-
-
-      \begin{table}[H]
-        \sffamily
-        \caption{{H2 : National outcomes}}
-        \centering
-        %\footnotesize
-        \resizebox{14cm}{!}{
-        \begin{tabular}{@{\extracolsep{5pt}} l c c c}
-        \\
-        \toprule
-        \toprule
-        & \multicolumn{3}{c}{{2SLS}}\\
-            \cmidrule(r){2-4}
-            & \multicolumn{1}{c}{{Satisfaction in democracy}} & \multicolumn{1}{c}{{Democracy extent}} & \multicolumn{1}{c}{{Trust in ruling party}} \\
-            \cmidrule(r){2-2}
-            \cmidrule(r){3-3}
-            \cmidrule(r){4-4}
-  
-    
-            & \multicolumn{1}{c}{{(1)}} & \multicolumn{1}{c}{{(2)}} & \multicolumn{1}{c}{{(3)}}\\
-            
-            \midrule
-      
-    Distance to the capital&  0.316*** & 0.342*** & 0.444***\\
-         \smallskip
-         & (0.10)& (0.09) & (0.13)\\
-    Internet use     & -0.251 & -0.148 & -0.574**\\
-    \smallskip      & (0.19) & (0.17)& (0.26)\\
-    
-    Distance to the capital $\times$ Internet use&   -0.229*  & -0.315***  & -0.356** \\
-    \smallskip & (0.12) & (0.11) & (0.16)\\
-    
-         \midrule
-        Standard controls  & Yes & Yes &Yes  \\
-        Country X Round FE       & Yes & Yes& Yes \\
-        Observations       &       85,017 & 83,786 & 86,489\\
-        Endogeneity test \emph{p}-value & 0.03 & 0.01& 0.00\\ 
-      
-                              \bottomrule
-        \multicolumn{4}{p{8cm}}{\footnotesize \emph{Notes}:}
-        \end{tabular}
-        }
-        \end{table}
-  
-
-        \begin{table}[H]
-          \sffamily
-          \caption{{Corruption perception}}
-          \centering
-          %\footnotesize
-          \resizebox{14cm}{!}{
-          \begin{tabular}{@{\extracolsep{5pt}} l c c c}
-          \\
-          \toprule
-          \toprule
-          & \multicolumn{3}{c}{{2SLS}}\\
-              \cmidrule(r){2-4}
-              & \multicolumn{1}{c}{{President}} & \multicolumn{1}{c}{{Parliament}} & \multicolumn{1}{c}{{Judiciary}} \\
-              \cmidrule(r){2-2}
-              \cmidrule(r){3-3}
-              \cmidrule(r){4-4}
-    
-      
-              & \multicolumn{1}{c}{{(1)}} & \multicolumn{1}{c}{{(2)}} & \multicolumn{1}{c}{{(3)}}\\
-              
-              \midrule
-        
-      Distance to the capital& -0.286***  & -0.302***  & -0.296***  \\
-           \smallskip
-           & (0.09)& (0.08) & (0.08)  \\
-      Internet use   & 0.242 & 0.057  & 0.089\\
-      \smallskip  & (0.17) & (0.15)& (0.17)  \\
-      
-      Distance to the capital $\times$ Internet use& 0.277***   & 0.321***   & 0.336***   \\
-      \smallskip  & (0.10) & (0.09) & (0.10) \\
-      
-           \midrule
-          Standard controls  & Yes & Yes &Yes  \\
-          Country X Round FE       & Yes & Yes& Yes \\
-          Observations       &       80,370& 81,590 & 81,705\\
-          Endogeneity test \emph{p}-value & 0.01 & 0.00 & 0.00\\ 
-        
-                                \bottomrule
-          \multicolumn{4}{p{8cm}}{\footnotesize \emph{Notes}:}
-          \end{tabular}
-          }
-          \end{table}
-
-
-          \begin{table}[H]
-            \sffamily
-            \caption{{Local}}
-            \centering
-            %\footnotesize
-            \resizebox{14cm}{!}{
-            \begin{tabular}{@{\extracolsep{5pt}} l c c }
-            \\
-            \toprule
-            \toprule
-            & \multicolumn{2}{c}{{2SLS}}\\
-                \cmidrule(r){2-3}
-                & \multicolumn{1}{c}{{Local corruption}} & \multicolumn{1}{c}{{National identity}} \\
-                \cmidrule(r){2-2}
-                \cmidrule(r){3-3}
-              
-                & \multicolumn{1}{c}{{(1)}} & \multicolumn{1}{c}{{(2)}}\\
-                
-                \midrule
-          
-        Distance to the capital&    -0.202** & 0.182 \\
-             \smallskip
-             & (0.08)  & (0.12) \\
-        Internet use   &   0.160 & 0.167  \\
-        \smallskip    & (0.16) & (0.25)  \\
-        
-        Distance to the capital $\times$ Internet use&   0.129  & -0.406***   \\
-        \smallskip  & (0.09)& (0.15)   \\
-        
-             \midrule
-            Standard controls  & Yes & Yes\\
-            Country X Round FE & Yes & Yes \\
-            Observations       &  79,545   & 88,078  \\
-            Endogeneity test \emph{p}-value & 0.16 & 0.06\\ 
-          
-                                  \bottomrule
-            \multicolumn{3}{p{8cm}}{\footnotesize \emph{Notes}:}
-            \end{tabular}
-            }
-            \end{table}
-
-
-
-            \begin{table}[H]
-              \sffamily
-              \caption{{Heterogeneity}}
-              \centering
-              %\footnotesize
-              \resizebox{14cm}{!}{
-              \begin{tabular}{@{\extracolsep{5pt}} l c c c c}
-              \\
-              \toprule
-              \toprule
-              & \multicolumn{4}{c}{{2SLS}}\\
-                  \cmidrule(r){2-5}
-                  & \multicolumn{2}{c}{{Institutions}} & \multicolumn{2}{c}{{Medias}} \\
-                  \cmidrule(r){2-3}
-                  \cmidrule(r){4-5}
-                  & \multicolumn{1}{c}{{Democratic}} & \multicolumn{1}{c}{{Autocratic}}& \multicolumn{1}{c}{{Free}} & \multicolumn{1}{c}{{Captured}} \\
-                  \cmidrule(r){2-2}
-                  \cmidrule(r){3-3}
-                  \cmidrule(r){4-4}
-                  \cmidrule(r){5-5}
-
-                
-                  & \multicolumn{1}{c}{{(1)}} & \multicolumn{1}{c}{{(2)}} & \multicolumn{1}{c}{{(3)}} & \multicolumn{1}{c}{{(4)}}\\
-                  
-                  \midrule
-            
-          Distance to the capital& 0.363 & 0.683*** & 0.364** & 0.719***\\
-               \smallskip
-               & (0.25)   & (0.15) & (0.17)  & (0.13)   \\
-          Internet use & -0.643 & -0.065  & -0.498* & 0.080\\
-          \smallskip    & (0.48) & (0.31) & (0.27)& (0.27) \\
-          
-          Distance to the capital $\times$ Internet use & -0.217 & -0.638*** & -0.303 & -0.581*** \\
-          \smallskip & (0.28) & (0.20)& (0.22) & (0.17) \\
-          
-               \midrule
-              Standard controls  & Yes & Yes& Yes & Yes\\
-              Country X Round FE & Yes & Yes & Yes & Yes\\
-              Observations  & 44,434  & 39,443  & 36,872  & 47,005   \\
-              Endogeneity test \emph{p}-value & 0.00 & 0.03 & 0.04 & 0.00 \\ 
-            
-                                    \bottomrule
-              \multicolumn{5}{p{8cm}}{\footnotesize \emph{Notes}:}
-              \end{tabular}
-              }
-              \end{table}
-\end{document}
+  \end{document}

@@ -1,6 +1,6 @@
-PWD c:\Users\Redha CHABA\Documents\Working paper\Trust\Script\writing\report
+PWD c:\Users\Redha CHABA\Documents\wp_git\rbci\writing\report
 INPUT C:\Users\Redha CHABA\AppData\Local\MiKTeX\miktex\data\le\pdftex\pdflatex.fmt
-INPUT c:\Users\Redha CHABA\Documents\Working paper\Trust\Script\writing\report\rbci_report.tex
+INPUT c:\Users\Redha CHABA\Documents\wp_git\rbci\writing\report\rbci_report.tex
 OUTPUT rbci_report.log
 INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\tex\latex\base\article.cls
 INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\tex\latex\base\article.cls
@@ -316,8 +316,6 @@ INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\tfm\public\amsfon
 INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\tfm\public\amsfonts\symbols\msbm5.tfm
 INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\tfm\kosch\crimson\Crimson-Roman-tlf-t1.tfm
 INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\tfm\kosch\crimson\Crimson-Roman-tlf-ts1.tfm
-INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\tfm\kosch\crimson\Crimson-Roman-tlf-t1.tfm
-INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\tfm\kosch\crimson\Crimson-Bold-tlf-t1.tfm
 INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\tex\latex\base\t1cmss.fd
 INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\tex\latex\base\t1cmss.fd
 INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\tex\latex\base\t1cmss.fd
@@ -338,32 +336,22 @@ INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\tfm\kosch\crimson
 INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\vf\kosch\crimson\Crimson-Roman-tlf-ts1.vf
 INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\tfm\kosch\crimson\Crimson-Roman-tlf-ts1--base.tfm
 INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\enc\dvips\crimson\crm_axwm4k.enc
-INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\vf\kosch\crimson\Crimson-Bold-tlf-t1.vf
-INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\tfm\kosch\crimson\Crimson-Bold-tlf-t1--base.tfm
-INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\enc\dvips\crimson\crm_fllea6.enc
 INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\vf\kosch\crimson\Crimson-Roman-tlf-t1.vf
 INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\tfm\kosch\crimson\Crimson-Roman-tlf-t1--base.tfm
 INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\vf\kosch\crimson\Crimson-Roman-tlf-ts1.vf
 INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\tfm\kosch\crimson\Crimson-Roman-tlf-ts1--base.tfm
 INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\vf\kosch\crimson\Crimson-Roman-tlf-t1.vf
 INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\tfm\kosch\crimson\Crimson-Roman-tlf-t1--base.tfm
-INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\tfm\jknappen\ec\ecsi1095.tfm
 INPUT rbci_report.aux
 INPUT .\rbci_report.out
 INPUT .\rbci_report.out
-INPUT C:\Users\Redha CHABA\AppData\Local\MiKTeX\fonts\pk\ljfour\jknappen\ec\dpi600\ecsi1095.pk
-INPUT C:\Users\Redha CHABA\AppData\Local\MiKTeX\fonts\pk\ljfour\jknappen\ec\dpi600\ecsi1095.pk
 INPUT C:\Users\Redha CHABA\AppData\Local\MiKTeX\fonts\pk\ljfour\jknappen\ec\dpi600\ecss0900.pk
 INPUT C:\Users\Redha CHABA\AppData\Local\MiKTeX\fonts\pk\ljfour\jknappen\ec\dpi600\ecss0900.pk
 INPUT C:\Users\Redha CHABA\AppData\Local\MiKTeX\fonts\pk\ljfour\jknappen\ec\dpi600\ecsi0900.pk
 INPUT C:\Users\Redha CHABA\AppData\Local\MiKTeX\fonts\pk\ljfour\jknappen\ec\dpi600\ecsi0900.pk
 INPUT C:\Users\Redha CHABA\AppData\Local\MiKTeX\fonts\pk\ljfour\jknappen\ec\dpi600\ecss1095.pk
 INPUT C:\Users\Redha CHABA\AppData\Local\MiKTeX\fonts\pk\ljfour\jknappen\ec\dpi600\ecss1095.pk
-INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\type1\kosch\crimson\Crimson-Bold.pfb
-INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\type1\kosch\crimson\Crimson-Bold.pfb
 INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\type1\kosch\crimson\Crimson-Roman.pfb
 INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\type1\kosch\crimson\Crimson-Roman.pfb
-INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmr8.pfb
-INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmr8.pfb
 INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmsy10.pfb
 INPUT C:\Users\Redha CHABA\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmsy10.pfb
