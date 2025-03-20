@@ -1168,3 +1168,53 @@ saveRDS(data_final, file="data/data_rds/data_final.rds")
 
 write_dta(data_final, "data/data_dta/data_final.dta")
 ```
+
+```{r}
+vdem <- readRDS("data/data_raw/V-Dem-CY-Full+Others-v13.rds")
+
+vdem%<>%
+  select(country_text_id, year, v2xedvd_inpt, v2x_polyarchy, v2xedvd_me_cent, v2medstateprint, v2medstatebroad, v2medpolstate, v2medpolnonstate, e_v2x_freexp_altinf_3C, e_v2x_freexp_altinf_4C, e_v2x_freexp_altinf_5C, v2x_freexp, v2xme_altinf, e_polity2)
+
+vdem%<>%
+  filter(country_text_id %in% countries)
+
+vdem%<>%
+  rename(iso=country_text_id)%>%
+    mutate(round=case_when(between(year, 2011, 2013)~5,
+                         between(year, 2014, 2015)~6,
+                         between(year, 2016, 2018)~7,
+                         between(year, 2019, 2021)~8,
+         TRUE~NA_integer_))
+
+vdem %<>%
+  group_by(iso, round) %>%
+  filter(!is.na(round)) %>%
+  mutate(
+    v2xedvd_inpt_mean2 = ifelse(all(is.na(v2xedvd_inpt)), NA_integer_, mean(v2xedvd_inpt, na.rm = TRUE)),
+    v2x_polyarchy_mean2 = ifelse(all(is.na(v2x_polyarchy)), NA_integer_, mean(v2x_polyarchy, na.rm = TRUE)),
+    v2xedvd_me_cent_mean2 = ifelse(all(is.na(v2xedvd_me_cent)), NA_integer_, mean(v2xedvd_me_cent, na.rm = TRUE)),
+    v2medstateprint_mean2 = ifelse(all(is.na(v2medstateprint)), NA_integer_, mean(v2medstateprint, na.rm = TRUE)),
+    v2medstatebroad_mean2 = ifelse(all(is.na(v2medstatebroad)), NA_integer_, mean(v2medstatebroad, na.rm = TRUE)),
+    v2medpolstate_mean2 = ifelse(all(is.na(v2medpolstate)), NA_integer_, mean(v2medpolstate, na.rm = TRUE)),
+    v2medpolnonstate_mean2 = ifelse(all(is.na(v2medpolnonstate)), NA_integer_, mean(v2medpolnonstate, na.rm = TRUE)),
+    e_v2x_freexp_altinf_3C_mean2 = ifelse(all(is.na(e_v2x_freexp_altinf_3C)), NA_integer_, mean(e_v2x_freexp_altinf_3C, na.rm = TRUE)),
+    e_v2x_freexp_altinf_4C_mean2 = ifelse(all(is.na(e_v2x_freexp_altinf_4C)), NA_integer_, mean(e_v2x_freexp_altinf_4C, na.rm = TRUE)),
+    e_v2x_freexp_altinf_5C_mean2 = ifelse(all(is.na(e_v2x_freexp_altinf_5C)), NA_integer_, mean(e_v2x_freexp_altinf_5C, na.rm = TRUE)),
+    v2x_freexp_mean2 = ifelse(all(is.na(v2x_freexp)), NA_integer_, mean(v2x_freexp, na.rm = TRUE)),
+    v2xme_altinf_mean2 = ifelse(all(is.na(v2xme_altinf)), NA_integer_, mean(v2xme_altinf, na.rm = TRUE)),
+    e_polity2_mean2 = ifelse(all(is.na(e_polity2)), NA_integer_, mean(e_polity2, na.rm = TRUE))
+  ) %>%
+  ungroup()
+
+
+vdem%<>%
+  mutate(e_polity2_med_all=ifelse(is.na(round), NA_integer_, median(e_polity2, na.rm=TRUE)))
+
+vdem%<>%
+  select(iso, round, v2xedvd_inpt_mean2, v2x_polyarchy_mean2, v2xedvd_me_cent_mean2, v2medstateprint_mean2, v2medstatebroad_mean2, v2medpolstate_mean2, v2medpolnonstate_mean2, e_v2x_freexp_altinf_3C_mean2, e_v2x_freexp_altinf_4C_mean2, e_v2x_freexp_altinf_5C_mean2, v2x_freexp_mean2, v2xme_altinf_mean2, e_polity2_mean2, e_polity2_med_all)%>%
+    distinct(iso, round, .keep_all = TRUE)
+
+data_final %<>% left_join(vdem, by=c("iso", "round"))
+
+```
+
