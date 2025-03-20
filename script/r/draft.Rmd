@@ -1225,7 +1225,7 @@ library(tidyr)
 
 data_final <- readRDS("data/data_rds/data_final.rds")
 
-countries <- data_final %>% filter(spl == 1) %>% pull(iso) %>% unique()
+countries <- data_final %>% pull(iso) %>% unique()
 
 wb_gov <- read_excel("data/data_raw/wb_gov/wgidataset.xlsx")
 
@@ -1247,7 +1247,7 @@ wb_gov %<>%
     iso = code
   ) %>%
   mutate(across(c(
-    ctrl_corr, voice_acc, pol_stab, gov_eff, reg_qty
+    ctrl_corr, voice_acc, pol_stab, gov_eff, reg_qty, rol
   ), as.numeric))
 
 
@@ -1268,9 +1268,13 @@ wb_gov %<>%
     voice_acc_mean = ifelse(all(is.na(voice_acc)), NA_integer_, mean(voice_acc, na.rm = TRUE)),
     pol_stab_mean = ifelse(all(is.na(pol_stab)), NA_integer_, mean(pol_stab, na.rm = TRUE)),
     gov_eff_mean = ifelse(all(is.na(gov_eff)), NA_integer_, mean(gov_eff, na.rm = TRUE)),
-    reg_qty_mean = ifelse(all(is.na(reg_qty)), NA_integer_, mean(reg_qty, na.rm = TRUE))
+    reg_qty_mean = ifelse(all(is.na(reg_qty)), NA_integer_, mean(reg_qty, na.rm = TRUE)),
+    rol_mean = ifelse(all(is.na(rol)), NA_integer_, mean(rol, na.rm = TRUE)),
   ) %>%
   ungroup()
+
+wb_gov%<>%
+  mutate(gov_cap = rowMeans(select(., gov_eff_mean, reg_qty_mean), na.rm = TRUE))
 
 wb_gov %<>%
   select(
@@ -1280,11 +1284,40 @@ wb_gov %<>%
     voice_acc_mean,
     pol_stab_mean,
     gov_eff_mean,
-    reg_qty_mean
+    reg_qty_mean,
+    rol_mean,
+    gov_cap
   ) %>%
   distinct(iso, round, .keep_all = TRUE)
 
 wb_gov %<>%
   filter(iso %in% countries)
+
+data_final %<>% left_join(wb_gov, by = c("iso", "round"))
+
+saveRDS(data_final, file = "data/data_rds/data_final.rds")
+
+write_dta(data_final, "data/data_dta/data_final.dta")
+
+```
+
+```{r}
+# Load dplyr package
+library(dplyr)
+
+# Assuming your data is in data_final and has columns ctrl_corr_mean and spl
+percentile_below_neg_0_5 <- data_final %>%
+  filter(spl == 1) %>%  # Filter for spl == 1
+  summarise(
+    total_count = n(),  # Total number of observations where spl == 1
+    below_neg_0_5_count = sum(ctrl_corr_mean < -0.5)  # Count values less than -0.5
+  ) %>%
+  mutate(
+    percentile = (below_neg_0_5_count / total_count) * 100  # Calculate the percentage
+  )
+
+# Display the result
+print(percentile_below_neg_0_5)
+
 ```
 
