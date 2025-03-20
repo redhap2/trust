@@ -1218,3 +1218,73 @@ data_final %<>% left_join(vdem, by=c("iso", "round"))
 
 ```
 
+
+```{r}
+library(readxl)
+library(tidyr)
+
+data_final <- readRDS("data/data_rds/data_final.rds")
+
+countries <- data_final %>% filter(spl == 1) %>% pull(iso) %>% unique()
+
+wb_gov <- read_excel("data/data_raw/wb_gov/wgidataset.xlsx")
+
+wb_gov %<>%
+  select(code, year, indicator, estimate) %>%
+  mutate(estimate = na_if(estimate, ".."))
+
+wb_gov %<>%
+  pivot_wider(names_from = indicator, values_from = estimate)
+
+wb_gov %<>%
+  rename(
+    ctrl_corr = cc,
+    voice_acc = va,
+    pol_stab = pv,
+    gov_eff = ge,
+    reg_qty = rq,
+    rol = rl,
+    iso = code
+  ) %>%
+  mutate(across(c(
+    ctrl_corr, voice_acc, pol_stab, gov_eff, reg_qty
+  ), as.numeric))
+
+
+wb_gov %<>%
+  mutate(round = case_when(
+    between(year, 2011, 2013) ~ 5,
+    between(year, 2014, 2015) ~ 6,
+    between(year, 2016, 2018) ~ 7,
+    between(year, 2019, 2021) ~ 8,
+    TRUE ~ NA_integer_
+  ))
+
+wb_gov %<>%
+  group_by(iso, round) %>%
+  filter(!is.na(round)) %>%
+  mutate(
+    ctrl_corr_mean = ifelse(all(is.na(ctrl_corr)), NA_integer_, mean(ctrl_corr, na.rm = TRUE)),
+    voice_acc_mean = ifelse(all(is.na(voice_acc)), NA_integer_, mean(voice_acc, na.rm = TRUE)),
+    pol_stab_mean = ifelse(all(is.na(pol_stab)), NA_integer_, mean(pol_stab, na.rm = TRUE)),
+    gov_eff_mean = ifelse(all(is.na(gov_eff)), NA_integer_, mean(gov_eff, na.rm = TRUE)),
+    reg_qty_mean = ifelse(all(is.na(reg_qty)), NA_integer_, mean(reg_qty, na.rm = TRUE))
+  ) %>%
+  ungroup()
+
+wb_gov %<>%
+  select(
+    iso,
+    round,
+    ctrl_corr_mean,
+    voice_acc_mean,
+    pol_stab_mean,
+    gov_eff_mean,
+    reg_qty_mean
+  ) %>%
+  distinct(iso, round, .keep_all = TRUE)
+
+wb_gov %<>%
+  filter(iso %in% countries)
+```
+
