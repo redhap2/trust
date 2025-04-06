@@ -3,3 +3,6 @@
 .RData
 .Ruserdata
 /script/r/draft.Rmd
+/script/stata/tests.do
+/script/stata/v_0.do
+/script/stata/v_1.do
