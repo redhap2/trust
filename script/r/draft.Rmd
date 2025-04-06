@@ -1321,3 +1321,795 @@ print(percentile_below_neg_0_5)
 
 ```
 
+
+```{r}
+df <- readRDS("data/data_rds/data_final.rds")
+
+df %<>%
+  filter(spl==1, round==5)
+
+radius<- 5000
+
+df_sf_buff <- df[, .(longitude, latitude, iso, id_ea)] %>%
+  vect(geom = c("longitude", "latitude"), crs = "EPSG:4326") %>%
+  buffer(width = radius)
+
+if (any(!is.valid(df_sf_buff))) {
+  df_sf_buff <- make_valid(df_sf_buff)
+}
+
+cty_shp <- vect("data/data_raw/gadm/gadm41_BEN_2.shp")
+
+
+
+
+cty_buff <- intersect(df_sf_buff, cty_shp)
+
+cty_sf <- st_as_sf(cty_shp)
+cty_buff_sf <- st_as_sf(cty_buff)
+
+ggplot() +
+  geom_sf(
+    data = cty_sf,
+    fill = "lightgray",
+    color = "black",
+    alpha = 0.5
+  ) +
+  
+  geom_sf(
+    data = cty_buff_sf,
+    fill = "gold",
+    color = "gold4",
+    alpha = 0.3
+  ) +
+  
+  theme_minimal() +
+  labs(title = "Circles 10km radius")
+
+
+```
+
+```{r}
+rc <- function(x) {
+  ifelse(is.na(x), 0 , 1)
+}
+
+# Define TIFF file path
+tiff_file <- "data/data_raw/collins_recode/Mobile Coverage Explorer v2012 - GeoTIFF/Data_MCE/ByCountry/MCE_2G/MCE_BEN2G_2012.tif"
+
+# Filter circles based on ISO code
+circles <- df_sf_buff[df_sf_buff$iso == "BEN"]
+
+# Harmonize CRS to WGS84 using terra::project()
+target_crs <- "EPSG:4326"  # WGS84 CRS
+
+# Load and process raster using terra (faster than raster)
+gg <- rast(tiff_file)
+plot(gg)
+gg_wgs84 <- project(gg, target_crs)
+plot(gg_wgs84)
+gg_wgs84_recode <- app(gg_wgs84, fun = rc)
+plot(gg_wgs84_recode)
+
+# Check the extent of circles to ensure it's valid
+circles_extent <- ext(circles)
+
+plot(circles)
+plot(circles_extent)
+# Crop and mask raster to the buffered areas
+gg_wgs84_cropped <- crop(gg_wgs84_recode, circles_extent)
+gg_wgs84_masked <- mask(gg_wgs84_cropped, circles)
+plot(gg_wgs84_cropped)
+plot(gg_wgs84_masked)
+
+global(gg_wgs84_masked, mean, na.rm = TRUE)
+
+circles_cropped <- crop(circles, gg_wgs84_masked)
+
+plot(circles_cropped, add = TRUE, border = "red")
+
+# Extract values from the raster based on the polygons
+gg_values <- terra::extract(gg_wgs84_masked,
+                            circles_cropped,
+                            fun = mean,
+                            na.rm = TRUE)
+
+circles_cropped$gg_mean <- gg_values[, 2]
+```
+
+```{r}
+# 1. Load region shapefile (convert to sf for use with dplyr/ggplot2)
+adm2_shp <- vect("data/data_raw/gadm/gadm41_BEN_2.shp")
+adm2_sf <- st_as_sf(adm2_shp)
+adm2_sf <- st_make_valid(adm2_sf)
+
+
+df <- readRDS("data/data_rds/data_final.rds")
+
+
+df_round5 <- df %>% filter(round == 5)
+df_round8 <- df %>% filter(round == 8)
+
+# Get the unique region identifiers in both rounds (intersection)
+common_regions <- intersect(df_round5$NAME_2, df_round8$NAME_2)
+
+# Filter original data to keep only the regions that appear in both rounds
+df_common <- df %>% filter(iso=="BEN", NAME_2 %in% common_regions) %>% select(-NAME_2)
+
+df_common%<>%filter(round==5)
+
+# Convert to sf object (if not already)
+df_sf <- st_as_sf(df_common, coords = c("longitude", "latitude"), crs = st_crs(adm2_sf))
+
+# Proceed with spatial join or further analysis
+df_adm2_sf <- st_join(df_sf, adm2_sf)
+
+
+# 5. Aggregate: calculate mean trust by region
+trust_mean <- df_adm2_sf %>%
+  group_by(NAME_2, round) %>%  # replace with actual region ID column
+  summarise(mean_trust = mean(trust_parl_a, na.rm = TRUE))
+
+trust_mean_df <- st_drop_geometry(trust_mean)
+
+# 6. Join aggregated data back to region geometries
+regions_map <- adm2_sf %>%
+  left_join(trust_mean_df, by = "NAME_2")  # make sure column name matches
+
+
+capitals <- df_common %>%
+  distinct(caplong, caplat, iso)%>%
+  na.omit() %>%
+  rename(longitude = caplong, latitude = caplat)
+
+# 7. Plot the map
+ggplot(regions_map) +
+  geom_sf(aes(fill = mean_trust), color = "white") +
+  scale_fill_gradient(
+    low = "red",   # Low values will be red
+    high = "green", # High values will be green
+    na.value = "lightgrey",  # Missing values will be light grey
+    limits = c(0, 3)  # Fix scale between 0 and 3
+
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Trust - Round 5",
+    fill = "Trust"
+  )+
+   geom_point(data = capitals, 
+             aes(x = longitude, y = latitude), 
+             size = 2, shape = 22, fill = "black", show.legend = FALSE)
+
+# 1. Load region shapefile (convert to sf for use with dplyr/ggplot2)
+adm2_shp <- vect("data/data_raw/gadm/gadm41_BEN_2.shp")
+adm2_sf <- st_as_sf(adm2_shp)
+adm2_sf <- st_make_valid(adm2_sf)
+
+
+df <- readRDS("data/data_rds/data_final.rds")
+
+
+df_round5 <- df %>% filter(round == 5)
+df_round8 <- df %>% filter(round == 8)
+
+# Get the unique region identifiers in both rounds (intersection)
+common_regions <- intersect(df_round5$NAME_2, df_round8$NAME_2)
+
+# Filter original data to keep only the regions that appear in both rounds
+df_common <- df %>% filter(iso=="BEN", NAME_2 %in% common_regions) %>% select(-NAME_2)
+
+df_common%<>%filter(round==8)
+
+# Convert to sf object (if not already)
+df_sf <- st_as_sf(df_common, coords = c("longitude", "latitude"), crs = st_crs(adm2_sf))
+
+# Proceed with spatial join or further analysis
+df_adm2_sf <- st_join(df_sf, adm2_sf)
+
+
+# 5. Aggregate: calculate mean trust by region
+trust_mean <- df_adm2_sf %>%
+  group_by(NAME_2, round) %>%  # replace with actual region ID column
+  summarise(mean_trust = mean(trust_parl_a, na.rm = TRUE))
+
+trust_mean_df <- st_drop_geometry(trust_mean)
+
+# 6. Join aggregated data back to region geometries
+regions_map <- adm2_sf %>%
+  left_join(trust_mean_df, by = "NAME_2")  # make sure column name matches
+
+
+capitals <- df_common %>%
+  distinct(caplong, caplat, iso)%>%
+  na.omit() %>%
+  rename(longitude = caplong, latitude = caplat)
+
+# 7. Plot the map
+ggplot(regions_map) +
+  geom_sf(aes(fill = mean_trust), color = "white") +
+  scale_fill_gradient(
+    low = "red",   # Low values will be red
+    high = "green", # High values will be green
+    na.value = "lightgrey",  # Missing values will be light grey
+    limits = c(0, 3)  # Fix scale between 0 and 3
+
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Trust - Round 8",
+    fill = "Trust"
+  )+
+   geom_point(data = capitals, 
+             aes(x = longitude, y = latitude), 
+             size = 2, shape = 22, fill = "black", show.legend = FALSE)
+
+# 1. Load region shapefile (convert to sf for use with dplyr/ggplot2)
+adm2_shp <- vect("data/data_raw/gadm/gadm41_BEN_2.shp")
+adm2_sf <- st_as_sf(adm2_shp)
+adm2_sf <- st_make_valid(adm2_sf)
+
+
+df <- readRDS("data/data_rds/data_final.rds")
+
+
+df_round5 <- df %>% filter(round == 5)
+df_round8 <- df %>% filter(round == 8)
+
+# Get the unique region identifiers in both rounds (intersection)
+common_regions <- intersect(df_round5$NAME_2, df_round8$NAME_2)
+
+# Filter original data to keep only the regions that appear in both rounds
+df_common <- df %>% filter(iso=="BEN", NAME_2 %in% common_regions)
+
+# 3. Aggregate: calculate mean trust by region and round (for both rounds 5 and 8)
+trust_mean_by_round <- df_common %>%
+  group_by(NAME_2, round) %>%
+  summarise(mean_trust = mean(trust_parl_a, na.rm = TRUE), .groups = "drop")
+
+# 4. Spread data: Create a wide format to compare rounds 5 and 8
+trust_mean_wide <- trust_mean_by_round %>%
+  pivot_wider(names_from = round, values_from = mean_trust) %>%
+  rename(mean_trust_5 = `5`, mean_trust_8 = `8`)
+
+# 5. Calculate the variation in trust (difference between round 8 and round 5)
+trust_mean_wide <- trust_mean_wide %>%
+  mutate(variation = mean_trust_8 - mean_trust_5)
+
+# 6. Join the aggregated data back to the region geometries
+regions_map <- adm2_sf %>%
+  left_join(trust_mean_wide, by = "NAME_2")
+
+# 7. Plot the variation map
+ggplot(regions_map) +
+  geom_sf(aes(fill = variation), color = "white") +
+  scale_fill_gradient(
+    low = "red",   # Low values will be red (indicating decrease in trust)
+    high = "green", # High values will be green (indicating increase in trust)
+    na.value = "lightgrey",  # Missing values will be light grey
+    limits = c(-3, 3)  # Fix scale between -3 and 3 for variation
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Trust (Round 8 - Round 5)",
+    fill = "Delta"
+  ) +
+   geom_point(data = capitals, 
+             aes(x = longitude, y = latitude), 
+             size = 2, shape = 22, fill = "black", show.legend = FALSE)
+
+```
+
+
+```{r}
+library(terra)
+library(dplyr)
+library(magrittr)
+library(ggplot2)
+library(tidyr)
+library(gt)
+library(rnaturalearth)
+
+# Load survey data
+df <- readRDS("data/data_rds/data_final.rds")
+
+df%<>%
+  filter(spl==1)
+
+# Unique ISO codes in data
+country_codes <- unique(df$iso)
+
+# Path to admin2 shapefiles
+shapefile_path <- "data/data_raw/gadm/"
+
+# Store each country’s region vector
+all_regions_vect <- list()
+
+for (iso in country_codes) {
+  shp_file <- paste0(shapefile_path, "gadm41_", iso, "_2.shp")
+  
+  if (!file.exists(shp_file)) {
+    message("⛔ Skipping ", iso, " - shapefile missing.")
+    next
+  }
+
+  message("✅ Processing ", iso)
+
+  # Load shapefile
+  adm2_vect <- vect(shp_file)
+
+  # Filter country data and only include rounds 5 and 8
+  df_country <- df %>% filter(iso == iso, round %in% c(5, 8))
+
+  if (nrow(df_country) == 0) {
+    message("⚠️ No data for rounds 5 or 8 for ", iso)
+    adm2_vect$variation <- NA
+    all_regions_vect[[iso]] <- adm2_vect
+    next
+  }
+
+  df5 <- df_country %>% filter(round == 5)
+  df8 <- df_country %>% filter(round == 8)
+  common_regions <- intersect(df5$NAME_2, df8$NAME_2)
+  
+  if (length(common_regions) == 0) {
+    message("⚠️ No common regions for ", iso)
+    adm2_vect$variation <- NA
+    all_regions_vect[[iso]] <- adm2_vect
+    next
+  }
+
+  df_common <- df_country %>% filter(NAME_2 %in% common_regions)
+
+  # Aggregate and calculate mean trust values
+  trust_wide <- df_common %>%
+    group_by(NAME_2, round) %>%
+    summarise(trust = mean(trust_parl_a, na.rm = TRUE), .groups = "drop") %>%
+    pivot_wider(names_from = round, values_from = trust, names_prefix = "R") %>%
+    mutate(variation = R8 - R5)
+
+  # Merge trust data back with spatial data
+  adm2_vect$NAME_2 <- as.character(adm2_vect$NAME_2)
+  joined <- tryCatch({
+    merge(adm2_vect, trust_wide, by = "NAME_2", all.x = TRUE)
+  }, error = function(e) {
+    message("❌ Merge failed for ", iso, ": ", e$message)
+    NULL
+  })
+
+  all_regions_vect[[iso]] <- joined
+}
+
+combined <- Reduce(rbind, all_regions_vect)
+combined_df <- as.data.frame(combined)
+
+
+capitals <- df %>%
+  filter(round %in% c(5, 8)) %>%
+  distinct(caplong, caplat, iso) %>%
+  na.omit() %>%
+  rename(longitude = caplong, latitude = caplat)
+
+africa_outline <- ne_countries(continent = "Africa", returnclass = "sf") %>%
+  st_make_valid()
+
+africa_sf <- st_as_sf(combined)
+
+ggplot() +
+  geom_sf(data = africa_sf, aes(fill = variation), color = "white", linewidth = 0.1) +
+  geom_sf(data = africa_outline, fill = NA, color = "black", linewidth = 0.2) +
+  geom_point(data = capitals, aes(x = longitude, y = latitude),
+             shape = 21, size = 2, fill = "black") +
+  scale_fill_gradient2(
+    low = "red", mid = "white", high = "green",
+    midpoint = 0, limits = c(-3, 3),
+    na.value = "lightgrey",
+    name = "Δ Trust\n(R8 - R5)"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Trust Change in Parliament (Round 8 - Round 5)",
+    subtitle = "Across African Regions",
+    caption = "Grey = No data"
+  )
+```
+
+
+```{r}
+# Define which countries use which admin level
+countries_adm1 <- c("GHA","KEN","MOZ", "MWI","NGA","TZA","UGA","ZMB", "ZWE")
+countries_adm2 <- c("BEN", "BFA", "BWA", "CIV", "CMR", "GIN", "LBR", "MLI", "NAM", "NER", "SLE")
+
+# Load required libraries
+library(magrittr)
+library(dplyr)
+library(tidyr)
+library(terra)
+library(sf) # For better spatial data handling
+
+# Load data
+df <- readRDS("data/data_rds/data_final.rds")
+df %<>% filter(spl == 1)
+
+# Unique ISO codes in data
+country_codes <- unique(df$iso)
+
+# Path to admin shapefiles
+shapefile_path <- "data/data_raw/gadm/"
+
+# Store each country's region vector - keeping as sf objects until the end
+all_regions_sf <- list()
+
+for (iso_code in country_codes) {
+  # Skip if not in our specified lists
+  if (!(iso_code %in% c(countries_adm1, countries_adm2))) {
+    message("⛔ Skipping ", iso_code, " - not in specified admin level lists.")
+    next
+  }
+  
+  # Determine admin level for this country
+  admin_level <- if(iso_code %in% countries_adm1) 1 else 2
+  
+  # Build shapefile path based on admin level
+  shp_file <- paste0(shapefile_path, "gadm41_", iso_code, "_", admin_level, ".shp")
+  
+  if (!file.exists(shp_file)) {
+    message("⛔ Skipping ", iso_code, " - shapefile missing at admin level ", admin_level)
+    next
+  }
+  
+  message("✅ Processing ", iso_code, " at admin level ", admin_level)
+  
+  # Load shapefile with sf for more reliable handling
+  adm_sf <- sf::st_read(shp_file, quiet = TRUE)
+  
+  # Get the appropriate region name field based on admin level
+  region_field <- paste0("NAME_", admin_level)
+  
+  # Make sure the field exists in the shapefile
+  if(!(region_field %in% names(adm_sf))) {
+    message("⚠️ Field ", region_field, " not found in shapefile for ", iso_code)
+    next
+  }
+  
+  # Filter country data and only include rounds 5 and 8
+  df_country <- df %>% filter(iso == iso_code, round %in% c(5, 8))
+  
+  if (nrow(df_country) == 0) {
+    message("⚠️ No data for rounds 5 or 8 for ", iso_code)
+    adm_sf$variation <- NA_real_
+    all_regions_sf[[iso_code]] <- adm_sf
+    next
+  }
+  
+  # Ensure we're using the correct region field in the data
+  # Check if fields exist in df_country
+  if(!(region_field %in% names(df_country))) {
+    message("⚠️ Field ", region_field, " not found in data for ", iso_code)
+    adm_sf$variation <- NA_real_
+    all_regions_sf[[iso_code]] <- adm_sf
+    next
+  }
+  
+  # Split by round
+  df5 <- df_country %>% filter(round == 5)
+  df8 <- df_country %>% filter(round == 8)
+  
+  # Find common regions between rounds
+  common_regions <- intersect(df5[[region_field]], df8[[region_field]])
+  
+  if (length(common_regions) == 0) {
+    message("⚠️ No common regions for ", iso_code)
+    adm_sf$variation <- NA_real_
+    all_regions_sf[[iso_code]] <- adm_sf
+    next
+  }
+  
+  # Filter to common regions
+  df_common <- df_country %>% filter(!!sym(region_field) %in% common_regions)
+  
+  # Debug: Print a sample of region names to verify structure
+  message("Sample regions for ", iso_code, ": ", 
+          paste(head(unique(df_common[[region_field]]), 3), collapse=", "))
+  
+  # Aggregate and calculate mean trust values
+  trust_wide <- df_common %>%
+    group_by(!!sym(region_field), round) %>%
+    summarise(trust = mean(trust_parl_a, na.rm = TRUE), .groups = "drop") %>%
+    pivot_wider(names_from = round, values_from = trust, names_prefix = "R") %>%
+    mutate(variation = R8 - R5)
+  
+  # Debug: Check trust_wide structure
+  message("Trust data structure: ", nrow(trust_wide), " rows with variation calculated")
+  
+  # Convert region names to character for reliable joining
+  adm_sf[[region_field]] <- as.character(adm_sf[[region_field]])
+  trust_wide[[region_field]] <- as.character(trust_wide[[region_field]])
+  
+  # Left join instead of merge for more reliable behavior
+  joined <- tryCatch({
+    sf::st_join(adm_sf, trust_wide, by = region_field, join = st_equals)
+  }, error = function(e) {
+    # Try a different join method if st_equals fails
+    tryCatch({
+      left_join(adm_sf, trust_wide, by = region_field)
+    }, error = function(e2) {
+      message("❌ Join failed for ", iso_code, ": ", e2$message)
+      message("SHP fields: ", paste(head(names(adm_sf)), collapse=", "))
+      message("Data fields: ", paste(head(names(trust_wide)), collapse=", "))
+      NULL
+    })
+  })
+  
+  if(!is.null(joined)) {
+    all_regions_sf[[iso_code]] <- joined
+    # Debug: Check for NAs in variation
+    na_count <- sum(is.na(joined$variation))
+    total_count <- nrow(joined)
+    message("Variation has ", na_count, " NAs out of ", total_count, " regions")
+  }
+}
+
+# Only combine non-NULL elements
+valid_regions <- all_regions_sf[!sapply(all_regions_sf, is.null)]
+
+if(length(valid_regions) > 0) {
+  # Check if we can rbind these objects
+  if(length(valid_regions) > 1) {
+    # Make sure all objects have compatible columns
+    all_cols <- unique(unlist(lapply(valid_regions, names)))
+    for(i in seq_along(valid_regions)) {
+      missing_cols <- setdiff(all_cols, names(valid_regions[[i]]))
+      for(col in missing_cols) {
+        valid_regions[[i]][[col]] <- NA
+      }
+    }
+  }
+  
+  # Now bind them safely
+  combined <- do.call(rbind, valid_regions)
+  
+  # Convert back to terra format if needed
+  combined_vect <- terra::vect(combined)
+  combined_df <- as.data.frame(combined_vect)
+  
+  # Save or continue processing
+} else {
+  message("No valid data to combine")
+}
+
+
+capitals <- df %>%
+  filter(round %in% c(5, 8)) %>%
+  distinct(caplong, caplat, iso) %>%
+  na.omit() %>%
+  rename(longitude = caplong, latitude = caplat)
+
+africa_outline <- ne_countries(continent = "Africa", returnclass = "sf") %>%
+  st_make_valid()
+
+africa_sf <- st_as_sf(combined)
+
+ggplot() +
+  geom_sf(data = africa_sf, aes(fill = variation), color = "white", linewidth = 0.1) +
+  geom_sf(data = africa_outline, fill = NA, color = "black", linewidth = 0.2) +
+  geom_point(data = capitals, aes(x = longitude, y = latitude),
+             shape = 21, size = 2, fill = "black") +
+  scale_fill_gradient2(
+    low = "red", mid = "white", high = "green",
+    midpoint = 0, limits = c(-3, 3),
+    na.value = "lightgrey",
+    name = "Δ Trust\n(R8 - R5)"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Trust Change in Parliament (Round 8 - Round 5)",
+    subtitle = "Across African Regions",
+    caption = "Grey = No data"
+  )
+```
+
+```{r}
+# Define which countries use which admin level
+countries_adm1 <- c("GHA","KEN","MOZ", "MWI","NGA","TZA","UGA","ZMB", "ZWE")
+countries_adm2 <- c("BEN", "BFA", "BWA", "CIV", "CMR", "GIN", "LBR", "MLI", "NAM", "NER", "SLE")
+
+# Load required libraries
+library(magrittr)
+library(dplyr)
+library(tidyr)
+library(terra)
+library(sf)
+
+# Load data
+df <- readRDS("data/data_rds/data_final.rds")
+df %<>% filter(spl == 1)
+
+# Unique ISO codes in data
+country_codes <- unique(df$iso)
+
+# Path to admin shapefiles
+shapefile_path <- "data/data_raw/gadm/"
+
+# Store each country's region vector
+all_regions_sf <- list()
+
+for (iso_code in country_codes) {
+  # Skip if not in our specified lists
+  if (!(iso_code %in% c(countries_adm1, countries_adm2))) {
+    message("⛔ Skipping ", iso_code, " - not in specified admin level lists.")
+    next
+  }
+  
+  # Determine admin level for this country
+  admin_level <- if(iso_code %in% countries_adm1) 1 else 2
+  
+  # Build shapefile path based on admin level
+  shp_file <- paste0(shapefile_path, "gadm41_", iso_code, "_", admin_level, ".shp")
+  
+  if (!file.exists(shp_file)) {
+    message("⛔ Skipping ", iso_code, " - shapefile missing at admin level ", admin_level)
+    next
+  }
+  
+  message("✅ Processing ", iso_code, " at admin level ", admin_level)
+  
+  # Load shapefile with sf
+  adm_sf <- sf::st_read(shp_file, quiet = TRUE)
+  
+  # Get the appropriate region name field based on admin level
+  region_field <- paste0("NAME_", admin_level)
+  
+  # Make sure the field exists in the shapefile
+  if(!(region_field %in% names(adm_sf))) {
+    message("⚠️ Field ", region_field, " not found in shapefile for ", iso_code)
+    next
+  }
+  
+  # Filter country data to include rounds 5-8
+  df_country <- df %>% filter(iso == iso_code, round >= 5, round <= 8)
+  
+  if (nrow(df_country) == 0) {
+    message("⚠️ No data for rounds 5-8 for ", iso_code)
+    adm_sf$variation <- NA_real_
+    adm_sf$min_round <- NA_integer_
+    adm_sf$max_round <- NA_integer_
+    all_regions_sf[[iso_code]] <- adm_sf
+    next
+  }
+  
+  # Ensure we're using the correct region field in the data
+  if(!(region_field %in% names(df_country))) {
+    message("⚠️ Field ", region_field, " not found in data for ", iso_code)
+    adm_sf$variation <- NA_real_
+    adm_sf$min_round <- NA_integer_
+    adm_sf$max_round <- NA_integer_
+    all_regions_sf[[iso_code]] <- adm_sf
+    next
+  }
+  
+  # Calculate average trust by region and round
+  region_trust <- df_country %>%
+    group_by(!!sym(region_field), round) %>%
+    summarise(trust = mean(trust_parl_a, na.rm = TRUE), .groups = "drop")
+  
+  # Find regions with at least 2 rounds of data
+  region_round_counts <- region_trust %>%
+    group_by(!!sym(region_field)) %>%
+    summarise(num_rounds = n(), .groups = "drop")
+  
+  regions_with_multiple_rounds <- region_round_counts %>%
+    filter(num_rounds >= 2) %>%
+    pull(!!sym(region_field))
+  
+  if (length(regions_with_multiple_rounds) == 0) {
+    message("⚠️ No regions with multiple rounds for ", iso_code)
+    adm_sf$variation <- NA_real_
+    adm_sf$min_round <- NA_integer_
+    adm_sf$max_round <- NA_integer_
+    all_regions_sf[[iso_code]] <- adm_sf
+    next
+  }
+  
+  # Filter to regions with multiple rounds
+  region_trust_filtered <- region_trust %>%
+    filter(!!sym(region_field) %in% regions_with_multiple_rounds)
+  
+  # For each region, calculate variation between earliest and latest available round
+  variation_data <- region_trust_filtered %>%
+    group_by(!!sym(region_field)) %>%
+    summarise(
+      min_round = min(round),
+      max_round = max(round),
+      earliest_trust = trust[which.min(round)],
+      latest_trust = trust[which.max(round)],
+      variation = latest_trust - earliest_trust,
+      .groups = "drop"
+    )
+  
+  # Debug info
+  message("Found ", nrow(variation_data), " regions with variations for ", iso_code)
+  
+  # Convert region names to character for reliable joining
+  adm_sf[[region_field]] <- as.character(adm_sf[[region_field]])
+  variation_data[[region_field]] <- as.character(variation_data[[region_field]])
+  
+  # Join variation data with shapefile
+  joined <- left_join(adm_sf, variation_data, by = region_field)
+  
+  if(!is.null(joined)) {
+    all_regions_sf[[iso_code]] <- joined
+    # Debug: Check for NAs in variation
+    na_count <- sum(is.na(joined$variation))
+    total_count <- nrow(joined)
+    message("Variation has ", na_count, " NAs out of ", total_count, " regions")
+  }
+}
+
+# Only combine non-NULL elements
+valid_regions <- all_regions_sf[!sapply(all_regions_sf, is.null)]
+
+if(length(valid_regions) > 0) {
+  # Ensure column compatibility
+  all_cols <- unique(unlist(lapply(valid_regions, names)))
+  for(i in seq_along(valid_regions)) {
+    missing_cols <- setdiff(all_cols, names(valid_regions[[i]]))
+    for(col in missing_cols) {
+      valid_regions[[i]][[col]] <- NA
+    }
+  }
+  
+  # Combine all regions
+  combined <- do.call(rbind, valid_regions)
+  
+  # Convert back to terra format if needed
+  combined_vect <- terra::vect(st_cast(combined))
+  combined_df <- as.data.frame(combined_vect)
+  
+  # Summary of variations
+  message("Variation summary:")
+  message("Min: ", min(combined$variation, na.rm = TRUE))
+  message("Max: ", max(combined$variation, na.rm = TRUE))
+  message("Mean: ", mean(combined$variation, na.rm = TRUE))
+  message("Median: ", median(combined$variation, na.rm = TRUE))
+  message("NA count: ", sum(is.na(combined$variation)))
+  
+  # You can now proceed with further analysis or visualization
+} else {
+  message("No valid data to combine")
+}
+
+
+capitals <- df %>%
+  filter(round %in% c(5, 8)) %>%
+  distinct(caplong, caplat, iso) %>%
+  na.omit() %>%
+  rename(longitude = caplong, latitude = caplat)
+
+africa_outline <- ne_countries(continent = "Africa", returnclass = "sf") %>%
+  st_make_valid()
+
+africa_outline <- st_transform(africa_outline, st_crs(combined))
+
+africa_sf <- st_as_sf(combined)
+
+ggplot() +
+  geom_sf(data = africa_sf, aes(fill = variation), color = "white", linewidth = 0.1) +
+  geom_sf(data = africa_outline, fill = NA, color = "black", linewidth = 0.2) +
+    geom_point(data = capitals, aes(x = longitude, y = latitude),
+             shape = 21, size = 2, fill = "black") +
+  scale_fill_gradient2(
+    low = "red", high = "green",
+    midpoint = 0, limits = c(-2, 2),
+    na.value = "lightgrey",
+    name = "Δ Trust\n(R8 - R5)"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Trust Change in Parliament (Round 8 - Round 5)",
+    subtitle = "Across African Regions",
+    caption = "Grey = No data"
+  )
+```
+
+
