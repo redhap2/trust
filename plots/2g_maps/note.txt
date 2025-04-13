@@ -1,0 +1,5 @@
+Warning messages:
+1: Fichier raster manquant pour : LBR année 2010 (2009)
+2: Fichier raster manquant pour : NER année 2010 (2009)
+3: Fichier raster manquant pour : ZWE année 2010 (2009)
+4: Fichier raster manquant pour : ZWE année 2011 (2010)
